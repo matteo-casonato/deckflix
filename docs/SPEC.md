@@ -383,6 +383,9 @@ Esporta CSV, invito ad accedere per chi usa l'app senza account, copia di sicure
 
 - **Dettaglio deck semplificato**: i contatori Pokémon / Allenatori / Energie (con matita) aprono il Deck List Creator sulla sezione; niente tasto Modifica. “Condividi” e “Stampa” (il foglio torneo, senza riga per la firma) stanno con “Ti mancano…” in un pannello sotto l’elenco delle carte: sono funzioni secondarie. Al posto di “Mancanti ai desideri” la riga “Ti mancano N carte · circa X € · vedi quali”, che apre “Cosa ti manca”: elenco delle mancanti (più care prima) con codice, quantità e prezzo, ognuna apre Cardmarket; in fondo “Salva le N mancanti nei Desideri” con la spiegazione di dove ritrovarle.
 
+- **Immagini mancanti**: TCGdex a volte non ha la carta nella lingua scelta (carte vecchie: EX Deoxys, Neo), o ce l'ha senza immagine (Charizard Set Base in italiano), o non ha l'immagine in nessuna lingua nei dati (gallerie TG di Silver Tempest, mep-028) anche se il file c'è sul server. La cache delle carte usa la carta o l'immagine inglese e altrimenti ricostruisce l'indirizzo (`guessImage`: serie dal prefisso dell'id, gallerie TG/GG nella cartella dell'edizione madre, es. swsh12tg-TG20 → swsh/swsh12/TG20); se il file non esiste resta il segnaposto. Vale per elenchi, raccoglitore e scheda carta.
+- **Profilo**: i link utili sono in un pannello (“Link utili”) dalla sezione App, non più una sezione a sé.
+
 ## 9. Fuori ambito
 
 Prezzi per lingua e per condizione, riconoscimento con IA a pagamento, notifiche push e backup a app chiusa (servirebbe un server), profili multipli sullo stesso telefono, backup su servizi diversi da Google Drive, pubblicazione sugli store, app nativa con Capacitor (piano B se la scansione web non basta).

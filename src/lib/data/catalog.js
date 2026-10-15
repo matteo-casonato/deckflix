@@ -1,7 +1,8 @@
 // @ts-check
-import { liveQuery } from 'dexie';
 // Read helpers over the TCGdex cache for the collection screens.
+import { liveQuery } from 'dexie';
 import { db } from '../db.js';
+import { guessImage, setIdOf } from '../domain/cards.js';
 import { getCard, getSet, getSets } from '../api/tcgdex.js';
 
 /**
@@ -29,7 +30,29 @@ export async function setsMap(lang) {
  */
 export async function cachedCards(cardIds, lang) {
   const rows = await db.cardCache.bulkGet(cardIds.map((id) => /** @type {[string, string]} */ ([lang, id])));
-  return new Map(rows.filter(Boolean).map((r) => [/** @type {any} */ (r).cardId, /** @type {any} */ (r).data]));
+  /** @type {Map<string, any>} */
+  const map = new Map(rows.filter(Boolean).map((r) => [/** @type {any} */ (r).cardId, /** @type {any} */ (r).data]));
+  // Old and gallery cards: TCGdex may lack the localized card (EX Deoxys in Italian) or its
+  // image (Base Set Charizard). Use the English card or image, else guess the asset path.
+  const incomplete = cardIds.filter((id) => !map.get(id)?.image);
+  if (!incomplete.length) return map;
+  const english =
+    lang === 'en'
+      ? new Map()
+      : new Map(
+          (await db.cardCache.bulkGet(incomplete.map((id) => /** @type {[string, string]} */ (['en', id]))))
+            .filter(Boolean)
+            .map((r) => [/** @type {any} */ (r).cardId, /** @type {any} */ (r).data]),
+        );
+  for (const id of incomplete) {
+    const local = map.get(id);
+    const en = english.get(id);
+    const card = local ?? en;
+    if (!card) continue;
+    const image = en?.image ?? guessImage(id, card.localId ?? id.slice(setIdOf(id).length + 1), local ? lang : 'en');
+    map.set(id, { ...card, image });
+  }
+  return map;
 }
 
 /** @type {Set<string>} */
@@ -41,12 +64,20 @@ const inFlight = new Set();
  * @param {string} lang
  */
 export async function prefetchCards(cardIds, lang) {
-  const have = await cachedCards(cardIds, lang);
-  const queue = [...new Set(cardIds)].filter((id) => !have.has(id) && !inFlight.has(`${lang}/${id}`));
+  const ids = [...new Set(cardIds)];
+  // Raw cache rows (cachedCards fills gaps with guesses): fetch what is missing, and the
+  // English card when the localized one has no image.
+  const [local, en] = await Promise.all(
+    [lang, 'en'].map((l) => db.cardCache.bulkGet(ids.map((id) => /** @type {[string, string]} */ ([l, id])))),
+  );
+  const need = (/** @type {number} */ i) => !local[i] || (lang !== 'en' && !local[i]?.data?.image && !en[i]);
+  const queue = ids.filter((id, i) => need(i) && !inFlight.has(`${lang}/${id}`));
   queue.forEach((id) => inFlight.add(`${lang}/${id}`));
   const worker = async () => {
     for (let id = queue.shift(); id; id = queue.shift()) {
-      await getCard(lang, id).catch(() => {});
+      const local = await getCard(lang, id).catch(() => null);
+      // Not in this language, or without image: the English card fills the gaps.
+      if (lang !== 'en' && !local?.data?.image) await getCard('en', id).catch(() => {});
       inFlight.delete(`${lang}/${id}`);
     }
   };

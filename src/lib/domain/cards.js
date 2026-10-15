@@ -185,3 +185,23 @@ export function variantBadge(variantKey) {
   if (variantKey === 'firstEdition') return '1ª ed.';
   return '★';
 }
+
+// Series folders of TCGdex assets, matched on the start of the set id (longest first).
+const SERIES = ['swsh', 'hgss', 'ecard', 'base', 'neo', 'gym', 'pop', 'sv', 'sm', 'xy', 'bw', 'me', 'dp', 'pl', 'ex', 'lc'];
+const SERIES_OF_SET = /** @type {Record<string, string>} */ ({ cel25: 'swsh', cel25c: 'swsh', svp: 'sv', mep: 'me' });
+
+/**
+ * Best guess of a card's image when TCGdex has none in its data: the asset is often on the
+ * server anyway (mep-028), and gallery cards (TG, GG) live in the folder of their main set
+ * (swsh12tg-TG20 → swsh/swsh12/TG20). The tile tries it and falls back to a placeholder.
+ * @param {string} cardId
+ * @param {string} localId
+ * @param {string} [lang]
+ */
+export function guessImage(cardId, localId, lang = 'en') {
+  const setId = setIdOf(cardId);
+  const series = SERIES_OF_SET[setId] ?? SERIES.find((s) => setId.startsWith(s));
+  if (!series) return null;
+  const folder = /^(TG|GG)/.test(localId) ? setId.replace(/(tg|gg)$/, '') : setId;
+  return `https://assets.tcgdex.net/${lang}/${series}/${folder}/${localId}`;
+}

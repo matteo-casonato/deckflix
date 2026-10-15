@@ -9,7 +9,7 @@
   import { settings, toggleCover } from '../lib/stores/settings.svelte.js';
   import { showToast } from '../lib/stores/toast.svelte.js';
   import { prefetchCards, liveCards } from '../lib/data/catalog.js';
-  import { copyPrice, euro, setProgress, variantBadge } from '../lib/domain/cards.js';
+  import { copyPrice, euro, guessImage, setProgress, variantBadge } from '../lib/domain/cards.js';
   import { hrefFor } from '../lib/domain/routes.js';
   import { replace } from '../lib/router.svelte.js';
   import BackHeader from '../lib/ui/BackHeader.svelte';
@@ -65,7 +65,7 @@
         props: {
           name: c.name,
           localId: c.localId,
-          image: c.image ?? null,
+          image: c.image ?? guessImage(c.id, c.localId, settings.cardLang),
           qty,
           missing: qty === 0,
           ghost: settings.missingImages,

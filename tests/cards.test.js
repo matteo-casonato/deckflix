@@ -133,3 +133,14 @@ describe('euro and variantBadge', async () => {
     expect(variantBadge('normal+stamp-player-rewards-program')).toBe('Timbro');
   });
 });
+
+describe('guessImage', async () => {
+  const { guessImage } = await import('../src/lib/domain/cards.js');
+  it('builds the asset path, gallery cards in the folder of their main set', () => {
+    expect(guessImage('swsh12tg-TG20', 'TG20')).toBe('https://assets.tcgdex.net/en/swsh/swsh12/TG20');
+    expect(guessImage('mep-028', '028')).toBe('https://assets.tcgdex.net/en/me/mep/028');
+    expect(guessImage('sv03.5-025', '025', 'it')).toBe('https://assets.tcgdex.net/it/sv/sv03.5/025');
+    expect(guessImage('cel25-11', '11')).toBe('https://assets.tcgdex.net/en/swsh/cel25/11');
+    expect(guessImage('A1-001', '001')).toBe(null);
+  });
+});

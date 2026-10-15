@@ -12,7 +12,7 @@
   import { toggleWish } from '../lib/data/actions.js';
   import { listVariants } from '../lib/domain/variants.js';
   import { collectionKey } from '../lib/domain/collection.js';
-  import { LANG_LABELS, cardmarketUrl, euro, googleUrl, pricesDate, setIdOf } from '../lib/domain/cards.js';
+  import { LANG_LABELS, cardmarketUrl, euro, googleUrl, guessImage, pricesDate, setIdOf } from '../lib/domain/cards.js';
   import { hrefFor } from '../lib/domain/routes.js';
   import { freshnessLabel } from '../lib/domain/cache.js';
   import BackHeader from '../lib/ui/BackHeader.svelte';
@@ -38,6 +38,9 @@
     let image = cardImage(res.data, 'high');
     // SPEC § 2: when the localised card has no image, use the English one.
     if (!image && lang !== 'en') image = await getCard('en', id).then((en) => cardImage(en.data, 'high')).catch(() => null);
+    // TCGdex data without image: the file is often on the server anyway (see guessImage).
+    const guess = guessImage(id, res.data.localId ?? '', 'en');
+    if (!image && guess) image = `${guess}/high.webp`;
     return { card: res.data, image, fetchedAt: res.fetchedAt, source: res.source, englishOnly: 'englishOnly' in res };
   }
 
@@ -62,6 +65,8 @@
   /** @type {{ variant: string, label: string } | null} */
   let confirmRemove = $state(null);
   let confirmMove = $state(false);
+  /** The (possibly guessed) image did not load: show the placeholder. */
+  let artFailed = $state(false);
   let picker = $state(false);
   const inAlbums = $derived(liveQuery(async () => (await db.albums.toArray()).filter((a) => a.cards.some((c) => c.cardId === id)).length));
 
@@ -142,8 +147,8 @@
     {@const variants = listVariants(card)}
     {@const prices = pricesDate(card.pricing?.cardmarket?.updated, Date.now())}
     <div class="layout">
-      {#if r.image}
-        <img class="art" src={r.image} alt={`${card.name}, carta ${card.localId} di ${card.set?.name}`} />
+      {#if r.image && !artFailed}
+        <img class="art" onerror={() => (artFailed = true)} src={r.image} alt={`${card.name}, carta ${card.localId} di ${card.set?.name}`} />
       {:else}
         <div class="art placeholder"><span>{card.name}</span><span class="num">{card.localId}</span></div>
       {/if}
