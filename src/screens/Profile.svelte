@@ -131,11 +131,11 @@
 
 <h2 class="section">Play!</h2>
 <section class="card list">
-  <a class="row" href={hrefFor('play')}>
+  <a class="row" href={hrefFor('deck')}>
     <span class="ico"><Icon icon={QrCodeIcon} /></span>
     <span class="text">
       <strong>ID giocatori</strong>
-      <span>{settings.players.length ? settings.players.map((p) => p.name.split(' ')[0]).join(', ') : 'ID, divisione e codice QR per la lega'}</span>
+      <span>{settings.players.length ? `${settings.players.map((p) => p.name.split(' ')[0]).join(', ')} · ora nella sezione Play!` : 'Nella sezione Play! della barra in basso'}</span>
     </span>
     <span class="chev"><Icon icon={ArrowRight01Icon} size={20} /></span>
   </a>

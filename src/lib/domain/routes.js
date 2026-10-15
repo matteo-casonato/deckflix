@@ -46,7 +46,7 @@ export const NAV_SECTION = /** @type {Record<RouteName, string>} */ ({
   deckPrint: 'deck',
   profile: 'profile',
   csv: 'profile',
-  play: 'profile',
+  play: 'deck',
   notFound: '',
 });
 

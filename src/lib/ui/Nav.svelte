@@ -14,7 +14,7 @@
   const items = [
     { name: 'home', label: 'Home', icon: Home04Icon },
     { name: 'collection', label: 'Collezione', icon: Cards02Icon },
-    { name: 'deck', label: 'Deck', icon: PokeballIcon },
+    { name: 'deck', label: 'Play!', icon: PokeballIcon },
   ];
 
   const status = $derived(

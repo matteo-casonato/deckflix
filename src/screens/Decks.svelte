@@ -1,6 +1,7 @@
 <script>
   // @ts-check
-  // Deck list (docs/mockups/Deck.html): completion of each deck, search, new deck, import.
+  // Play! (docs/mockups/Deck.html): the players of this phone with their check-in QR, then the
+  // decks with their completion, search, new deck, import.
   import { liveQuery } from 'dexie';
   import { Add01Icon, Search01Icon } from '@hugeicons/core-free-icons';
   import { db } from '../lib/db.js';
@@ -12,6 +13,7 @@
   import { navigate } from '../lib/router.svelte.js';
   import Icon from '../lib/ui/Icon.svelte';
   import EmptyState from '../lib/ui/EmptyState.svelte';
+  import Players from './play/Players.svelte';
 
   const decks = liveQuery(() => db.decks.orderBy('updatedAt').reverse().toArray());
   const owned = liveQuery(ownedMap);
@@ -44,10 +46,15 @@
   const C = 2 * Math.PI * R;
 </script>
 
-<header class="top">
-  <h1>I miei deck</h1>
+<header class="top"><h1>Play!</h1></header>
+
+<h2 class="label">Giocatori</h2>
+<Players />
+
+<div class="decks-head">
+  <h2 class="label">I miei deck</h2>
   <button class="round" aria-label="Nuovo deck" onclick={newDeck}><Icon icon={Add01Icon} /></button>
-</header>
+</div>
 
 <div class="pad">
   <a class="search" href={hrefFor('search', {}, { standard: '1' })}>
@@ -109,6 +116,26 @@
 {/if}
 
 <style>
+  .label {
+    margin: 18px 20px 10px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .decks-head {
+    padding-right: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .decks-head .label {
+    margin-top: 26px;
+  }
+
   .hint {
     margin: 8px 4px 0;
     font-size: 12px;

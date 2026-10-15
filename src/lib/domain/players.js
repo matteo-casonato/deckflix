@@ -2,7 +2,7 @@
 // Play! Pokémon players saved in the app (the user and, e.g., a child): name, Player ID,
 // birth year, age division and the check-in QR code.
 
-/** @typedef {{ id: string, name: string, playerId: string, birthYear: number }} Player */
+/** @typedef {{ id: string, name: string, playerId: string, birthYear: number, avatar?: string | null }} Player avatar: small JPEG data URL */
 
 /** How long a generated check-in code stays valid, like the official app (10 days). */
 export const QR_VALID_DAYS = 10;
