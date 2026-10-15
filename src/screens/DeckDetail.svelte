@@ -192,9 +192,10 @@
               <a href={hrefFor('card', { lang: 'en', id: r.cardId })} oncontextmenu={(e) => chooseCover(e, r)}>
                 <span class="thumb" class:missing={r.state === 'missing'}>
                   {#if cardImage(r.card)}<img src={cardImage(r.card)} alt="" loading="lazy" />{/if}
+                  {#if r.cardId === coverId}<span class="star mini" title="Copertina">★</span>{/if}
                 </span>
                 <span class="name">
-                  <strong>{r.card?.name ?? r.cardId}{#if r.cardId === coverId}<span class="star-inline" title="Copertina"> ★</span>{/if}</strong>
+                  <strong>{r.card?.name ?? r.cardId}</strong>
                   <span class="muted num">{r.card ? printedCode(r.card, sets.get(r.card.set?.id)) : ''}</span>
                 </span>
                 <span class="state {r.state}">{rowLabel(r)}</span>
@@ -255,8 +256,17 @@
     outline-offset: -2px;
   }
 
-  .star-inline {
-    color: var(--accent);
+  .thumb {
+    position: relative;
+  }
+
+  .star.mini {
+    top: 2px;
+    right: auto;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    font-size: 10px;
   }
 
   /* No text selection or callout on long press: it chooses the cover. */
