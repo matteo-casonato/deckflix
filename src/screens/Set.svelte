@@ -65,7 +65,7 @@
         props: {
           name: c.name,
           localId: c.localId,
-          image: c.image ?? guessImage(c.id, c.localId, settings.cardLang),
+          image: c.image ?? guessImage(c.id, c.localId, 'en'),
           qty,
           missing: qty === 0,
           ghost: settings.missingImages,

@@ -7,6 +7,8 @@
    * @type {{ items: StripItem[], label: string }}
    */
   let { items, label } = $props();
+  /** Images that did not load (guessed paths): show the name instead of a broken icon. */
+  let failed = $state(new Set());
 </script>
 
 <ul class="strip" aria-label={label}>
@@ -14,7 +16,9 @@
     <li>
       <a href={it.href}>
         <span class="art">
-          {#if it.image}<img src={it.image} alt="" loading="lazy" decoding="async" />{:else}<span class="ph">{it.title}</span>{/if}
+          {#if it.image && !failed.has(it.key)}
+            <img src={it.image} alt="" loading="lazy" decoding="async" onerror={() => (failed = new Set([...failed, it.key]))} />
+          {:else}<span class="ph">{it.title}</span>{/if}
           {#if it.tag}<span class="tag" class:up={it.tone === 'up'} class:down={it.tone === 'down'}>{it.tag}</span>{/if}
         </span>
         <span class="title">{it.title}</span>

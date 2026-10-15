@@ -141,6 +141,8 @@ describe('guessImage', async () => {
     expect(guessImage('mep-028', '028')).toBe('https://assets.tcgdex.net/en/me/mep/028');
     expect(guessImage('sv03.5-025', '025', 'it')).toBe('https://assets.tcgdex.net/it/sv/sv03.5/025');
     expect(guessImage('cel25-11', '11')).toBe('https://assets.tcgdex.net/en/swsh/cel25/11');
+    expect(guessImage('sm7.5-3', '3')).toBe('https://assets.tcgdex.net/en/sm/sm75/3');
+    expect(guessImage('swsh4.5-SV001', 'SV001')).toBe('https://assets.tcgdex.net/en/swsh/swsh4.5/SV001');
     expect(guessImage('A1-001', '001')).toBe(null);
   });
 });

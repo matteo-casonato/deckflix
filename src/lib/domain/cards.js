@@ -193,7 +193,9 @@ const SERIES_OF_SET = /** @type {Record<string, string>} */ ({ cel25: 'swsh', ce
 /**
  * Best guess of a card's image when TCGdex has none in its data: the asset is often on the
  * server anyway (mep-028), and gallery cards (TG, GG) live in the folder of their main set
- * (swsh12tg-TG20 → swsh/swsh12/TG20). The tile tries it and falls back to a placeholder.
+ * (swsh12tg-TG20 → swsh/swsh12/TG20); Sun & Moon "half" sets drop the dot (sm7.5 → sm75,
+ * checked 15/10/2026), the others keep it (swsh4.5, sv03.5). The tile tries it and falls
+ * back to a placeholder.
  * @param {string} cardId
  * @param {string} localId
  * @param {string} [lang]
@@ -202,6 +204,7 @@ export function guessImage(cardId, localId, lang = 'en') {
   const setId = setIdOf(cardId);
   const series = SERIES_OF_SET[setId] ?? SERIES.find((s) => setId.startsWith(s));
   if (!series) return null;
-  const folder = /^(TG|GG)/.test(localId) ? setId.replace(/(tg|gg)$/, '') : setId;
+  let folder = /^(TG|GG)/.test(localId) ? setId.replace(/(tg|gg)$/, '') : setId;
+  if (series === 'sm') folder = folder.replace('.', '');
   return `https://assets.tcgdex.net/${lang}/${series}/${folder}/${localId}`;
 }

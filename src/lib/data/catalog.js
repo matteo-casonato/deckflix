@@ -49,7 +49,8 @@ export async function cachedCards(cardIds, lang) {
     const en = english.get(id);
     const card = local ?? en;
     if (!card) continue;
-    const image = en?.image ?? guessImage(id, card.localId ?? id.slice(setIdOf(id).length + 1), local ? lang : 'en');
+    // Guessed paths in English: localized files are often missing for these cards.
+    const image = en?.image ?? guessImage(id, card.localId ?? id.slice(setIdOf(id).length + 1), 'en');
     map.set(id, { ...card, image });
   }
   return map;
