@@ -6,10 +6,14 @@ App personale (PWA Android) per catalogare carte Pokémon e costruire deck. Spec
 
 ```bash
 npm install
-npm run dev      # http://localhost:5173/deckflix/
+npm run dev          # http://localhost:5173/deckflix/
+npm run dev:offline  # come dev, ma i dati TCGdex arrivano da tests/fixtures (niente rete)
 npm test
 npm run build
+npm run fixtures     # riscarica le risposte TCGdex usate da test e modalità offline
 ```
+
+Struttura: `src/` app Svelte 5 (schermate in `src/screens`, logica pura in `src/lib/domain`, client TCGdex in `src/lib/api`), `lab/scan/` prototipo di scansione della Fase 0, `docs/` specifica e mockup.
 
 ### Provare la fotocamera dal telefono (HTTPS locale)
 

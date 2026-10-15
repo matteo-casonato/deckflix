@@ -1,5 +1,6 @@
 // @ts-check
 import { defineConfig } from 'vite';
+import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
@@ -12,6 +13,7 @@ const https = existsSync(resolve(certDir, 'cert.pem'))
 
 export default defineConfig({
   base: '/deckflix/',
+  plugins: [svelte()],
   define: { __BUILD_TIME__: JSON.stringify(new Date().toISOString()) },
   server: { https },
   build: {

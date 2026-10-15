@@ -1,0 +1,214 @@
+{
+ "category": "Pokémon",
+ "id": "base1-4",
+ "illustrator": "Mitsuhiro Arita",
+ "localId": "4",
+ "name": "Charizard",
+ "rarity": "Rara",
+ "set": {
+  "cardCount": {
+   "official": 102,
+   "total": 102
+  },
+  "id": "base1",
+  "name": "Set Base"
+ },
+ "variants": {
+  "firstEdition": true,
+  "holo": true,
+  "normal": false,
+  "reverse": false,
+  "wPromo": false
+ },
+ "variants_detailed": [
+  {
+   "type": "Olografica",
+   "subtype": "illimitato",
+   "size": "Standard",
+   "thirdParty": {
+    "cardmarket": 273699,
+    "tcgplayer": 42382
+   },
+   "variantId": "4ffrmhcfiaejakhepqdkx7o",
+   "pricing": {
+    "cardmarket": {
+     "updated": "2026-10-14T15:00:50.475Z",
+     "unit": "EUR",
+     "idProduct": 273699,
+     "avg": 741.93,
+     "low": 99,
+     "trend": 165.39,
+     "avg1": 324.8,
+     "avg7": 423.4,
+     "avg30": 765.81,
+     "avg-holo": null,
+     "low-holo": null,
+     "trend-holo": 123.63,
+     "avg1-holo": 207.4,
+     "avg7-holo": 129.55,
+     "avg30-holo": 202.71
+    },
+    "tcgplayer": {
+     "unit": "USD",
+     "updated": "2026-10-14T15:00:51.222Z",
+     "holofoil": {
+      "productId": 42382,
+      "lowPrice": 489.99,
+      "midPrice": 587.98,
+      "highPrice": 3499.1,
+      "marketPrice": 954.65,
+      "directLowPrice": null
+     }
+    }
+   }
+  },
+  {
+   "type": "Olografica",
+   "subtype": "senza ombra",
+   "size": "Standard",
+   "stamp": [
+    "1a Edizione"
+   ],
+   "thirdParty": {
+    "tcgplayer": 106999,
+    "cardmarket": 660224
+   },
+   "variantId": "mtltux8qtgdu4exu903oasum21juxbvx6lx",
+   "pricing": {
+    "cardmarket": {
+     "updated": "2026-10-14T15:00:50.475Z",
+     "unit": "EUR",
+     "idProduct": 660224,
+     "avg": 4625,
+     "low": 980,
+     "trend": 3330.71,
+     "avg1": 950,
+     "avg7": 1821.3,
+     "avg30": 2478.82,
+     "avg-holo": null,
+     "low-holo": null,
+     "trend-holo": 0,
+     "avg1-holo": null,
+     "avg7-holo": null,
+     "avg30-holo": null
+    },
+    "tcgplayer": null
+   }
+  },
+  {
+   "type": "Olografica",
+   "subtype": "senza ombra",
+   "size": "Standard",
+   "thirdParty": {
+    "tcgplayer": 106999,
+    "cardmarket": 660224
+   },
+   "variantId": "3takscxpcqoqcfnxk1ivs2y6",
+   "pricing": {
+    "cardmarket": {
+     "updated": "2026-10-14T15:00:50.475Z",
+     "unit": "EUR",
+     "idProduct": 660224,
+     "avg": 4625,
+     "low": 980,
+     "trend": 3330.71,
+     "avg1": 950,
+     "avg7": 1821.3,
+     "avg30": 2478.82,
+     "avg-holo": null,
+     "low-holo": null,
+     "trend-holo": 0,
+     "avg1-holo": null,
+     "avg7-holo": null,
+     "avg30-holo": null
+    },
+    "tcgplayer": null
+   }
+  },
+  {
+   "type": "Olografica",
+   "subtype": "Copyright 1999-2000",
+   "size": "Standard",
+   "variantId": "zqq5g2u9n0st0gren5bssktmac2ywqaw"
+  }
+ ],
+ "dexId": [
+  6
+ ],
+ "hp": 120,
+ "types": [
+  "Fuoco"
+ ],
+ "evolveFrom": "Charmeleon",
+ "description": "Sputa fiamme così intense da sciogliere le rocce. Senza volerlo, a volte causa incendi boschivi. LIV 76 N.6",
+ "stage": "Livello 2",
+ "abilities": [
+  {
+   "type": "Pokemon Power",
+   "name": "Brucia energia",
+   "effect": "Quante volte vuoi durante il tuo turno (prima di attaccare), puoi trasformare tutte le carte Energia assegnate a Charizard in carte Energia Fuoco per il resto del turno. Questo potere non può essere usato se Charizard è Addormentato, Confuso o Paralizzato."
+  }
+ ],
+ "attacks": [
+  {
+   "cost": [
+    "Fuoco",
+    "Fuoco",
+    "Fuoco",
+    "Fuoco"
+   ],
+   "name": "Turbofuoco",
+   "effect": "Scarta 2 carte Energia assegnate a Charizard per poter usare questo attacco.",
+   "damage": 100
+  }
+ ],
+ "weaknesses": [
+  {
+   "type": "Acqua",
+   "value": "×2"
+  }
+ ],
+ "resistances": [
+  {
+   "type": "Lotta",
+   "value": "-30"
+  }
+ ],
+ "retreat": 3,
+ "legal": {
+  "standard": false,
+  "expanded": false
+ },
+ "updated": "2026-09-04T23:45:25+01:00",
+ "pricing": {
+  "cardmarket": {
+   "updated": "2026-10-14T15:00:50.475Z",
+   "unit": "EUR",
+   "idProduct": 273699,
+   "avg": 741.93,
+   "low": 99,
+   "trend": 165.39,
+   "avg1": 324.8,
+   "avg7": 423.4,
+   "avg30": 765.81,
+   "avg-holo": null,
+   "low-holo": null,
+   "trend-holo": 123.63,
+   "avg1-holo": 207.4,
+   "avg7-holo": 129.55,
+   "avg30-holo": 202.71
+  },
+  "tcgplayer": {
+   "unit": "USD",
+   "updated": "2026-10-14T15:00:51.222Z",
+   "holofoil": {
+    "productId": 42382,
+    "lowPrice": 489.99,
+    "midPrice": 587.98,
+    "highPrice": 3499.1,
+    "marketPrice": 954.65,
+    "directLowPrice": null
+   }
+  }
+ }
+}

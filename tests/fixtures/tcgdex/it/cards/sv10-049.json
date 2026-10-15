@@ -1,0 +1,295 @@
+{
+ "category": "Pokémon",
+ "id": "sv10-049",
+ "illustrator": "GOSSAN",
+ "image": "https://assets.tcgdex.net/it/sv/sv10/049",
+ "localId": "049",
+ "name": "Gyarados di Misty",
+ "rarity": "Rara",
+ "set": {
+  "cardCount": {
+   "official": 182,
+   "total": 244
+  },
+  "id": "sv10",
+  "logo": "https://assets.tcgdex.net/it/sv/sv10/logo",
+  "name": "Rivali Predestinati",
+  "symbol": "https://assets.tcgdex.net/univ/sv/sv10/symbol"
+ },
+ "variants": {
+  "firstEdition": false,
+  "holo": true,
+  "normal": true,
+  "reverse": true,
+  "wPromo": false
+ },
+ "variants_detailed": [
+  {
+   "type": "Reverse",
+   "size": "Standard",
+   "thirdParty": {
+    "cardmarket": 825923,
+    "tcgplayer": 630816
+   },
+   "variantId": "cm4kqul3x1bwlz1f",
+   "pricing": {
+    "cardmarket": {
+     "updated": "2026-10-14T15:00:50.608Z",
+     "unit": "EUR",
+     "idProduct": 825923,
+     "avg": 0.14,
+     "low": 0.02,
+     "trend": 0.12,
+     "avg1": 0.1,
+     "avg7": 0.12,
+     "avg30": 0.13,
+     "avg-holo": 0.35,
+     "low-holo": 0.02,
+     "trend-holo": 0.33,
+     "avg1-holo": 0.34,
+     "avg7-holo": 0.33,
+     "avg30-holo": 0.36
+    },
+    "tcgplayer": {
+     "unit": "USD",
+     "updated": "2026-10-14T15:01:23.857Z",
+     "reverse-holofoil": {
+      "productId": 630816,
+      "lowPrice": 0.1,
+      "midPrice": 0.5,
+      "highPrice": 30,
+      "marketPrice": 0.43,
+      "directLowPrice": null
+     },
+     "holofoil": {
+      "productId": 630816,
+      "lowPrice": 0.01,
+      "midPrice": 0.35,
+      "highPrice": 22,
+      "marketPrice": 0.23,
+      "directLowPrice": 0.23
+     }
+    }
+   }
+  },
+  {
+   "type": "Olografica",
+   "size": "Standard",
+   "thirdParty": {
+    "cardmarket": 825923,
+    "tcgplayer": 630816
+   },
+   "variantId": "jr7oetx1mqug9",
+   "pricing": {
+    "cardmarket": {
+     "updated": "2026-10-14T15:00:50.608Z",
+     "unit": "EUR",
+     "idProduct": 825923,
+     "avg": 0.14,
+     "low": 0.02,
+     "trend": 0.12,
+     "avg1": 0.1,
+     "avg7": 0.12,
+     "avg30": 0.13,
+     "avg-holo": 0.35,
+     "low-holo": 0.02,
+     "trend-holo": 0.33,
+     "avg1-holo": 0.34,
+     "avg7-holo": 0.33,
+     "avg30-holo": 0.36
+    },
+    "tcgplayer": {
+     "unit": "USD",
+     "updated": "2026-10-14T15:01:23.857Z",
+     "reverse-holofoil": {
+      "productId": 630816,
+      "lowPrice": 0.1,
+      "midPrice": 0.5,
+      "highPrice": 30,
+      "marketPrice": 0.43,
+      "directLowPrice": null
+     },
+     "holofoil": {
+      "productId": 630816,
+      "lowPrice": 0.01,
+      "midPrice": 0.35,
+      "highPrice": 22,
+      "marketPrice": 0.23,
+      "directLowPrice": 0.23
+     }
+    }
+   }
+  },
+  {
+   "type": "Olografica",
+   "size": "Standard",
+   "stamp": [
+    "Logo set"
+   ],
+   "thirdParty": {
+    "cardmarket": 826180
+   },
+   "variantId": "555jb0efopmyclvkikic41",
+   "pricing": {
+    "cardmarket": {
+     "updated": "2026-10-14T15:00:50.608Z",
+     "unit": "EUR",
+     "idProduct": 826180,
+     "avg": 20.04,
+     "low": 3.99,
+     "trend": 24.01,
+     "avg1": 51.75,
+     "avg7": 21.88,
+     "avg30": 24.39,
+     "avg-holo": null,
+     "low-holo": null,
+     "trend-holo": 0,
+     "avg1-holo": null,
+     "avg7-holo": null,
+     "avg30-holo": null
+    },
+    "tcgplayer": null
+   }
+  },
+  {
+   "type": "Normale",
+   "size": "Standard",
+   "thirdParty": {
+    "cardmarket": 828101
+   },
+   "variantId": "endfynwn4n10gzq",
+   "pricing": {
+    "cardmarket": {
+     "updated": "2026-10-14T15:00:50.608Z",
+     "unit": "EUR",
+     "idProduct": 828101,
+     "avg": 6.14,
+     "low": 4,
+     "trend": 7.22,
+     "avg1": 12.02,
+     "avg7": 6.93,
+     "avg30": 7.04,
+     "avg-holo": null,
+     "low-holo": null,
+     "trend-holo": 0,
+     "avg1-holo": null,
+     "avg7-holo": null,
+     "avg30-holo": null
+    },
+    "tcgplayer": null
+   }
+  },
+  {
+   "type": "Olografica",
+   "size": "Standard",
+   "stamp": [
+    "Logo set",
+    "Staff"
+   ],
+   "thirdParty": {
+    "cardmarket": 833945
+   },
+   "variantId": "2fnyg4g5382k6pl1ij0u1km1pdn",
+   "pricing": {
+    "cardmarket": {
+     "updated": "2026-10-14T15:00:50.608Z",
+     "unit": "EUR",
+     "idProduct": 833945,
+     "avg": 45.05,
+     "low": 31.94,
+     "trend": 22.65,
+     "avg1": 75.49,
+     "avg7": 54.46,
+     "avg30": 123.71,
+     "avg-holo": null,
+     "low-holo": null,
+     "trend-holo": 0,
+     "avg1-holo": null,
+     "avg7-holo": null,
+     "avg30-holo": null
+    },
+    "tcgplayer": null
+   }
+  }
+ ],
+ "dexId": [
+  130
+ ],
+ "hp": 180,
+ "types": [
+  "Acqua"
+ ],
+ "evolveFrom": "Magikarp di Misty",
+ "stage": "Livello 1",
+ "attacks": [
+  {
+   "cost": [
+    "Acqua"
+   ],
+   "name": "Panico Inondante",
+   "effect": "Scarta le prime sette carte del tuo mazzo e questo attacco infligge 70 danni per ogni Pokémon di Misty che hai scartato in questo modo.",
+   "damage": "70×"
+  },
+  {
+   "cost": [
+    "Acqua",
+    "Acqua",
+    "Incolore"
+   ],
+   "name": "Cascata",
+   "damage": 120
+  }
+ ],
+ "weaknesses": [
+  {
+   "type": "Lampo",
+   "value": "×2"
+  }
+ ],
+ "retreat": 4,
+ "regulationMark": "I",
+ "legal": {
+  "standard": true,
+  "expanded": true
+ },
+ "updated": "2026-06-14T19:10:29+01:00",
+ "pricing": {
+  "cardmarket": {
+   "updated": "2026-10-14T15:00:50.608Z",
+   "unit": "EUR",
+   "idProduct": 825923,
+   "avg": 0.14,
+   "low": 0.02,
+   "trend": 0.12,
+   "avg1": 0.1,
+   "avg7": 0.12,
+   "avg30": 0.13,
+   "avg-holo": 0.35,
+   "low-holo": 0.02,
+   "trend-holo": 0.33,
+   "avg1-holo": 0.34,
+   "avg7-holo": 0.33,
+   "avg30-holo": 0.36
+  },
+  "tcgplayer": {
+   "unit": "USD",
+   "updated": "2026-10-14T15:01:23.857Z",
+   "reverse-holofoil": {
+    "productId": 630816,
+    "lowPrice": 0.1,
+    "midPrice": 0.5,
+    "highPrice": 30,
+    "marketPrice": 0.43,
+    "directLowPrice": null
+   },
+   "holofoil": {
+    "productId": 630816,
+    "lowPrice": 0.01,
+    "midPrice": 0.35,
+    "highPrice": 22,
+    "marketPrice": 0.23,
+    "directLowPrice": 0.23
+   }
+  }
+ }
+}

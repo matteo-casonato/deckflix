@@ -1,0 +1,35 @@
+/* Design tokens (docs/SPEC.md § 6). Only these variables are used for colours, radii and fonts. */
+:root {
+  --bg: #0F1115;
+  --surface: #191C23;
+  --surface-2: #232733;
+  --line: #262A35;
+  --line-2: #2E3340;
+  --text: #EEF0F4;
+  --muted: #9AA1AE;
+  --accent: #FFCB45;
+  --on-accent: #14161B;
+  --success: #5BD08A;
+  --danger: #FF7A6B;
+
+  --r-chip: 19px;
+  --r-control: 22px;
+  --r-card: 31px;
+  --r-section: 36px;
+
+  --font-display: 'Bricolage Grotesque', system-ui, sans-serif;
+  --font-body: 'DM Sans', system-ui, sans-serif;
+
+  /* Floating navigation bar: height and distance from the bottom edge. */
+  --nav-height: 72px;
+  --nav-gap: 16px;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-top: env(safe-area-inset-top, 0px);
+
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  --dur: 200ms;
+}
+
+@supports (corner-shape: squircle) {
+  .card, .btn, .chip, .nav, .avatar { corner-shape: squircle; }
+}

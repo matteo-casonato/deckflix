@@ -51,6 +51,7 @@ db.version(1).stores({
   decks: 'id, updatedAt',
   priceSnapshots: 'date',
   cardCache: '[lang+cardId]',
+  apiCache: 'path, fetchedAt',
   syncQueue: '++id',
   settings: 'key',
 });
@@ -63,6 +64,7 @@ db.version(1).stores({
 | `decks` | `id` | `{ id, name, format: 'standard', cards: [{ cardId, qty }], createdAt, updatedAt }` |
 | `priceSnapshots` | `date` | `{ date, totalValue }` — uno al giorno per lo storico del valore |
 | `cardCache` | `[lang+cardId]` | risposta TCGdex + `fetchedAt` (scadenza 24 h per i prezzi) |
+| `apiCache` | `path` | altre risposte TCGdex (edizioni, serie, ricerche) per percorso API + `fetchedAt` (scadenza 7 giorni, 24 h per le ricerche) |
 | `syncQueue` | auto | segnala che ci sono modifiche non ancora salvate su Drive (basta un flag + `changedAt`, non serve una coda per operazione) |
 | `settings` | `key` | preferenze, account (`email`, `name`, `picture`), `lastBackupAt`, `lastRemoteBackupAt` |
 
@@ -290,11 +292,14 @@ Prototipo isolato (una pagina, nessuna persistenza, `lab/scan/`): fotocamera, ri
 - OCR Google (`TextDetector`) dalla fotocamera: 15 scansioni su 15 con numero leggibile hanno trovato la carta giusta (quasi tutte al primo colpo), 0,6–2 s; circa 10 carte diverse, tutte italiane recenti (SV, Megaevoluzione). Foto caricate: 6 su 8.
 - Errori tipici: Energia base senza numero (non trovata: serve la scelta manuale), stampe con timbro mancanti su TCGdex (Shaymin `sv10-010`), sigla incollata al codice lingua (`DRIT`, `JTGT`, `MEGIT`), CORS di `assets.tcgdex.net` a volte con intestazione doppia (`*, *`): le immagini si mostrano con `<img>` ma non si possono leggere da canvas, quindi niente confronti con la scansione ufficiale.
 - Regolazioni utili: video 4K senza foto, cornice al 90% di un'area con le proporzioni della carta, zoom ×1,2, scatto toccando l'area dello scanner.
+- **Decisione aperta prima della Fase 5**: `TextDetector` richiede su ogni telefono il flag di Chrome "Experimental Web Platform features" (una volta). Va bene per l'uso personale; se l'app deve servire ad altre persone senza questo passaggio, le alternative sono l'app nativa (Capacitor + ML Kit, oggi fuori ambito) o Google Cloud Vision (a pagamento oltre la quota gratuita). Senza OCR resta sempre l'inserimento rapido per numero.
 - **Da riprendere** (prima o durante la Fase 5, con più carte): 30 carte di lingue ed epoche diverse per la soglia dell'85%; verifica del timbro Play! con modello appreso sul telefono e carte senza timbro; riconoscimento holo/reverse (idea: torcia spenta/accesa); carte d'epoca e Energie base.
 
 **Fase 1 — Fondamenta**
 Progetto Vite + Svelte 5, Vitest, workflow GitHub Actions per il deploy, fixture di risposte TCGdex reali in `tests/fixtures/` (una carta per lingua, una con prezzi, una senza immagine, un'edizione completa) usate dai test e da una modalità di sviluppo offline, token CSS, componente `Icon`, barra di navigazione, router a hash, schema Dexie, client TCGdex con cache.
 ✅ `npm run build` produce un sito statico che si apre su GitHub Pages; la navigazione funziona; una carta di prova si carica da TCGdex e, ricaricando senza rete, viene letta dalla cache Dexie.
+
+**Esito (15/10/2026)**: app Svelte 5 in `src/` (router a hash, barra di navigazione, token e font locali, schema Dexie, client TCGdex con cache e regola "fresco / scaduto / offline" in `src/lib/domain/cache.js`), fixture reali in `tests/fixtures/tcgdex/` (`npm run fixtures` per aggiornarle) e modalità `npm run dev:offline` che le usa al posto della rete. Verificato: carta letta dalla rete, poi dalla cache dopo il ricaricamento; con TCGdex irraggiungibile la copia salvata viene mostrata con l'avviso offline. Il ricaricamento della pagina intera senza rete richiede il Service Worker (Fase 4).
 
 **Fase 2 — Account Google e backup automatico**
 Schermata Accesso, login GIS, token per Drive, ripristino automatico, salvataggio automatico con debounce e in background, gestione dei conflitti, pallino di stato nella barra, schermata Profilo (parte account), modalità senza account.

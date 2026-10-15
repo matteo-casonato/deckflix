@@ -1,0 +1,8 @@
+// @ts-check
+import { mount } from 'svelte';
+import './styles/tokens.css';
+import './styles/base.css';
+import './lib/ui/buttons.css';
+import App from './App.svelte';
+
+mount(App, { target: /** @type {HTMLElement} */ (document.getElementById('app')) });
