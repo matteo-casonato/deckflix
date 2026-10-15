@@ -13,7 +13,7 @@
 
   const items = [
     { name: 'home', label: 'Home', icon: Home04Icon },
-    { name: 'collection', label: 'Collezione', icon: Cards02Icon },
+    { name: 'collection', label: 'Cards', icon: Cards02Icon },
     { name: 'deck', label: 'Play!', icon: PokeballIcon },
   ];
 
@@ -119,8 +119,8 @@
   }
 
   .item {
-    /* Width from the label plus equal extra space: "Collezione" gets room around it. */
-    flex: 1 1 auto;
+    /* Short labels (Home, Cards, Play!): equal widths, long profile names are cut. */
+    flex: 1 1 0;
     min-width: 48px;
     padding: 0 8px;
     height: 58px;
@@ -138,7 +138,7 @@
   }
 
   .name {
-    max-width: 72px;
+    max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
