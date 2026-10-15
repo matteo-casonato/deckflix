@@ -6,7 +6,7 @@ import { parseCollectorNumber, parseSetCode, detectLanguage } from './recognize.
 import { findReprints, findWithCorrections, getCard, knownTotals } from './tcgdex.js';
 import { applyStampSuggestion, guessVariant, listVariants } from './variants.js';
 import {
-  GRID_H, GRID_W, MIN_ALIGNMENT, STAMP_MIN_SCORE, STAMP_MIN_VALUE, STAMP_SUGGESTIONS_ENABLED, anomalyMap, bestShift, strongestBlob,
+  CARD_H, CARD_W, LEARNED_THRESHOLD, STAMP_H, STAMP_W, cropFeatures, features, findStamp, templateFromJSON, templateToJSON,
 } from './stamp.js';
 
 /** @template {HTMLElement} T @param {string} id @returns {T} */
@@ -33,7 +33,7 @@ const controls = {
   engine: /** @type {HTMLSelectElement} */ ($('engine')),
 };
 
-const SETTINGS_KEY = 'deckflix-lab-settings-v4';
+const SETTINGS_KEY = 'deckflix-lab-settings-v5';
 const LOG_KEY = 'deckflix-lab-log';
 
 // ---------- settings ----------
@@ -160,6 +160,7 @@ async function startCamera(deviceId = '') {
     shootBtn.disabled = !engineReady();
     const caps = /** @type {any} */ (track.getCapabilities?.() ?? {});
     torchBtn.hidden = !caps.torch;
+    setupZoom(caps.zoom);
     if (caps.focusMode?.includes('continuous')) {
       await track.applyConstraints(/** @type {any} */ ({ advanced: [{ focusMode: 'continuous' }] })).catch(() => {});
     }
@@ -192,6 +193,43 @@ async function listCameras(activeId) {
     }),
   );
 }
+
+const ZOOM_KEY = 'deckflix-lab-zoom';
+const zoomInput = /** @type {HTMLInputElement} */ ($('zoom'));
+
+/**
+ * Optical/digital zoom of the camera track, when supported: lets the user hold the card
+ * farther away (where autofocus works) while it still fills the guide.
+ * @param {{ min: number, max: number, step?: number } | undefined} range
+ */
+function setupZoom(range) {
+  const ctl = $('zoomCtl');
+  if (!range || !(range.max > range.min)) {
+    ctl.hidden = true;
+    return;
+  }
+  ctl.hidden = false;
+  zoomInput.min = String(range.min);
+  zoomInput.max = String(Math.min(range.max, 5));
+  zoomInput.step = String(range.step || 0.1);
+  let saved = 2;
+  try {
+    saved = Number(localStorage.getItem(ZOOM_KEY) ?? 2);
+  } catch {}
+  zoomInput.value = String(Math.min(Number(zoomInput.max), Math.max(range.min, saved)));
+  applyZoom();
+}
+
+async function applyZoom() {
+  const zoom = Number(zoomInput.value);
+  $('zoomOut').textContent = `×${zoom.toFixed(1)}`;
+  try {
+    localStorage.setItem(ZOOM_KEY, String(zoom));
+  } catch {}
+  await track?.applyConstraints(/** @type {any} */ ({ advanced: [{ zoom }] })).catch((err) => console.error(err));
+}
+
+zoomInput.addEventListener('input', applyZoom);
 
 torchBtn.addEventListener('click', async () => {
   if (!track) return;
@@ -421,12 +459,12 @@ let stampResult = null;
 
 const DIGITS = '0123456789/';
 
-
 /**
  * Small preview of the cropped card with the OCR zones, to check the crop at a glance.
+ * With a stamp result, draws the box where the stamp was searched for (yellow if found).
  * @param {HTMLCanvasElement} card
  * @param {ReturnType<typeof readSettings>} s
- * @param {any} [stamp] result of detectStamp, to draw the mismatch map
+ * @param {Awaited<ReturnType<typeof detectPlayStamp>> | null} [stamp]
  */
 function drawPreview(card, s, stamp = null) {
   const out = /** @type {HTMLCanvasElement} */ ($('preview'));
@@ -441,26 +479,11 @@ function drawPreview(card, s, stamp = null) {
     ctx.fillRect(0, 0, out.width, s.topEnd * out.height);
     return;
   }
-  // Mismatch heat map against the official scan, in the photo's coordinates.
-  const { map, keep, dx, dy } = stamp;
-  const cw = (out.width * keep) / map.cols;
-  const ch = (out.height * keep) / map.rows;
-  const ox = (out.width * (1 - keep)) / 2 + (dx / GRID_W) * out.width * keep;
-  const oy = (out.height * (1 - keep)) / 2 + (dy / GRID_H) * out.height * keep;
-  for (let r = 0; r < map.rows; r++) {
-    for (let c = 0; c < map.cols; c++) {
-      const v = map.values[r * map.cols + c];
-      if (v < 0.35) continue;
-      ctx.fillStyle = `rgb(255 122 107 / ${Math.min(0.6, v * 0.6)})`;
-      ctx.fillRect(ox + c * cw, oy + r * ch, cw, ch);
-    }
-  }
-  if (stamp.blob) {
-    ctx.strokeStyle = stamp.suggested ? '#FFCB45' : '#9AA1AE';
-    ctx.lineWidth = 3;
-    const b = stamp.blob;
-    ctx.strokeRect(ox + b.x * map.cols * cw - 4, oy + b.y * map.rows * ch - 4, b.w * map.cols * cw + 8, b.h * map.rows * ch + 8);
-  }
+  const { hit, detected } = stamp;
+  ctx.strokeStyle = detected ? '#FFCB45' : '#9AA1AE';
+  ctx.lineWidth = 3;
+  ctx.setLineDash(detected ? [] : [6, 4]);
+  ctx.strokeRect(hit.x * out.width - 3, hit.y * out.height - 3, hit.w * out.width + 6, hit.h * out.height + 6);
 }
 
 /**
@@ -687,84 +710,165 @@ async function loadVariants() {
   $('stampInfo').textContent = '';
   box.replaceChildren();
   if (!pick) return;
-  box.textContent = 'Carico le varianti e confronto con la carta ufficiale…';
+  box.textContent = 'Carico le varianti…';
   try {
-    const [card, stamp] = await Promise.all([
-      getCard(pick.lang, pick.id),
-      lastCard && pick.image ? detectStamp(lastCard, pick.image).catch((err) => (console.error(err), null)) : null,
-    ]);
+    const card = await getCard(pick.lang, pick.id);
     if (candidates[chosen] !== pick) return;
+    const stamp = lastCard ? detectPlayStamp(lastCard) : null;
     stampResult = stamp;
     const listed = listVariants(card);
-    const r = applyStampSuggestion(listed, guessVariant(listed, ocrText), !!stamp?.suggested);
+    const r = applyStampSuggestion(listed, guessVariant(listed, ocrText), stamp?.detected ? 'player-rewards-program' : null);
     variantOptions = r.options;
     chosenVariant = r.preselect;
     highlightedVariants = r.highlighted;
     if (lastCard) drawPreview(lastCard, readSettings(), stamp);
-    $('stampInfo').textContent = !stamp
-      ? 'Confronto con la carta ufficiale non disponibile.'
-      : stamp.alignment < MIN_ALIGNMENT
-        ? `Confronto incerto: la foto non si allinea bene alla carta ufficiale (${stamp.alignment}).`
-        : stamp.suggested
-          ? `Possibile timbro nel riquadro giallo (forza ${stamp.blob.score.toFixed(1)}). Controlla la variante suggerita.`
-          : `Sperimentale: in rosso le zone diverse dalla carta ufficiale, nel riquadro la più diversa (forza ${stamp.blob?.score.toFixed(1) ?? '—'}). Non ancora affidabile per riconoscere i timbri: scegli tu la variante.`;
+    renderStampInfo();
   } catch (err) {
     console.error(err);
   }
   renderVariants();
 }
 
-// ---------- stamp detection (experimental) ----------
+// ---------- Play! Pokémon stamp ----------
+
+const STAMP_TEMPLATE_KEY = 'deckflix-lab-stamp-play';
 
 /**
- * Grey levels of an image resized to the working grid, optionally cropping a centred
- * fraction first (the card may not fill the whole guide).
- * @param {CanvasImageSource & { width: number, height: number }} img
+ * Features of an image resized to the working card size.
+ * @param {CanvasImageSource} img
  * @param {number} w
  * @param {number} h
- * @param {number} [keep] fraction of the image kept around the centre
- * @returns {import('./stamp.js').Gray}
  */
-function grayOf(img, w, h, keep = 1) {
+function featuresOf(img, w, h) {
   const c = document.createElement('canvas');
   c.width = w;
   c.height = h;
   const ctx = /** @type {CanvasRenderingContext2D} */ (c.getContext('2d', { willReadFrequently: true }));
-  const sw = img.width * keep, sh = img.height * keep;
-  ctx.drawImage(img, (img.width - sw) / 2, (img.height - sh) / 2, sw, sh, 0, 0, w, h);
-  const d = ctx.getImageData(0, 0, w, h).data;
-  const data = new Float32Array(w * h);
-  for (let i = 0, p = 0; i < d.length; i += 4, p++) data[p] = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
-  return { data, w, h };
+  ctx.drawImage(img, 0, 0, w, h);
+  return features(ctx.getImageData(0, 0, w, h).data, w, h);
 }
 
 /**
- * Compares the photographed card with the official scan and looks for a logo that is
- * only on the photo. Tries a few crops (the card may sit inside the guide with margins)
- * and small shifts, keeping the best alignment.
- * @param {HTMLCanvasElement} photoCanvas
- * @param {string} imageBase TCGdex image base URL
+ * Geometric drawing of the Play! Pokémon stamp (rounded box, red top and black bottom,
+ * ball top left, light silhouette): close enough to find where the stamp is, not to
+ * decide whether it is there. Not a copy of the logo.
+ * @type {import('./stamp.js').Features | null}
  */
-async function detectStamp(photoCanvas, imageBase) {
-  const res = await fetch(`${imageBase}/high.png`);
-  if (!res.ok) return null;
-  const refBitmap = await createImageBitmap(await res.blob());
-  const ref = grayOf(refBitmap, GRID_W, GRID_H);
-  const refSmall = grayOf(refBitmap, GRID_W / 2, GRID_H / 2);
-  refBitmap.close();
+let drawnTemplate = null;
+function getDrawnTemplate() {
+  if (drawnTemplate) return drawnTemplate;
+  const w = Math.round(STAMP_W * CARD_W * 4), h = Math.round(STAMP_H * CARD_H * 4);
+  const c = document.createElement('canvas');
+  c.width = w;
+  c.height = h;
+  const x = /** @type {CanvasRenderingContext2D} */ (c.getContext('2d'));
+  const light = '#e8e8e8', red = '#d42a2a', dark = '#1c1c1c';
+  x.fillStyle = light;
+  x.beginPath();
+  x.roundRect(0, 0, w, h, w * 0.08);
+  x.fill();
+  const m = w * 0.05;
+  x.save();
+  x.beginPath();
+  x.roundRect(m, m, w - 2 * m, h - 2 * m, w * 0.06);
+  x.clip();
+  x.fillStyle = red;
+  x.fillRect(0, 0, w, h * 0.55);
+  x.fillStyle = dark;
+  x.fillRect(0, h * 0.55, w, h);
+  const bx = w * 0.24, by = h * 0.4, br = w * 0.17;
+  x.fillStyle = light;
+  x.beginPath();
+  x.arc(bx, by, br, 0, Math.PI * 2);
+  x.fill();
+  x.fillStyle = '#c42020';
+  x.beginPath();
+  x.arc(bx, by, br * 0.86, Math.PI, 0);
+  x.fill();
+  x.fillStyle = dark;
+  x.fillRect(bx - br, by - br * 0.08, br * 2, br * 0.16);
+  x.fillStyle = light;
+  x.beginPath();
+  x.arc(bx + br * 0.1, by, br * 0.28, 0, Math.PI * 2);
+  x.fill();
+  x.beginPath();
+  x.arc(w * 0.7, h * 0.33, w * 0.095, 0, Math.PI * 2);
+  x.fill();
+  x.lineWidth = w * 0.09;
+  x.lineCap = 'round';
+  x.strokeStyle = light;
+  x.beginPath();
+  x.moveTo(w * 0.35, h * 0.22);
+  x.lineTo(w * 0.55, h * 0.48);
+  x.stroke();
+  x.beginPath();
+  x.ellipse(w * 0.66, h * 0.75, w * 0.17, h * 0.33, 0, 0, Math.PI * 2);
+  x.fill();
+  x.restore();
+  drawnTemplate = featuresOf(c, Math.round(w / 4), Math.round(h / 4));
+  return drawnTemplate;
+}
 
-  let best = { keep: 1, dx: 0, dy: 0, ncc: -Infinity };
-  for (const keep of [1, 0.97, 0.94, 0.91, 0.88]) {
-    const shift = bestShift(grayOf(photoCanvas, GRID_W / 2, GRID_H / 2, keep), refSmall, 5);
-    if (shift.ncc > best.ncc) best = { keep, ...shift };
+/** Template cut from one of the user's stamped cards: stays on this device. */
+function loadLearnedTemplate() {
+  try {
+    return templateFromJSON(JSON.parse(localStorage.getItem(STAMP_TEMPLATE_KEY) ?? 'null'));
+  } catch {
+    return null;
   }
-  const photo = grayOf(photoCanvas, GRID_W, GRID_H, best.keep);
-  const fine = bestShift(photo, ref, 2 * 5 + 2);
-  const map = anomalyMap(photo, ref, fine.dx, fine.dy);
-  const blob = strongestBlob(map);
-  const suggested =
-    STAMP_SUGGESTIONS_ENABLED && !!blob && fine.ncc >= MIN_ALIGNMENT && blob.score >= STAMP_MIN_SCORE && blob.value >= STAMP_MIN_VALUE;
-  return { alignment: +fine.ncc.toFixed(2), keep: best.keep, dx: fine.dx, dy: fine.dy, map, blob, suggested };
+}
+
+/**
+ * Looks for the Play! stamp on the lower edge of the artwork. Only a learned template
+ * can say "stamp present"; the drawn one just shows where it would be.
+ * @param {HTMLCanvasElement} cardCanvas
+ */
+function detectPlayStamp(cardCanvas) {
+  const card = featuresOf(cardCanvas, CARD_W, CARD_H);
+  const learned = loadLearnedTemplate();
+  const hit = findStamp(card, learned ?? getDrawnTemplate());
+  return { hit, learned: !!learned, detected: !!learned && hit.score >= LEARNED_THRESHOLD, card };
+}
+
+function renderStampInfo() {
+  const info = $('stampInfo');
+  const stamp = stampResult;
+  /** @type {HTMLButtonElement} */ ($('calibrate')).hidden = !stamp;
+  if (!stamp) {
+    info.textContent = '';
+    return;
+  }
+  const where = stamp.hit.side === 'left' ? 'a sinistra' : 'a destra';
+  const score = stamp.hit.score.toFixed(2);
+  info.textContent = !stamp.learned
+    ? `Timbro Play!: il riquadro tratteggiato è dove sarebbe (${where}, somiglianza ${score} col modello disegnato). Per riconoscerlo da solo, scansiona una carta con il timbro e tocca "Usa come modello del timbro".`
+    : stamp.detected
+      ? `Timbro Play! rilevato ${where} (somiglianza ${score}): variante con timbro evidenziata.`
+      : `Nessun timbro Play! (somiglianza massima ${score}, serve ${LEARNED_THRESHOLD}).`;
+}
+
+/** Saves the stamp found on the current card as this device's template. */
+function calibrateStamp() {
+  if (!stampResult || !lastCard) return;
+  const { hit, card } = stampResult;
+  const t = cropFeatures(card, Math.round(hit.x * CARD_W), Math.round(hit.y * CARD_H), Math.round(hit.w * CARD_W), Math.round(hit.h * CARD_H));
+  try {
+    localStorage.setItem(STAMP_TEMPLATE_KEY, JSON.stringify(templateToJSON(t)));
+  } catch {}
+  statusEl.textContent =
+    hit.side === 'right'
+      ? 'Modello del timbro salvato. Se il timbro era tagliato dal bordo, rifallo con una carta Pokémon (timbro a sinistra).'
+      : 'Modello del timbro salvato su questo telefono.';
+  renderTemplateInfo();
+  loadVariants();
+}
+
+function renderTemplateInfo() {
+  const has = !!loadLearnedTemplate();
+  $('templateInfo').textContent = has
+    ? 'Modello del timbro Play!: salvato su questo telefono.'
+    : 'Modello del timbro Play!: non ancora creato (usa una carta con il timbro).';
+  /** @type {HTMLButtonElement} */ ($('clearTemplate')).hidden = !has;
 }
 
 function renderVariants() {
@@ -779,7 +883,7 @@ function renderVariants() {
     btn.type = 'button';
     btn.className = 'chip';
     btn.setAttribute('aria-pressed', String(v.key === chosenVariant));
-    const hint = highlightedVariants.includes(v.key) ? '★ timbro rilevato? · ' : '';
+    const hint = highlightedVariants.includes(v.key) ? '★ timbro rilevato · ' : '';
     if (hint) btn.classList.add('hinted');
     btn.textContent = `${hint}${v.label} · ${v.price != null ? priceFormat.format(v.price) : 'prezzo n.d.'}`;
     btn.addEventListener('click', () => {
@@ -850,11 +954,11 @@ function mark(correct) {
       variantsAvailable: variantOptions.length,
       stamp: stampResult
         ? {
-            suggested: stampResult.suggested,
-            alignment: stampResult.alignment,
-            score: stampResult.blob ? +stampResult.blob.score.toFixed(1) : null,
-            value: stampResult.blob ? +stampResult.blob.value.toFixed(2) : null,
-            at: stampResult.blob ? [+stampResult.blob.x.toFixed(2), +stampResult.blob.y.toFixed(2)] : null,
+            detected: stampResult.detected,
+            learned: stampResult.learned,
+            score: +stampResult.hit.score.toFixed(2),
+            side: stampResult.hit.side,
+            at: [+stampResult.hit.x.toFixed(2), +stampResult.hit.y.toFixed(2)],
           }
         : null,
       note,
@@ -866,6 +970,13 @@ function mark(correct) {
 }
 
 $('markOk').addEventListener('click', () => mark(true));
+$('calibrate').addEventListener('click', calibrateStamp);
+$('clearTemplate').addEventListener('click', () => {
+  try {
+    localStorage.removeItem(STAMP_TEMPLATE_KEY);
+  } catch {}
+  renderTemplateInfo();
+});
 $('markKo').addEventListener('click', () => mark(false));
 $('copyLog').addEventListener('click', async () => {
   const text = JSON.stringify(readLog(), null, 2);
@@ -936,6 +1047,7 @@ document.addEventListener('visibilitychange', () => {
 $('version').textContent = `Versione ${new Date(__BUILD_TIME__).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' })}`;
 loadSettings();
 renderSettings();
+renderTemplateInfo();
 renderLog();
 lockScreen();
 startCamera();

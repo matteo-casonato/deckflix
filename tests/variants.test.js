@@ -82,23 +82,41 @@ describe('guessVariant', () => {
 
 describe('applyStampSuggestion', () => {
   const plain = listVariants({ variants_detailed: [{ type: 'Normale' }, { type: 'Reverse' }] });
+  // Trimmed from /it/cards/me01-118 (Difensore Ferreo).
   const withPlay = listVariants({
-    variants_detailed: [{ type: 'Normale' }, { type: 'Reverse' }, { type: 'Normale', stamp: ['player-rewards-program'] }],
+    variants_detailed: [
+      { type: 'Normale' },
+      { type: 'Reverse' },
+      { type: 'Olografica', stamp: ['player-rewards-program'], foil: 'Cosmo' },
+      { type: 'Normale', stamp: ['player-rewards-program'] },
+    ],
   });
 
   it('always offers the unlisted-stamp entry', () => {
-    const r = applyStampSuggestion(plain, 'normal', false);
+    const r = applyStampSuggestion(plain, 'normal', null);
     expect(r.options.at(-1).key).toBe('normal+stamp-unlisted');
     expect(r.preselect).toBe('normal');
+    expect(r.highlighted).toEqual([]);
   });
 
-  it('preselects the only stamped print when a stamp is likely', () => {
-    const r = applyStampSuggestion(withPlay, 'normal', true);
+  it('highlights every print with the detected stamp and preselects the first', () => {
+    const r = applyStampSuggestion(withPlay, 'normal', 'player-rewards-program');
+    expect(r.highlighted).toEqual(['holo+foil-cosmo+stamp-player-rewards-program', 'normal+stamp-player-rewards-program']);
+    expect(r.preselect).toBe('holo+foil-cosmo+stamp-player-rewards-program');
+  });
+
+  it('adds a manual Play! entry when TCGdex lacks the stamped print', () => {
+    const r = applyStampSuggestion(plain, 'normal', 'player-rewards-program');
     expect(r.preselect).toBe('normal+stamp-player-rewards-program');
-    expect(r.highlighted).toEqual(['normal+stamp-player-rewards-program']);
+    expect(r.options.find((o) => o.key === r.preselect).label).toBe('Normale · timbro Play! Pokémon (non in elenco)');
   });
+});
 
-  it('falls back to the unlisted entry when TCGdex has no stamped print', () => {
-    expect(applyStampSuggestion(plain, 'normal', true).preselect).toBe('normal+stamp-unlisted');
+describe('listVariants in other API languages', () => {
+  it('maps localised finish names to the same keys', () => {
+    // From /es/cards/me01-118.
+    const v = listVariants({ variants_detailed: [{ type: 'básico' }, { type: 'reversa' }, { type: 'holo' }] });
+    expect(v.map((o) => o.key)).toEqual(['normal', 'reverse', 'holo']);
+    expect(v[0].label).toBe('Normale');
   });
 });

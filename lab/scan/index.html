@@ -26,6 +26,10 @@
     <p class="viewer-msg" id="viewerMsg">Avvio fotocamera…</p>
   </section>
 
+  <label class="ctl zoom" id="zoomCtl" hidden>Zoom: <output id="zoomOut"></output>
+    <input type="range" id="zoom" min="1" max="4" step="0.1" value="1">
+    <span class="muted small">Allontana la carta di 15–20 cm e usa lo zoom finché riempie la cornice: mette meglio a fuoco.</span>
+  </label>
   <div class="actions">
     <button class="btn primary" id="shoot" disabled>Scatta e riconosci</button>
     <label class="btn secondary">
@@ -44,6 +48,7 @@
     </div>
     <canvas class="preview" id="preview" aria-label="Anteprima del ritaglio con le zone lette"></canvas>
     <p class="muted small" id="stampInfo"></p>
+    <button class="btn secondary wide" id="calibrate" hidden>Questa carta ha il timbro Play!: usa come modello del timbro</button>
     <ul class="candidates" id="candidates"></ul>
     <p class="label">Variante (finitura e timbri)</p>
     <div class="chips" id="variants"></div>
@@ -65,12 +70,14 @@
       </select>
     </label>
     <p class="muted small" id="engineInfo"></p>
+    <p class="muted small" id="templateInfo"></p>
+    <button class="btn secondary" id="clearTemplate" hidden>Cancella il modello del timbro</button>
     <label class="ctl">Fotocamera
       <select id="camera" class="field"></select>
     </label>
     <label class="ctl check"><input type="checkbox" id="still" checked> Foto ad alta risoluzione se il video è sotto 1440p (più nitida, scatto più lento)</label>
     <label class="ctl">Dimensione cornice: <output id="guideOut"></output>
-      <input type="range" id="guideSize" min="45" max="90" value="70"></label>
+      <input type="range" id="guideSize" min="60" max="96" value="90"></label>
     <label class="ctl">Fascia alta: <output id="topOut"></output>
       <input type="range" id="topEnd" min="6" max="25" value="13"></label>
     <label class="ctl">Fascia bassa da: <output id="bottomOut"></output>

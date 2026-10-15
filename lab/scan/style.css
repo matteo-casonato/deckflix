@@ -16,6 +16,7 @@
 }
 
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 
 body {
   margin: 0;
@@ -38,7 +39,10 @@ h2 { font-size: 18px; margin-bottom: 12px; }
 
 .viewer {
   position: relative;
-  aspect-ratio: 3 / 4;
+  /* Card-shaped, as tall as the screen allows, so the guide can fill it. */
+  aspect-ratio: 63 / 88;
+  width: min(100%, calc(72svh * 63 / 88));
+  margin-inline: auto;
   border-radius: var(--r-card);
   overflow: hidden;
   background: var(--surface);
@@ -50,7 +54,7 @@ h2 { font-size: 18px; margin-bottom: 12px; }
   position: absolute;
   left: 50%;
   top: 50%;
-  height: 70%;
+  height: 90%;
   aspect-ratio: 63 / 88;
   transform: translate(-50%, -50%);
   border: 2px solid var(--accent);
@@ -63,6 +67,8 @@ h2 { font-size: 18px; margin-bottom: 12px; }
 .bottom-band { bottom: 0; }
 
 .actions { display: flex; gap: 12px; margin-top: 16px; }
+.zoom { margin: 12px 0 0; }
+.zoom .small { display: block; }
 
 .btn {
   min-height: 48px;

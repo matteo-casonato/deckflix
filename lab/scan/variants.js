@@ -34,6 +34,18 @@ const TYPE_LABELS = /** @type {Record<string, string>} */ ({
   metal: 'Metallica',
 });
 
+/** `type` comes localised in each API language: map it back to one key. */
+const FINISH_ALIASES = /** @type {Record<string, string>} */ ({
+  normale: 'normal',
+  basico: 'normal',
+  olografica: 'holo',
+  holografica: 'holo',
+  holographique: 'holo',
+  metallica: 'metal',
+  reverso: 'reverse',
+  reversa: 'reverse',
+});
+
 /** @param {string} s */
 const slug = (s) =>
   s
@@ -85,7 +97,7 @@ export function listVariants(card) {
   if (detailed.length) {
     return detailed.map((/** @type {any} */ v) => {
       const finish = slug(v.type ?? 'normal');
-      const finishKey = { normale: 'normal', olografica: 'holo', metallica: 'metal' }[finish] ?? finish;
+      const finishKey = FINISH_ALIASES[finish] ?? finish;
       const stamps = (v.stamp ?? []).map((/** @type {string} */ s) => slug(s));
       const foil = v.foil ? slug(v.foil) : null;
       const parts = [
@@ -150,20 +162,41 @@ export const UNLISTED_STAMP = /** @type {VariantOption} */ ({
 });
 
 /**
- * Adds the manual "unlisted stamp" entry and, when the image comparison suggests a stamp,
- * picks the stamped print to preselect: the only listed stamped one, else the unlisted entry.
- * With several stamped prints the guess is left to the user (they are all highlighted).
+ * Manual entry for a detected stamp that TCGdex doesn't list for this card.
+ * @param {string} stamp e.g. 'player-rewards-program'
+ * @returns {VariantOption}
+ */
+export function unlistedStamp(stamp) {
+  return {
+    key: `normal+stamp-${stamp}`,
+    label: `Normale · timbro ${STAMP_LABELS[stamp] ?? humanize(stamp)} (non in elenco)`,
+    finish: 'normal',
+    stamps: [stamp],
+    foil: null,
+    price: null,
+  };
+}
+
+/**
+ * Adds the manual entries and, when a stamp was detected on the photo, preselects and
+ * highlights the prints carrying it. With several such prints (e.g. Normale and Olografica
+ * Cosmo, both with Play!) the first one is preselected and all are highlighted.
  * @param {VariantOption[]} options
  * @param {string | null} current preselected key
- * @param {boolean} stampLikely
+ * @param {string | null} detected stamp key found on the photo, or null
  * @returns {{ options: VariantOption[], preselect: string | null, highlighted: string[] }}
  */
-export function applyStampSuggestion(options, current, stampLikely) {
-  const all = [...options, UNLISTED_STAMP];
-  if (!stampLikely) return { options: all, preselect: current, highlighted: [] };
-  const stamped = options.filter((o) => o.stamps.length);
-  if (!stamped.length) return { options: all, preselect: UNLISTED_STAMP.key, highlighted: [UNLISTED_STAMP.key] };
+export function applyStampSuggestion(options, current, detected) {
+  if (!detected) return { options: [...options, UNLISTED_STAMP], preselect: current, highlighted: [] };
+  const stamped = options.filter((o) => o.stamps.includes(detected));
+  if (!stamped.length) {
+    const manual = unlistedStamp(detected);
+    return { options: [...options, manual, UNLISTED_STAMP], preselect: manual.key, highlighted: [manual.key] };
+  }
   const keys = stamped.map((o) => o.key);
-  const keepCurrent = current && keys.includes(current);
-  return { options: all, preselect: keepCurrent ? current : stamped.length === 1 ? stamped[0].key : current, highlighted: keys };
+  return {
+    options: [...options, UNLISTED_STAMP],
+    preselect: current && keys.includes(current) ? current : keys[0],
+    highlighted: keys,
+  };
 }
