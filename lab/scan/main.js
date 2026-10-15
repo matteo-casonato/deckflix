@@ -26,9 +26,10 @@ const controls = {
   still: /** @type {HTMLInputElement} */ ($('still')),
   guideSize: /** @type {HTMLInputElement} */ ($('guideSize')),
   ocrLangs: /** @type {HTMLSelectElement} */ ($('ocrLangs')),
+  engine: /** @type {HTMLSelectElement} */ ($('engine')),
 };
 
-const SETTINGS_KEY = 'deckflix-lab-settings-v3';
+const SETTINGS_KEY = 'deckflix-lab-settings-v4';
 const LOG_KEY = 'deckflix-lab-log';
 
 // ---------- settings ----------
@@ -55,6 +56,7 @@ function readSettings() {
     still: controls.still.checked,
     guideSize: Number(controls.guideSize.value) / 100,
     ocrLangs: controls.ocrLangs.value,
+    engine: /** @type {'google' | 'tesseract'} */ (controls.engine.value),
   };
 }
 
@@ -73,7 +75,33 @@ function renderSettings() {
   } catch {}
 }
 
-// ---------- OCR worker ----------
+// ---------- OCR engines ----------
+
+/**
+ * Chrome's Shape Detection API. On Android it runs Google's on-device text recognition
+ * (Play Services / ML Kit): free, offline, no keys. Behind chrome://flags
+ * "Experimental Web Platform features" at the time of writing.
+ */
+const hasGoogleOcr = 'TextDetector' in window;
+
+function useGoogle() {
+  return readSettings().engine === 'google' && hasGoogleOcr;
+}
+
+/** Prepares the selected engine and enables the shutter when camera and OCR are ready. */
+async function ensureEngine() {
+  if (useGoogle()) {
+    statusEl.textContent = 'Pronto (OCR Google). Inquadra la carta dentro la cornice.';
+    shootBtn.disabled = !video.srcObject;
+    return;
+  }
+  await ensureWorker();
+}
+
+function engineReady() {
+  return useGoogle() || !!worker;
+}
+
 
 /** @type {import('tesseract.js').Worker | null} */
 let worker = null;
@@ -125,7 +153,7 @@ async function startCamera(deviceId = '') {
     await video.play();
     track = stream.getVideoTracks()[0];
     viewerMsg.textContent = '';
-    shootBtn.disabled = !worker;
+    shootBtn.disabled = !engineReady();
     const caps = /** @type {any} */ (track.getCapabilities?.() ?? {});
     torchBtn.hidden = !caps.torch;
     if (caps.focusMode?.includes('continuous')) {
@@ -380,6 +408,7 @@ let lastCard = null;
 
 const DIGITS = '0123456789/';
 
+
 /**
  * Small preview of the cropped card with the OCR zones, to check the crop at a glance.
  * @param {HTMLCanvasElement} card
@@ -397,66 +426,116 @@ function drawPreview(card, s) {
   ctx.fillRect(0, 0, out.width, s.topEnd * out.height);
 }
 
+/**
+ * @typedef {{ num: ReturnType<typeof parseCollectorNumber>, top: string, bottom: string, digitsText: string, attempts: number }} OcrResult
+ */
+
+/**
+ * Tesseract: digits-only passes on each bottom corner (left on recent cards, right on
+ * older ones), from cheapest to most aggressive preprocessing; then name and language.
+ * @param {HTMLCanvasElement} card
+ * @param {ReturnType<typeof readSettings>} s
+ * @param {Set<number> | null} totals
+ * @returns {Promise<OcrResult>}
+ */
+async function ocrTesseract(card, s, totals) {
+  const w = await ensureWorker();
+  const topCanvas = /** @type {HTMLCanvasElement} */ ($('topCanvas'));
+  const bottomCanvas = /** @type {HTMLCanvasElement} */ ($('bottomCanvas'));
+  await w.setParameters({ tessedit_pageseg_mode: PSM.SPARSE_TEXT, tessedit_char_whitelist: DIGITS });
+  const looks = [
+    { name: 'grigio', opts: { ...s } },
+    { name: 'invertito', opts: { ...s, invert: !s.invert } },
+    { name: 'soglia locale', opts: { ...s, threshold: false, adaptive: true } },
+    { name: 'soglia locale invertita', opts: { ...s, threshold: false, adaptive: true, invert: !s.invert } },
+  ];
+  const passes = looks.flatMap((look) => CORNERS.map((c) => ({ ...look, ...c, name: `${look.name} ${c.name}` })));
+  let digitsText = '';
+  /** @type {OcrResult['num']} */
+  let num = null;
+  let attempts = 0;
+  for (const pass of passes) {
+    attempts++;
+    prepareStrip(card, s.bottomStart, 1, bottomCanvas, pass.opts, pass.x0, pass.x1);
+    const text = (await w.recognize(bottomCanvas)).data.text;
+    digitsText += `[${pass.name}] ${text.trim()}\n`;
+    num = parseCollectorNumber(text, totals);
+    if (num) break;
+  }
+
+  let bottom = '';
+  let top = '';
+  if (num) {
+    statusEl.textContent = 'Lettura di nome e lingua…';
+    await w.setParameters({ tessedit_char_whitelist: '' });
+    prepareStrip(card, s.bottomStart, 1, bottomCanvas, s);
+    bottom = (await w.recognize(bottomCanvas)).data.text;
+    await w.setParameters({ tessedit_pageseg_mode: PSM.SINGLE_BLOCK });
+    prepareStrip(card, 0, s.topEnd, topCanvas, s);
+    top = (await w.recognize(topCanvas)).data.text;
+  } else {
+    prepareStrip(card, 0, s.topEnd, topCanvas, s);
+  }
+  await w.setParameters({ tessedit_char_whitelist: '' });
+  return { num, top, bottom, digitsText, attempts };
+}
+
+/**
+ * Google on-device OCR (TextDetector): one pass on the whole card, then text blocks are
+ * split by position into the top (name, HP) and bottom (number, set code) zones.
+ * If the number is missing, retries on enlarged bottom corners.
+ * @param {HTMLCanvasElement} card
+ * @param {ReturnType<typeof readSettings>} s
+ * @param {Set<number> | null} totals
+ * @returns {Promise<OcrResult>}
+ */
+async function ocrGoogle(card, s, totals) {
+  // @ts-ignore -- TextDetector is not in the DOM typings yet
+  const detector = new TextDetector();
+  /** @type {{ rawValue: string, boundingBox: DOMRectReadOnly }[]} */
+  const blocks = await detector.detect(card);
+  const lines = blocks
+    .map((b) => ({ text: b.rawValue, y0: b.boundingBox.y / card.height, y1: (b.boundingBox.y + b.boundingBox.height) / card.height }))
+    .sort((a, b) => a.y0 - b.y0);
+  const top = lines.filter((l) => l.y0 < s.topEnd).map((l) => l.text).join('\n');
+  const bottom = lines.filter((l) => l.y1 > s.bottomStart).map((l) => l.text).join('\n');
+  let digitsText = `[carta intera] ${lines.map((l) => `${Math.round(l.y0 * 100)}% ${l.text}`).join(' | ')}\n`;
+  let num = parseCollectorNumber(bottom, totals) ?? parseCollectorNumber(lines.map((l) => l.text).join('\n'), totals);
+  let attempts = 1;
+
+  const bottomCanvas = /** @type {HTMLCanvasElement} */ ($('bottomCanvas'));
+  for (const c of CORNERS) {
+    if (num) break;
+    attempts++;
+    prepareStrip(card, s.bottomStart, 1, bottomCanvas, s, c.x0, c.x1);
+    const found = await detector.detect(bottomCanvas);
+    const text = found.map((/** @type {any} */ b) => b.rawValue).join('\n');
+    digitsText += `[angolo ${c.name}] ${text}\n`;
+    num = parseCollectorNumber(text, totals);
+  }
+  prepareStrip(card, 0, s.topEnd, /** @type {HTMLCanvasElement} */ ($('topCanvas')), s);
+  return { num, top, bottom, digitsText, attempts };
+}
+
+const CORNERS = [
+  { name: 'sx', x0: 0, x1: 0.45 },
+  { name: 'dx', x0: 0.55, x1: 1 },
+];
+
 /** @param {HTMLCanvasElement} card @param {string} source */
 async function recognize(card, source) {
   const s = readSettings();
-  const w = await ensureWorker();
+  const engine = useGoogle() ? 'google' : 'tesseract';
   shootBtn.disabled = true;
   statusEl.textContent = 'Lettura del numero…';
   const t0 = performance.now();
   lastCard = card;
 
-  const topCanvas = /** @type {HTMLCanvasElement} */ ($('topCanvas'));
-  const bottomCanvas = /** @type {HTMLCanvasElement} */ ($('bottomCanvas'));
-
   try {
-    // 1. Collector number: digits-only passes on each bottom corner (left on recent cards,
-    //    right on older ones), from cheapest to most aggressive preprocessing.
-    await w.setParameters({ tessedit_pageseg_mode: PSM.SPARSE_TEXT, tessedit_char_whitelist: DIGITS });
-    const looks = [
-      { name: 'grigio', opts: { ...s } },
-      { name: 'invertito', opts: { ...s, invert: !s.invert } },
-      { name: 'soglia locale', opts: { ...s, threshold: false, adaptive: true } },
-      { name: 'soglia locale invertita', opts: { ...s, threshold: false, adaptive: true, invert: !s.invert } },
-    ];
-    const corners = [
-      { name: 'sx', x0: 0, x1: 0.45 },
-      { name: 'dx', x0: 0.55, x1: 1 },
-    ];
-    const passes = looks.flatMap((look) => corners.map((c) => ({ ...look, ...c, name: `${look.name} ${c.name}` })));
-    let digitsText = '';
-    /** @type {ReturnType<typeof parseCollectorNumber>} */
-    let num = null;
-    let attempts = 0;
     // Sets are listed in Italian and English; good enough to validate any language here.
     const totals = await knownTotals('it').catch(() => null);
-    for (const pass of passes) {
-      attempts++;
-      prepareStrip(card, s.bottomStart, 1, bottomCanvas, pass.opts, pass.x0, pass.x1);
-      const text = (await w.recognize(bottomCanvas)).data.text;
-      digitsText += `[${pass.name}] ${text.trim()}\n`;
-      const found = parseCollectorNumber(text, totals);
-      if (found) {
-        num = found;
-        break;
-      }
-    }
-
-    // 2. Language, set code and name: full-alphabet passes, only when the number was found.
-    let bottom = '';
-    let top = '';
-    if (num) {
-      statusEl.textContent = 'Lettura di nome e lingua…';
-      await w.setParameters({ tessedit_char_whitelist: '' });
-      prepareStrip(card, s.bottomStart, 1, bottomCanvas, s);
-      bottom = (await w.recognize(bottomCanvas)).data.text;
-      await w.setParameters({ tessedit_pageseg_mode: PSM.SINGLE_BLOCK });
-      prepareStrip(card, 0, s.topEnd, topCanvas, s);
-      top = (await w.recognize(topCanvas)).data.text;
-    } else {
-      prepareStrip(card, 0, s.topEnd, topCanvas, s);
-    }
-    await w.setParameters({ tessedit_char_whitelist: '' });
+    const { num, top, bottom, digitsText, attempts } =
+      engine === 'google' ? await ocrGoogle(card, s, totals) : await ocrTesseract(card, s, totals);
     const tOcr = performance.now() - t0;
     $('topText').textContent = top || '(non letta)';
     $('bottomText').textContent = `${digitsText}${bottom ? `[testo] ${bottom}` : ''}`;
@@ -484,6 +563,7 @@ async function recognize(card, source) {
       setCode,
       lang,
       langScores: scores,
+      engine,
       attempts,
       source,
       cardPx: `${card.width}×${card.height}`,
@@ -652,7 +732,8 @@ $('saveCrop').addEventListener('click', () => {
 });
 
 for (const el of Object.values(controls)) el.addEventListener('input', renderSettings);
-controls.ocrLangs.addEventListener('change', () => ensureWorker());
+controls.ocrLangs.addEventListener('change', () => ensureEngine());
+controls.engine.addEventListener('change', () => ensureEngine());
 
 // Keep the screen on while testing.
 /** @type {WakeLockSentinel | null} */
@@ -674,7 +755,16 @@ renderSettings();
 renderLog();
 lockScreen();
 startCamera();
-ensureWorker().catch((err) => {
+if (!hasGoogleOcr) {
+  const opt = /** @type {HTMLOptionElement} */ (controls.engine.querySelector('option[value="google"]'));
+  opt.disabled = true;
+  opt.textContent += ' — non disponibile (vedi sotto)';
+  controls.engine.value = 'tesseract';
+}
+$('engineInfo').textContent = hasGoogleOcr
+  ? 'OCR Google disponibile su questo browser.'
+  : 'OCR Google non disponibile: in Chrome apri chrome://flags, attiva "Experimental Web Platform features" e riavvia Chrome.';
+ensureEngine().catch((err) => {
   console.error(err);
   statusEl.textContent = 'Impossibile caricare l\'OCR. Controlla la connessione e ricarica.';
 });
