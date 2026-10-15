@@ -19,7 +19,7 @@ export const hostOf = (url) => new URL(url).hostname.replace(/^www\./, '');
  */
 export const ABOUT = {
   /** Address for suggestions (opens the mail app). */
-  contactEmail: '',
+  contactEmail: 'matteocasonato@gmail.com',
   /** "Offrimi un caffè": PayPal.me or another donation page. */
-  donateUrl: '',
+  donateUrl: 'https://www.paypal.me/matteocasonato',
 };
