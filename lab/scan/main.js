@@ -15,7 +15,8 @@ const $ = (id) => /** @type {T} */ (document.getElementById(id));
 const video = /** @type {HTMLVideoElement} */ ($('video'));
 const viewer = $('viewer');
 const guide = $('guide');
-const shootBtn = /** @type {HTMLButtonElement} */ ($('shoot'));
+// The whole camera area is the shutter: tap the card to scan it.
+const shootBtn = /** @type {HTMLButtonElement} */ ($('viewer'));
 const torchBtn = /** @type {HTMLButtonElement} */ ($('torch'));
 const statusEl = $('status');
 const viewerMsg = $('viewerMsg');
@@ -39,6 +40,13 @@ const LOG_KEY = 'deckflix-lab-log';
 // ---------- settings ----------
 
 function loadSettings() {
+  // Chrome restores form values on reload: start from the defaults in the markup,
+  // so stale values (e.g. an old 45% guide) don't come back.
+  for (const el of Object.values(controls)) {
+    if (el instanceof HTMLInputElement && el.type === 'checkbox') el.checked = el.defaultChecked;
+    else if (el instanceof HTMLInputElement) el.value = el.defaultValue;
+    else el.selectedIndex = Math.max(0, [...el.options].findIndex((o) => o.defaultSelected));
+  }
   try {
     const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) ?? '{}');
     for (const [k, el] of Object.entries(controls)) {
@@ -194,7 +202,9 @@ async function listCameras(activeId) {
   );
 }
 
-const ZOOM_KEY = 'deckflix-lab-zoom';
+const ZOOM_KEY = 'deckflix-lab-zoom-v2';
+/** Chosen by the user on their phone: card at a comfortable distance and in focus. */
+const DEFAULT_ZOOM = 1.2;
 const zoomInput = /** @type {HTMLInputElement} */ ($('zoom'));
 
 /**
@@ -212,9 +222,9 @@ function setupZoom(range) {
   zoomInput.min = String(range.min);
   zoomInput.max = String(Math.min(range.max, 5));
   zoomInput.step = String(range.step || 0.1);
-  let saved = 2;
+  let saved = DEFAULT_ZOOM;
   try {
-    saved = Number(localStorage.getItem(ZOOM_KEY) ?? 2);
+    saved = Number(localStorage.getItem(ZOOM_KEY) ?? DEFAULT_ZOOM);
   } catch {}
   zoomInput.value = String(Math.min(Number(zoomInput.max), Math.max(range.min, saved)));
   applyZoom();

@@ -17,21 +17,21 @@
     <button class="btn icon" id="torch" aria-label="Accendi la torcia" hidden>⚡</button>
   </header>
 
-  <section class="viewer" id="viewer">
+  <button type="button" class="viewer" id="viewer" aria-label="Tocca per scattare e riconoscere la carta" disabled>
     <video id="video" playsinline muted></video>
-    <div class="guide" id="guide">
-      <div class="band top-band" id="topBand"></div>
-      <div class="band bottom-band" id="bottomBand"></div>
-    </div>
-    <p class="viewer-msg" id="viewerMsg">Avvio fotocamera…</p>
-  </section>
+    <span class="guide" id="guide">
+      <span class="band top-band" id="topBand"></span>
+      <span class="band bottom-band" id="bottomBand"></span>
+    </span>
+    <span class="viewer-msg" id="viewerMsg">Avvio fotocamera…</span>
+    <span class="tap-hint" aria-hidden="true">Tocca per scattare</span>
+  </button>
 
   <label class="ctl zoom" id="zoomCtl" hidden>Zoom: <output id="zoomOut"></output>
     <input type="range" id="zoom" min="1" max="4" step="0.1" value="1">
     <span class="muted small">Allontana la carta di 15–20 cm e usa lo zoom finché riempie la cornice: mette meglio a fuoco.</span>
   </label>
   <div class="actions">
-    <button class="btn primary" id="shoot" disabled>Scatta e riconosci</button>
     <label class="btn secondary">
       Carica foto
       <input type="file" accept="image/*" id="file" hidden>

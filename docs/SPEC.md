@@ -285,6 +285,13 @@ Ogni fase si chiude con i criteri di accettazione verificati.
 Prototipo isolato (una pagina, nessuna persistenza, `lab/scan/`): fotocamera, ritaglio delle zone, OCR (Google `TextDetector`, ripiego Tesseract.js), riconoscimento di numero, lingua, sigla e nome, ricerca su TCGdex, scelta della variante.
 ✅ Su 30 carte reali di edizioni, lingue e finiture diverse (comprese holo e reverse), almeno l'85% riconosciute correttamente in condizioni di luce normali. Annotare tempi, errori tipici e regolazioni utili (contrasto, soglia, area di ritaglio). Se la soglia non è raggiunta, fermarsi e discutere alternative prima della Fase 1.
 
+**Esito (15/10/2026)** — chiusa su decisione dell'utente, con meno carte di quelle previste:
+- Tesseract dal telefono: numero quasi mai letto, 10–25 s per tentativo. Scartato come motore principale.
+- OCR Google (`TextDetector`) dalla fotocamera: 15 scansioni su 15 con numero leggibile hanno trovato la carta giusta (quasi tutte al primo colpo), 0,6–2 s; circa 10 carte diverse, tutte italiane recenti (SV, Megaevoluzione). Foto caricate: 6 su 8.
+- Errori tipici: Energia base senza numero (non trovata: serve la scelta manuale), stampe con timbro mancanti su TCGdex (Shaymin `sv10-010`), sigla incollata al codice lingua (`DRIT`, `JTGT`, `MEGIT`), CORS di `assets.tcgdex.net` a volte con intestazione doppia (`*, *`): le immagini si mostrano con `<img>` ma non si possono leggere da canvas, quindi niente confronti con la scansione ufficiale.
+- Regolazioni utili: video 4K senza foto, cornice al 90% di un'area con le proporzioni della carta, zoom ×1,2, scatto toccando l'area dello scanner.
+- **Da riprendere** (prima o durante la Fase 5, con più carte): 30 carte di lingue ed epoche diverse per la soglia dell'85%; verifica del timbro Play! con modello appreso sul telefono e carte senza timbro; riconoscimento holo/reverse (idea: torcia spenta/accesa); carte d'epoca e Energie base.
+
 **Fase 1 — Fondamenta**
 Progetto Vite + Svelte 5, Vitest, workflow GitHub Actions per il deploy, fixture di risposte TCGdex reali in `tests/fixtures/` (una carta per lingua, una con prezzi, una senza immagine, un'edizione completa) usate dai test e da una modalità di sviluppo offline, token CSS, componente `Icon`, barra di navigazione, router a hash, schema Dexie, client TCGdex con cache.
 ✅ `npm run build` produce un sito statico che si apre su GitHub Pages; la navigazione funziona; una carta di prova si carica da TCGdex e, ricaricando senza rete, viene letta dalla cache Dexie.
@@ -302,7 +309,7 @@ vite-plugin-pwa: manifest, precache dell'app shell, cache `CacheFirst` per le im
 ✅ L'app si installa su Android e si apre offline mostrando la collezione.
 
 **Fase 5 — Scansione**
-Fotocamera, OCR in un worker (riusando quanto imparato nella Fase 0), riconoscimento, modalità Singola e Raffica, wake lock e vibrazione.
+Fotocamera (area dello scanner a forma di carta, tocco per scattare, zoom), OCR (riusando quanto imparato nella Fase 0: `lab/scan/`), riconoscimento, modalità Singola e Raffica, wake lock e vibrazione.
 ✅ Una carta italiana ben illuminata viene riconosciuta e aggiunta alla collezione; la seconda scansione della stessa carta incrementa la quantità.
 
 **Fase 6 — Deck**

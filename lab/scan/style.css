@@ -44,11 +44,34 @@ h2 { font-size: 18px; margin-bottom: 12px; }
   width: min(100%, calc(72svh * 63 / 88));
   margin-inline: auto;
   border-radius: var(--r-card);
+  /* It is also the shutter button. */
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
   overflow: hidden;
   background: var(--surface);
 }
 .viewer video { width: 100%; height: 100%; object-fit: cover; display: block; }
-.viewer-msg { position: absolute; inset: auto 16px 16px; text-align: center; color: var(--muted); margin: 0; }
+.viewer:disabled { cursor: progress; }
+.viewer:active:not(:disabled) .guide { border-color: var(--text); }
+.viewer:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+.tap-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  transform: translateX(-50%);
+  padding: 6px 14px;
+  border-radius: var(--r-chip);
+  background: rgb(15 17 21 / 0.7);
+  color: var(--text);
+  font-size: 14px;
+  pointer-events: none;
+}
+.viewer:disabled .tap-hint { opacity: 0.5; }
+.viewer-msg { position: absolute; left: 16px; right: 16px; top: 50%; transform: translateY(-50%); text-align: center; color: var(--muted); margin: 0; }
 
 .guide {
   position: absolute;
