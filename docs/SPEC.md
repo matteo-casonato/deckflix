@@ -334,9 +334,16 @@ Elenco deck, Deck List Creator, aggiunta dalla ricerca con "Solo Standard", stat
 **Fase 7 — Valore e statistiche**
 Calcolo del valore, istantanee giornaliere, schermata Statistiche, card in Home.
 
+**Esito (15/10/2026)**: valore = prezzo Cardmarket della variante × copie (reverse e holo usano il prezzo `-holo`); le copie senza prezzo non entrano nel totale e sono indicate. Istantanea del giorno all'avvio e all'apertura delle Statistiche, solo quando ci sono i dati di tutte le carte (così un avvio offline non registra un valore troppo basso); nella stessa giornata viene aggiornata. Statistiche: valore, variazione nel periodo (7 g, 30 g, 1 anno, Tutto; il punto di partenza è l'ultima istantanea prima del periodo), grafico con tocco per leggere il valore e tabella per i lettori di schermo, numeri chiave, le più preziose, in crescita (media 7 giorni su 30), per rarità e per lingua, data dei prezzi. Home: valore, variazione a 30 giorni e ultima aggiunta. Logica in `src/lib/domain/value.js` (testata). Verificato nel browser con istantanee simulate di 40 giorni (poi rimosse): variazioni a 7 e 30 giorni corrette, grafico e card in Home. Il grafico si riempie giorno dopo giorno: TCGdex non ha uno storico dei prezzi.
+
 **Fase 8 — Esportazioni e rifiniture**
 Esporta CSV, invito ad accedere per chi usa l'app senza account, copia di sicurezza del giorno precedente su Drive, revisione di accessibilità e stati vuoti su tutte le schermate.
 ✅ Il CSV si apre correttamente in un foglio di calcolo con accenti e separatori giusti.
+
+**Fase 9 — Proposte dell'utente (15/10/2026), dopo la Fase 8**
+- Collezione come punto d'ingresso con tre riquadri grandi: **Edizioni** (l'attuale vista per edizione, con Tutte · Recenti · Statistiche), **Raccolte**, **Desideri**; ricerca in alto, che parte da "Tutte le carte" con le possedute evidenziate.
+- Nell'edizione, le carte mancanti mostrano l'immagine in grigio e semitrasparente invece del solo numero (interruttore nel Profilo per risparmiare dati).
+- **Raccolte** personali (non "set", che nel gioco significa edizione): manuali stile Pinterest, con "Aggiungi a raccolta" dalla scheda della carta e creazione al volo, copertina = carta più preziosa, salvate nel backup (nuovo store Dexie `albums`, schema v3); automatiche che si aggiornano da sole: le 10 più preziose, in crescita, full art e illustrazioni (rarità TCGdex), doppioni, holo e reverse, per Pokémon (`dexId`, vale in tutte le lingue), per illustratore.
 
 ## 9. Fuori ambito
 

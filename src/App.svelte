@@ -11,6 +11,7 @@
   import Toast from './lib/ui/Toast.svelte';
   import UpdateBanner from './lib/ui/UpdateBanner.svelte';
   import { initPwa } from './lib/stores/pwa.svelte.js';
+  import { recordTodaySnapshot } from './lib/data/value.js';
   import Collection from './screens/Collection.svelte';
   import Search from './screens/Search.svelte';
   import QuickAdd from './screens/QuickAdd.svelte';
@@ -30,7 +31,7 @@
   import Choice from './screens/Choice.svelte';
 
   onMount(() => {
-    loadSettings();
+    loadSettings().then(() => recordTodaySnapshot()).catch(() => {});
     initSync();
     initPwa();
   });

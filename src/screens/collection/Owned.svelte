@@ -12,6 +12,7 @@
   import Icon from '../../lib/ui/Icon.svelte';
   import CardTile from '../../lib/ui/CardTile.svelte';
   import EmptyState from '../../lib/ui/EmptyState.svelte';
+  import Stats from './Stats.svelte';
 
   /** @type {{ query: Record<string, string>, copies: number }} */
   let { query, copies } = $props();
@@ -122,7 +123,7 @@
     <a class="btn" href={hrefFor('quick')}>Inserimento rapido</a>
   </EmptyState>
 {:else if view === 'stats'}
-  <EmptyState title="Statistiche" text="Valore nel tempo, carte più preziose e distribuzione arrivano nella Fase 7." />
+  <Stats {query} />
 {:else if view === 'sets'}
   <div class="sets">
     {#each groups as g, i (g.setId)}
