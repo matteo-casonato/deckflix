@@ -94,7 +94,7 @@
       </span>
       {@render fan(ownedCovers)}
     </a>
-    <a class="tile card" href={hrefFor('collection', {}, { tab: 'owned' })}>
+    <a class="tile big card" href={hrefFor('collection', {}, { tab: 'owned' })}>
       <span class="txt">
         <strong>Edizioni</strong>
         <span class="num">{setCount} {setCount === 1 ? 'edizione' : 'edizioni'}</span>
@@ -167,8 +167,8 @@
   .hub {
     padding: 14px 16px 24px;
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 10px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
   }
 
   .tile {
@@ -189,7 +189,7 @@
 
   .tile.big {
     grid-column: 1 / -1;
-    min-height: 220px;
+    min-height: 200px;
     padding: 18px;
   }
 
@@ -202,7 +202,7 @@
 
   .txt strong {
     font-family: var(--font-display);
-    font-size: 17px;
+    font-size: 22px;
     font-weight: 800;
     line-height: 1.15;
   }
@@ -222,7 +222,7 @@
 
   .fan {
     position: relative;
-    height: 74px;
+    height: 96px;
     display: block;
   }
 
@@ -233,9 +233,9 @@
   .fan img,
   .ph {
     position: absolute;
-    bottom: -28px;
+    bottom: -30px;
     left: 50%;
-    height: 96px;
+    height: 124px;
     aspect-ratio: 63 / 88;
     border-radius: 9px;
     box-shadow: 0 10px 22px rgb(0 0 0 / 0.45);
