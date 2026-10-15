@@ -65,7 +65,7 @@
           <span class="num">{summary.missing} mancanti{summary.missingCost ? ` · ~${euro(summary.missingCost)}` : ''}</span>
         </button>
       {:else if summary}
-        <a class="btn" href={hrefFor('deckPrint', { id: $deck.id })}>Foglio torneo</a>
+        <a class="btn" href={hrefFor('deckPrint', { id: $deck.id })}>Stampa</a>
       {/if}
     </div>
   </section>

@@ -381,6 +381,8 @@ Esporta CSV, invito ad accedere per chi usa l'app senza account, copia di sicure
 
 - **Cards (hub)**: riquadro grande “Tutte le mie carte” (dentro: Tutte · Recenti · Statistiche), poi Edizioni a tutta larghezza (solo l’elenco delle edizioni) e sotto Raccolte e Desideri affiancati. I link `?view=recent|stats` della Home e della scansione aprono “Tutte le mie carte”.
 
+- **Dettaglio deck semplificato**: i contatori Pokémon / Allenatori / Energie (con matita) aprono il Deck List Creator sulla sezione; niente tasto Modifica. “Condividi” e “Stampa” (il foglio torneo, senza riga per la firma). Al posto di “Mancanti ai desideri” la riga “Ti mancano N carte · circa X € · vedi quali”, che apre “Cosa ti manca”: elenco delle mancanti (più care prima) con codice, quantità e prezzo, ognuna apre Cardmarket; in fondo “Aggiungi tutte ai desideri” con la spiegazione di dove ritrovarle.
+
 ## 9. Fuori ambito
 
 Prezzi per lingua e per condizione, riconoscimento con IA a pagamento, notifiche push e backup a app chiusa (servirebbe un server), profili multipli sullo stesso telefono, backup su servizi diversi da Google Drive, pubblicazione sugli store, app nativa con Capacitor (piano B se la scansione web non basta).

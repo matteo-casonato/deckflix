@@ -16,6 +16,10 @@
   import { coverCards, printedCode } from '../lib/domain/deck.js';
   import { replace } from '../lib/router.svelte.js';
   import BackHeader from '../lib/ui/BackHeader.svelte';
+  import Sheet from '../lib/ui/Sheet.svelte';
+  import Icon from '../lib/ui/Icon.svelte';
+  import { ArrowRight01Icon, LinkSquare02Icon, PencilEdit02Icon } from '@hugeicons/core-free-icons';
+  import { cardmarketUrl } from '../lib/domain/cards.js';
   import Segmented from '../lib/ui/Segmented.svelte';
   import ConfirmDialog from '../lib/ui/ConfirmDialog.svelte';
   import DeckStats from './deck/DeckStats.svelte';
@@ -97,8 +101,20 @@
   async function toWishlist() {
     if (!rows) return;
     const n = await missingToWishlist(rows);
+    showMissing = false;
     showToast(n ? `${n} ${n === 1 ? 'carta aggiunta' : 'carte aggiunte'} ai desideri` : 'Le mancanti sono già nei desideri');
   }
+
+  /** "Cosa ti manca": the missing cards with price and a Cardmarket link each. */
+  let showMissing = $state(false);
+  const missingRows = $derived((rows ?? []).filter((r) => r.missing > 0).sort((a, b) => (b.price ?? 0) * b.missing - (a.price ?? 0) * a.missing));
+
+  /** Section counters open the editor on that section. */
+  const SECTION_LINKS = /** @type {const} */ ([
+    ['pokemon', 'Pokémon', null],
+    ['trainer', 'Allenatori', 'Trainer'],
+    ['energy', 'Energie', 'Energy'],
+  ]);
 </script>
 
 <BackHeader title="Deck" fallback={hrefFor('deck')} />
@@ -113,9 +129,13 @@
     {#if summary}
       <p class="muted num">{summary.total} carte · valore deck {euro(summary.value)}</p>
       <div class="split num">
-        <span><strong>{summary.pokemon}</strong> Pokémon</span>
-        <span><strong>{summary.trainer}</strong> Allenatori</span>
-        <span><strong>{summary.energy}</strong> Energie</span>
+        {#each SECTION_LINKS as [key, label, tab] (key)}
+          <a href={hrefFor('deckEdit', { id }, { tab })} aria-label={`Modifica ${label}: ${summary[key]} carte`}>
+            <span class="pen" aria-hidden="true"><Icon icon={PencilEdit02Icon} size={16} /></span>
+            <strong>{summary[key]}</strong>
+            {label}
+          </a>
+        {/each}
       </div>
       <div class="progress">
         <span class="pct num">{summary.percent}%</span>
@@ -131,14 +151,19 @@
     {:else}
       <p class="muted">Controllo la collezione…</p>
     {/if}
-    <div class="actions">
-      <a class="btn light" href={hrefFor('deckEdit', { id })}>Modifica</a>
-      <button class="btn" onclick={share} disabled={!$deck.cards.length}>Condividi lista</button>
-      <a class="btn" href={hrefFor('deckPrint', { id })} aria-disabled={!$deck.cards.length}>Foglio torneo</a>
-    </div>
     {#if summary?.missing}
-      <button class="btn subtle" onclick={toWishlist}>Mancanti ai desideri</button>
+      <button class="missing-row" onclick={() => (showMissing = true)}>
+        <span>
+          <strong>Ti mancano {summary.missing} {summary.missing === 1 ? 'carta' : 'carte'}</strong>
+          <span class="num">circa {euro(summary.missingCost)} su Cardmarket · vedi quali</span>
+        </span>
+        <Icon icon={ArrowRight01Icon} size={20} />
+      </button>
     {/if}
+    <div class="actions">
+      <button class="btn" onclick={share} disabled={!$deck.cards.length}>Condividi</button>
+      <a class="btn" href={hrefFor('deckPrint', { id })} aria-disabled={!$deck.cards.length}>Stampa</a>
+    </div>
   </section>
 
   {#if rows?.length}
@@ -214,6 +239,29 @@
   {/if}
 
   <div class="pad"><button class="btn danger-text" onclick={() => (confirmDelete = true)}>Elimina il deck</button></div>
+
+  <Sheet open={showMissing} title="Cosa ti manca" onclose={() => (showMissing = false)}>
+    <p class="sheet-note num">
+      {summary?.missing ?? 0} carte, circa {euro(summary?.missingCost ?? 0)} su Cardmarket. Tocca una carta per aprirla su Cardmarket.
+    </p>
+    <ul class="missing-list">
+      {#each missingRows as r (r.cardId)}
+        <li>
+          <a href={cardmarketUrl(r.card ?? r.cardId, 'it')} target="_blank" rel="noopener noreferrer">
+            <span class="thumb">{#if cardImage(r.card)}<img src={cardImage(r.card)} alt="" loading="lazy" />{/if}</span>
+            <span class="name">
+              <strong>{r.card?.name ?? r.cardId}</strong>
+              <span class="muted num">{r.card ? printedCode(r.card, sets.get(r.card.set?.id)) : ''}</span>
+            </span>
+            <span class="need num">×{r.missing}{r.price ? ` · ${euro(r.price * r.missing)}` : ''}</span>
+            <Icon icon={LinkSquare02Icon} size={16} />
+          </a>
+        </li>
+      {/each}
+    </ul>
+    <button class="btn primary" onclick={toWishlist}>Aggiungi tutte ai desideri</button>
+    <p class="sheet-note">Le ritrovi in Cards › Desideri, con il prezzo e l’avviso quando scendono.</p>
+  </Sheet>
 
   <ConfirmDialog
     open={confirmDelete}
@@ -307,14 +355,85 @@
     gap: 8px;
   }
 
-  .split span {
+  .split a {
+    position: relative;
+    min-height: 64px;
     padding: 10px;
     border-radius: 16px;
     background: var(--bg);
     font-size: 12px;
     color: var(--muted);
+    text-decoration: none;
     display: flex;
     flex-direction: column;
+  }
+
+  .pen {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    color: var(--muted);
+    display: flex;
+  }
+
+  .missing-row {
+    width: 100%;
+    min-height: 60px;
+    padding: 10px 14px;
+    border: 1px solid color-mix(in srgb, var(--danger) 40%, var(--line));
+    border-radius: var(--r-card);
+    background: color-mix(in srgb, var(--danger) 8%, var(--surface));
+    color: var(--text);
+    font: inherit;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    cursor: pointer;
+  }
+
+  .missing-row > span {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .missing-row span span {
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .sheet-note {
+    margin: 0;
+    padding: 0 4px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .missing-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    max-height: 48dvh;
+    overflow-y: auto;
+  }
+
+  .missing-list a {
+    min-height: 60px;
+    padding: 6px 4px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--text);
+    text-decoration: none;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .need {
+    font-size: 13px;
+    font-weight: 700;
+    white-space: nowrap;
   }
 
   .split strong {

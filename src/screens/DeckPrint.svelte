@@ -62,7 +62,7 @@
 </script>
 
 <div class="screen-only">
-  <BackHeader title="Foglio torneo" big fallback={hrefFor('deckDetail', { id })} />
+  <BackHeader title="Stampa" big fallback={hrefFor('deckDetail', { id })} />
   <div class="pad">
     {#if settings.players.length}
       <label class="field">
@@ -132,7 +132,6 @@
 
     <footer>
       <strong>Totale carte: <span class="num">{sheet.totals.all}</span></strong>
-      <span>Firma del giocatore ____________________</span>
     </footer>
   </article>
 {:else}
