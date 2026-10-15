@@ -102,7 +102,7 @@
     if (!rows) return;
     const n = await missingToWishlist(rows);
     showMissing = false;
-    showToast(n ? `${n} ${n === 1 ? 'carta aggiunta' : 'carte aggiunte'} ai desideri` : 'Le mancanti sono già nei desideri');
+    showToast(n ? `${n} ${n === 1 ? 'carta salvata' : 'carte salvate'} nei Desideri` : 'Le mancanti sono già nei Desideri');
   }
 
   /** "Cosa ti manca": the missing cards with price and a Cardmarket link each. */
@@ -259,8 +259,10 @@
         </li>
       {/each}
     </ul>
-    <button class="btn primary" onclick={toWishlist}>Aggiungi tutte ai desideri</button>
-    <p class="sheet-note">Le ritrovi in Cards › Desideri, con il prezzo e l’avviso quando scendono.</p>
+    <button class="btn primary" onclick={toWishlist}>
+      Salva {summary?.missing === 1 ? 'la mancante' : `le ${summary?.missing ?? ''} mancanti`} nei Desideri
+    </button>
+    <p class="sheet-note">Le ritrovi in Cards › Desideri, con il prezzo e l’avviso quando scendono: una lista della spesa per completare il deck.</p>
   </Sheet>
 
   <ConfirmDialog
