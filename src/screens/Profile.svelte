@@ -18,6 +18,7 @@
   import { account } from '../lib/stores/account.svelte.js';
   import { setSetting, settings } from '../lib/stores/settings.svelte.js';
   import { LANG_LABELS } from '../lib/domain/cards.js';
+  import { clearImageCache, imageCacheInfo } from '../lib/data/imageCache.js';
   import { backupState, relativeTime } from '../lib/domain/backup.js';
   import { backupNow, isConfigured, restoreFromDrive, signOut } from '../lib/sync/sync.js';
 
@@ -55,7 +56,14 @@
     account.lastBackupAt ? `${relativeTime(account.lastBackupAt, now)} · automatico mentre usi l’app` : 'Automatico mentre usi l’app',
   );
 
-  /** @type {'restore' | 'signout' | 'wipe' | null} */
+  /** @type {{ images: number, usageMb: number | null } | null} */
+  let cache = $state(null);
+  const refreshCache = () => imageCacheInfo().then((c) => (cache = c));
+  $effect(() => {
+    refreshCache();
+  });
+
+  /** @type {'restore' | 'signout' | 'wipe' | 'images' | null} */
   let confirm = $state(null);
 
   /** Interactive when Google needs a tap to renew access. */
@@ -127,10 +135,17 @@
     <span class="ico"><Icon icon={Analytics01Icon} /></span>
     <span class="text"><strong>Prezzo di riferimento</strong><span>Trend Cardmarket · Fase 7</span></span>
   </div>
-  <div class="row disabled">
+  <button class="row" onclick={() => (confirm = 'images')} disabled={!cache || cache.images === 0}>
     <span class="ico"><Icon icon={Image01Icon} /></span>
-    <span class="text"><strong>Cache immagini</strong><span>Fase 4</span></span>
-  </div>
+    <span class="text">
+      <strong>Cache immagini</strong>
+      <span>
+        {!cache
+          ? 'Calcolo…'
+          : `${cache.images} ${cache.images === 1 ? 'immagine' : 'immagini'}${cache.usageMb != null ? ` · app ${cache.usageMb} MB in tutto` : ''}${cache.images ? ' · svuota' : ''}`}
+      </span>
+    </span>
+  </button>
   <div class="row static">
     <span class="ico"><Icon icon={LockIcon} /></span>
     <span class="text">
@@ -152,6 +167,14 @@
   <p class="foot">I dati restano su questo telefono finché non li cancelli.</p>
 {/if}
 
+<ConfirmDialog
+  open={confirm === 'images'}
+  title="Svuotare la cache delle immagini?"
+  text="Le immagini delle carte verranno scaricate di nuovo quando le apri. La collezione non cambia."
+  confirmLabel="Svuota"
+  onconfirm={() => clearImageCache().then(refreshCache)}
+  onclose={() => (confirm = null)}
+/>
 <ConfirmDialog
   open={confirm === 'restore'}
   title="Ripristinare da Drive?"

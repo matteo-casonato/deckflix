@@ -9,6 +9,8 @@
   import { FULL_SCREEN, NAV_SECTION } from './lib/domain/routes.js';
   import { loadSettings } from './lib/stores/settings.svelte.js';
   import Toast from './lib/ui/Toast.svelte';
+  import UpdateBanner from './lib/ui/UpdateBanner.svelte';
+  import { initPwa } from './lib/stores/pwa.svelte.js';
   import Collection from './screens/Collection.svelte';
   import Search from './screens/Search.svelte';
   import QuickAdd from './screens/QuickAdd.svelte';
@@ -26,6 +28,7 @@
   onMount(() => {
     loadSettings();
     initSync();
+    initPwa();
   });
 
   const route = $derived(router.route);
@@ -88,6 +91,7 @@
   <Nav active={NAV_SECTION[route.name]} />
 {/if}
 <Toast />
+<UpdateBanner />
 {/if}
 
 <style>

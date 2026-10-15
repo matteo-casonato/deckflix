@@ -30,6 +30,10 @@ npm run dev:https                   # apri https://<ip-del-mac>:5173/deckflix/ d
 
 Sul telefono Chrome mostrerà un avviso sul certificato (la CA di mkcert non è installata su Android): "Avanzate → Procedi". In alternativa usa la versione pubblicata.
 
+## Installare l'app sul telefono
+
+Apri https://matteo-casonato.github.io/deckflix/ in Chrome per Android → menu ⋮ → **Installa app** (o "Aggiungi a schermata Home"). Dopo la prima apertura funziona anche senza rete.
+
 ## Fase 0 — prova della scansione
 
 Pagina: `lab/scan/` (`/deckflix/lab/scan/`). Per ogni carta: inquadra, "Scatta e riconosci", scegli la carta giusta se non è la prima, segna **Corretta** o **Sbagliata** (con una nota su finitura e luce). In alto c'è l'accuratezza; "Copia registro (JSON)" esporta i risultati.

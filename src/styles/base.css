@@ -57,8 +57,17 @@ button {
 }
 
 :focus-visible {
-  outline: 3px solid var(--accent);
-  outline-offset: 2px;
+  /* Light ring, not yellow: the accent already marks active filters and main actions. */
+  outline: 2px solid var(--text);
+  outline-offset: 3px;
+}
+
+/* Chrome on Android shows :focus-visible on a <select> after a tap: no ring for those,
+   the open menu and the filled chip already show the state. */
+@media (pointer: coarse) {
+  select:focus-visible {
+    outline: none;
+  }
 }
 
 .num {

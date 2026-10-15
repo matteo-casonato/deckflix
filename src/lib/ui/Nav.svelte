@@ -91,8 +91,10 @@
   }
 
   .item {
-    flex: 1 1 0;
+    /* Width from the label plus equal extra space: "Collezione" gets room around it. */
+    flex: 1 1 auto;
     min-width: 48px;
+    padding: 0 8px;
     height: 58px;
     border-radius: 38px;
     display: flex;
