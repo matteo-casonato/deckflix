@@ -76,7 +76,6 @@
     position: relative;
     margin: 14px 16px 0;
     padding: 20px;
-    min-height: 330px;
     border-radius: var(--r-section);
     background: radial-gradient(120% 80% at 50% 0%, color-mix(in srgb, var(--accent) 14%, var(--surface)) 0%, var(--surface) 60%);
     border: 1px solid var(--line);
@@ -110,12 +109,12 @@
     align-items: center;
   }
 
+  /* In the flow, above the title: a long deck name can't end up under the cards. */
   .fan {
-    position: absolute;
-    top: 30px;
-    left: 0;
-    right: 0;
-    height: 170px;
+    position: relative;
+    align-self: stretch;
+    height: 190px;
+    margin: 28px 0 10px;
     display: block;
   }
 
@@ -134,10 +133,17 @@
 
   .title {
     position: relative;
+    max-width: 100%;
     font-family: var(--font-display);
     font-weight: 800;
-    font-size: 28px;
-    line-height: 1.1;
+    font-size: 26px;
+    line-height: 1.15;
+    overflow-wrap: anywhere;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
 
   .sub {

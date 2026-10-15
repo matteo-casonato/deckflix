@@ -19,9 +19,11 @@ import {
 } from '../domain/backup.js';
 import { createDrive } from './drive.js';
 import { loadSettings } from '../stores/settings.svelte.js';
-import { AuthError, getToken, isConfigured, requestToken, signOut as revoke } from './google-auth.js';
+import { AuthError, getToken, hasValidToken, isConfigured, requestToken, signOut as revoke } from './google-auth.js';
 
 export const DEBOUNCE_MS = 10_000;
+/** Backup delay when the Drive token must be renewed first (see scheduleBackup). */
+export const LATE_MS = 5 * 60_000;
 /** Retry delays when Drive is unreachable while the browser says "online" (Wi-Fi without internet). */
 const RETRY_MS = [30_000, 60_000, 120_000, 300_000];
 const DATA_TABLES = /** @type {const} */ (['collection', 'wishlist', 'decks', 'albums', 'priceSnapshots']);
@@ -76,28 +78,38 @@ function networkUp() {
   clearTimeout(retryTimer);
 }
 
-function markDirty() {
+/**
+ * @param {{ urgent?: boolean }} [o] urgent: false for changes the app makes on its own (the
+ *   daily value): they travel with the next backup instead of starting one.
+ */
+function markDirty({ urgent = true } = {}) {
   if (quiet > 0) return;
   account.pending = true;
   // Hooks run inside the caller's transaction: record the flag right after it.
   setTimeout(() => {
     db.syncQueue.add({ changedAt: Date.now() }).catch(() => {});
   }, 0);
-  scheduleBackup();
+  if (urgent) scheduleBackup();
 }
 
+/**
+ * Without a valid token, renewing it opens Google's window for an instant (no backend means
+ * no refresh token). So the backup waits: it runs when the app goes to the background, or
+ * after LATE_MS, instead of 10 seconds after each change. With a valid token: DEBOUNCE_MS.
+ */
 function scheduleBackup() {
   clearTimeout(timer);
   if (!account.user) return;
-  timer = setTimeout(() => backupNow(), DEBOUNCE_MS);
+  timer = setTimeout(() => backupNow(), hasValidToken() ? DEBOUNCE_MS : LATE_MS);
 }
 
 function watchChanges() {
   for (const name of DATA_TABLES) {
     const table = db.table(name);
-    table.hook('creating', () => void markDirty());
-    table.hook('updating', () => void markDirty());
-    table.hook('deleting', () => void markDirty());
+    const urgent = name !== 'priceSnapshots';
+    table.hook('creating', () => void markDirty({ urgent }));
+    table.hook('updating', () => void markDirty({ urgent }));
+    table.hook('deleting', () => void markDirty({ urgent }));
   }
   /** @param {any} key */
   const settingChanged = (key) => {
@@ -170,6 +182,12 @@ async function readTables() {
 
 /** @param {unknown} err */
 function handleError(err) {
+  // Renewing the token while the app is in the background: the browser may block Google's
+  // window. Not the user's fault, try again later.
+  if (err instanceof AuthError && err.kind === 'popup' && document.visibilityState === 'hidden') {
+    scheduleBackup();
+    return;
+  }
   if (err instanceof AuthError && err.kind !== 'not-configured') {
     account.needsAuth = true;
     account.error = null;
