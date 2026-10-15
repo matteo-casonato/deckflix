@@ -386,6 +386,9 @@ Esporta CSV, invito ad accedere per chi usa l'app senza account, copia di sicure
 - **Immagini mancanti**: TCGdex a volte non ha la carta nella lingua scelta (carte vecchie: EX Deoxys, Neo), o ce l'ha senza immagine (Charizard Set Base in italiano), o non ha l'immagine in nessuna lingua nei dati (gallerie TG di Silver Tempest, mep-028) anche se il file c'è sul server. La cache delle carte usa la carta o l'immagine inglese e altrimenti ricostruisce l'indirizzo (`guessImage`: serie dal prefisso dell'id, gallerie TG/GG nella cartella dell'edizione madre, es. swsh12tg-TG20 → swsh/swsh12/TG20); se il file non esiste resta il segnaposto. Vale per elenchi, raccoglitore e scheda carta.
 - **Profilo**: i link utili sono in un pannello (“Link utili”) dalla sezione App, non più una sezione a sé.
 
+- **Scanner più comodo**: “Scrivi il numero” sempre visibile sotto la cornice (si evidenzia quando la lettura fallisce): si scrive quello che è stampato sulla carta (“SVI 25”, “25/165”, “16/107”, “TG25”, “swsh302”, anche col nome) e si sceglie tra i risultati, poi il solito pannello con variante e lingua. Lettura non riuscita: niente pannello in basso, il messaggio compare al centro della cornice e il tocco successivo riprova.
+- **Inserimento rapido ripensato**: un solo campo grande che accetta numero, sigla e totale senza scegliere prima l'edizione; edizione facoltativa (“fissa”) per inserire una pila di carte scrivendo solo i numeri; edizione e lingua affiancate, scelta tra più risultati in un elenco con miniature, “Non è questa” per cambiare.
+
 ## 9. Fuori ambito
 
 Prezzi per lingua e per condizione, riconoscimento con IA a pagamento, notifiche push e backup a app chiusa (servirebbe un server), profili multipli sullo stesso telefono, backup su servizi diversi da Google Drive, pubblicazione sugli store, app nativa con Capacitor (piano B se la scansione web non basta).

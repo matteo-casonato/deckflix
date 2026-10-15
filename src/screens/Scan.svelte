@@ -3,11 +3,13 @@
   // Scanner (SPEC § 4.1, docs/mockups/Raffica.html). Single: tap the camera to scan, then
   // confirm in the sheet. Burst: automatic shot when the card is still, queue, review and save.
   import { onMount } from 'svelte';
-  import { ArrowLeft01Icon, FlashIcon, PauseIcon, Tick02Icon } from '@hugeicons/core-free-icons';
+  import { ArrowLeft01Icon, FlashIcon, KeyboardIcon, PauseIcon, Tick02Icon } from '@hugeicons/core-free-icons';
   import Icon from '../lib/ui/Icon.svelte';
   import ConfirmDialog from '../lib/ui/ConfirmDialog.svelte';
   import ResultSheet from './scan/ResultSheet.svelte';
   import BurstReview from './scan/BurstReview.svelte';
+  import NumberSheet from './scan/NumberSheet.svelte';
+  import { settings } from '../lib/stores/settings.svelte.js';
   import { CameraError, closeCamera, createMotionMeter, grabCard, openCamera, setTorch, setZoom } from '../lib/scan/camera.js';
   import { hasGoogleOcr } from '../lib/scan/ocr.js';
   import { printsFor, recognize } from '../lib/scan/pipeline.js';
@@ -37,6 +39,10 @@
 
   /** @type {import('../lib/scan/pipeline.js').Recognition | null} */
   let rec = $state(null);
+  /** Last shot not read or not found: shown in the middle of the frame; a tap retries. */
+  /** @type {{ title: string, text: string } | null} */
+  let miss = $state(null);
+  let numberOpen = $state(false);
 
   /** @type {import('./scan/BurstReview.svelte').Item[]} */
   let items = $state([]);
@@ -114,10 +120,22 @@
 
   async function shoot() {
     if (!cam || busy || rec || !video.videoWidth) return;
+    miss = null;
     busy = true;
     try {
       const r = await recognize(grabCard(video, guide, 2400));
       buzz(r.status === 'found' && !r.uncertain);
+      if (r.status !== 'found') {
+        // No sheet at the bottom: the message sits where the thumb already is.
+        miss =
+          r.status === 'unread'
+            ? { title: 'Non riesco a leggere il numero', text: 'Tieni la carta ferma, con luce e senza riflessi in basso' }
+            : {
+                title: `Numero ${r.reading.num ? `${r.reading.num.number}/${r.reading.num.total}` : (r.reading.special?.code ?? '')} non trovato`,
+                text: 'Riprova, oppure scrivi il numero qui sotto',
+              };
+        return;
+      }
       rec = r;
       history.pushState({ ...history.state, scanSheet: true }, '');
     } catch (err) {
@@ -126,6 +144,42 @@
     } finally {
       busy = false;
     }
+  }
+
+  /**
+   * A card found by its printed number ("SVI 25", "16/107"): same add sheet as a scan.
+   * @param {{ id: string, localId: string, name: string, image?: string }} c
+   * @param {any} set
+   */
+  function pickNumber(c, set) {
+    numberOpen = false;
+    miss = null;
+    rec = {
+      status: 'found',
+      reading: { num: null, special: null, setCode: null, lang: null, nameText: '', text: '', engine: 'google' },
+      lang: settings.cardLang,
+      candidates: [
+        {
+          id: c.id,
+          localId: c.localId,
+          name: c.name,
+          image: c.image,
+          setId: c.id.slice(0, c.id.lastIndexOf('-')),
+          setName: set?.name ?? '',
+          setCode: set?.abbreviation?.official ?? null,
+          official: set?.cardCount?.official ?? 0,
+          releaseDate: set?.releaseDate ?? '',
+          lang: settings.cardLang,
+          nameScore: 1,
+          codeMatch: true,
+        },
+      ],
+      corrected: null,
+      uncertain: false,
+      stamp: null,
+      ms: 0,
+    };
+    history.pushState({ ...history.state, scanSheet: true }, '');
   }
 
   /** @param {{ cardId: string, lang: string, variant: string, name: string, localId: string }} s */
@@ -284,6 +338,12 @@
         </span>
       {:else if busy}
         <span class="hint">Riconosco la carta…</span>
+      {:else if miss && mode === 'single'}
+        <span class="miss" role="status">
+          <strong>{miss.title}</strong>
+          <span>{miss.text}</span>
+          <span class="again">Tocca per riprovare</span>
+        </span>
       {:else if cam}
         <span class="hint">
           {mode === 'single' ? 'Tocca per scattare' : paused ? 'In pausa' : 'Scatto automatico quando la carta è ferma'}
@@ -307,10 +367,12 @@
       </label>
     {/if}
 
-    {#if camError}
+    {#if mode === 'single' || camError}
       <div class="row-actions">
-        <a class="btn" href={hrefFor('quick')}>Inserimento rapido</a>
-        <button class="btn primary" onclick={start}>Riprova</button>
+        <button class="btn number" class:attention={!!miss || !!camError} onclick={() => (numberOpen = true)}>
+          <Icon icon={KeyboardIcon} size={20} /> Scrivi il numero
+        </button>
+        {#if camError}<button class="btn primary" onclick={start}>Riprova la fotocamera</button>{/if}
       </div>
     {/if}
 
@@ -358,6 +420,8 @@
   <ResultSheet {rec} onadd={addFromSheet} onretry={closeSheet} />
 {/if}
 
+<NumberSheet open={numberOpen} onpick={pickNumber} onclose={() => (numberOpen = false)} />
+
 <ConfirmDialog
   open={confirmExit}
   title="Uscire senza salvare?"
@@ -369,6 +433,48 @@
 />
 
 <style>
+  .miss {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: min(80%, 300px);
+    padding: 18px 16px;
+    border-radius: 24px;
+    background: rgb(15 17 21 / 0.86);
+    border: 1px solid color-mix(in srgb, var(--danger) 50%, transparent);
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    text-align: center;
+    font-size: 13px;
+  }
+
+  .miss strong {
+    font-size: 16px;
+  }
+
+  .miss span {
+    color: var(--muted);
+  }
+
+  .miss .again {
+    margin-top: 6px;
+    color: var(--accent);
+    font-weight: 700;
+  }
+
+  .number {
+    flex: 1;
+    gap: 8px;
+  }
+
+  .number.attention {
+    background: var(--accent);
+    color: var(--on-accent);
+  }
+
   .scan {
     min-height: 100dvh;
     max-width: 560px;

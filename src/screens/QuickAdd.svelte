@@ -1,24 +1,30 @@
 <script>
   // @ts-check
-  // Quick add by number (SPEC § 4.1 bis): set and language, type only the number
-  // ("25", "025" or "25/165"), Enter adds the default print, the field clears for the next card.
+  // Quick add by number (SPEC § 4.1 bis). One big field: what is printed on the card
+  // ("SVI 25", "25/165", "16/107", "TG25", "swsh302"), no set needed. For a pile of cards from
+  // the same set, fix the set and type only the numbers ("25", "26"…). Enter adds the default
+  // print and clears the field for the next card.
   import { cardsByNumber, getCard, getSet } from '../lib/api/tcgdex.js';
   import { settings, rememberSet } from '../lib/stores/settings.svelte.js';
   import { setsMap } from '../lib/data/catalog.js';
+  import { smartSearch } from '../lib/data/search.js';
   import { changeCopies, restoreEntry } from '../lib/data/collection.js';
   import { defaultVariant } from '../lib/data/actions.js';
   import { listVariants } from '../lib/domain/variants.js';
   import { collectionKey } from '../lib/domain/collection.js';
-  import { LANG_LABELS, cardByNumber, euro, parseQuickNumber } from '../lib/domain/cards.js';
+  import { LANG_LABELS, cardByNumber, euro, parseQuickNumber, setIdOf } from '../lib/domain/cards.js';
   import { hrefFor } from '../lib/domain/routes.js';
   import { replace } from '../lib/router.svelte.js';
   import BackHeader from '../lib/ui/BackHeader.svelte';
   import SetPicker from '../lib/ui/SetPicker.svelte';
 
+  /** @typedef {{ id: string, localId: string, name: string, image?: string }} Brief */
+
   /** @type {{ query: Record<string, string> }} */
   let { query } = $props();
 
-  let setId = $state(query.set ?? settings.recentSets[0] ?? '');
+  /** Fixed set ('' = any: the field takes code and number). */
+  let setId = $state(query.set ?? '');
   let copyLang = $state(settings.cardLang);
   let text = $state('');
   /** @type {HTMLInputElement} */
@@ -37,58 +43,81 @@
     const id = setId;
     set = null;
     setError = false;
+    replace(hrefFor('quick', {}, { set: id || null }));
     if (!id) return;
-    replace(hrefFor('quick', {}, { set: id }));
     getSet(settings.cardLang, id)
       .catch(() => getSet('en', id))
       .then((r) => (set = r.data))
       .catch(() => (setError = true));
   });
 
-  const parsed = $derived(parseQuickNumber(text));
-  const inSet = $derived(parsed && set ? cardByNumber(set.cards ?? [], parsed.number) : null);
-
-  // Numbers with letters not in the chosen set: gallery cards live in a companion set on
-  // TCGdex (swsh9 → swsh9tg, swsh12.5 → swsh12.5gg), promos in their own ("SWSH302"),
-  // so look there, then in every set.
-  /** @type {any[]} */
-  let elsewhere = $state([]);
-  let looking = $state(false);
-  /** @type {any} */
-  let picked = $state(null);
-  $effect(() => {
-    const p = parsed;
-    const id = setId;
-    elsewhere = [];
-    picked = null;
-    if (!p || !set || inSet || !/[A-Z]/.test(p.number)) return;
-    looking = true;
-    (async () => {
-      for (const sub of [`${id}tg`, `${id}gg`]) {
-        if (!sets.has(sub)) continue;
-        const r = await getSet(settings.cardLang, sub).catch(() => getSet('en', sub)).catch(() => null);
-        const c = r && cardByNumber(r.data.cards ?? [], p.number);
-        if (c) return [c];
-      }
-      const m = p.number.match(/^([A-Z]+)0*(\d+)$/);
-      const variants = m ? [...new Set([p.number, `${m[1]}${m[2].padStart(2, '0')}`, `${m[1]}${m[2]}`])] : [p.number];
-      const lists = await Promise.all(variants.map((v) => cardsByNumber(settings.cardLang, v).then((r) => r.data).catch(() => [])));
-      const seen = new Set();
-      return lists.flat().filter((c) => !/^[A-Z]/.test(c.id) && !seen.has(c.id) && seen.add(c.id));
-    })().then((found) => {
-      if (parsed !== p) return;
-      elsewhere = found;
-      if (found.length === 1) picked = found[0];
-      looking = false;
-    });
-  });
-  const brief = $derived(inSet ?? picked);
   const isDigits = (/** @type {string} */ n) => /^\d+$/.test(n);
-  /** Set of the card in the preview (the chosen one, or where the number was found). */
-  const briefSet = $derived(inSet ? set : picked ? sets.get(picked.id.slice(0, picked.id.lastIndexOf('-'))) : null);
+
+  // ---------- fixed set: only the number ----------
+  const parsed = $derived(setId ? parseQuickNumber(text) : null);
+  const inSet = $derived(parsed && set ? cardByNumber(set.cards ?? [], parsed.number) : null);
   const totalMismatch = $derived(
     parsed?.total && set?.cardCount?.official && parsed.total !== set.cardCount.official ? set.cardCount.official : null,
   );
+
+  // ---------- lookups: number with letters outside the set, or free text without a set ----------
+  /** @type {Brief[]} */
+  let found = $state([]);
+  let looking = $state(false);
+  let looked = $state(false);
+  /** @type {Brief | null} */
+  let picked = $state(null);
+  /** @type {ReturnType<typeof setTimeout> | undefined} */
+  let debounce;
+
+  $effect(() => {
+    const t = text.trim();
+    const p = parsed;
+    const id = setId;
+    const s = set;
+    found = [];
+    picked = null;
+    looked = false;
+    clearTimeout(debounce);
+    if (!t) return;
+    if (id) {
+      // Gallery cards live in a companion set on TCGdex (swsh9 → swsh9tg), promos in their own.
+      if (!p || !s || inSet || !/[A-Z]/.test(p.number)) return;
+      looking = true;
+      debounce = setTimeout(async () => {
+        /** @type {Brief[]} */
+        let list = [];
+        for (const sub of [`${id}tg`, `${id}gg`]) {
+          if (!sets.has(sub)) continue;
+          const r = await getSet(settings.cardLang, sub).catch(() => getSet('en', sub)).catch(() => null);
+          const c = r && cardByNumber(r.data.cards ?? [], p.number);
+          if (c) list = [c];
+        }
+        if (!list.length) list = (await cardsByNumber(settings.cardLang, p.number).catch(() => ({ data: [] }))).data;
+        if (text.trim() !== t) return;
+        found = list.filter((c) => !/^[A-Z]/.test(c.id));
+        if (found.length === 1) picked = found[0];
+        looking = false;
+        looked = true;
+      }, 250);
+    } else {
+      if (!/\d/.test(t)) return;
+      looking = true;
+      debounce = setTimeout(async () => {
+        const r = await smartSearch(settings.cardLang, t, { setId: '', type: '', rarity: '', standard: false }, sets.size ? sets : await setsMap(settings.cardLang)).catch(
+          () => ({ results: [] }),
+        );
+        if (text.trim() !== t) return;
+        found = r.results.slice(0, 12);
+        if (found.length === 1) picked = found[0];
+        looking = false;
+        looked = true;
+      }, 450);
+    }
+  });
+
+  const brief = $derived(/** @type {Brief | null} */ (inSet ?? picked));
+  const briefSet = $derived(brief ? (inSet ? set : sets.get(setIdOf(brief.id))) : null);
 
   /** Full card of the preview, for its prints. */
   /** @type {any} */
@@ -99,6 +128,7 @@
     card = null;
     if (!b) return;
     getCard(settings.cardLang, b.id)
+      .catch(() => getCard('en', b.id))
       .then((r) => {
         if (brief?.id !== b.id) return;
         card = r.data;
@@ -122,7 +152,7 @@
       { key: collectionKey(copy.cardId, copy.lang, copy.variant), name: brief.name, localId: brief.localId, label, before, undone: false },
       ...added,
     ].slice(0, 20);
-    rememberSet(setId);
+    rememberSet(setId || setIdOf(brief.id));
     text = '';
     input?.focus();
   }
@@ -137,19 +167,6 @@
 <BackHeader title="Inserimento rapido" big fallback={hrefFor('collection')} />
 
 <div class="pad">
-  <div class="selects">
-    <div class="sel">
-      <span>Edizione</span>
-      <SetPicker {sets} value={setId} recent={settings.recentSets} onchange={(v) => (setId = v)} />
-    </div>
-    <label class="sel">
-      <span>Lingua delle copie</span>
-      <select class="chip" bind:value={copyLang}>
-        {#each Object.entries(LANG_LABELS) as [code, label] (code)}<option value={code}>{label}</option>{/each}
-      </select>
-    </label>
-  </div>
-
   <form
     class="number"
     onsubmit={(e) => {
@@ -167,31 +184,65 @@
       autocapitalize="characters"
       autocomplete="off"
       enterkeyhint="done"
-      placeholder={set ? `Numero, es. 25, 25/${set.cardCount?.official ?? ''} o TG05` : 'Scegli prima l’edizione'}
-      disabled={!setId}
+      placeholder={setId ? `25 · 25/${set?.cardCount?.official ?? '…'} · TG05` : 'SVI 25 · 25/165 · TG25'}
       autofocus
     />
     <button class="btn primary" disabled={!brief}>Aggiungi</button>
   </form>
 
+  <div class="opts">
+    <div class="opt">
+      <span>Edizione</span>
+      <SetPicker
+        {sets}
+        value={setId}
+        recent={settings.recentSets}
+        placeholder="Qualsiasi"
+        noneLabel="Qualsiasi (scrivo sigla e numero)"
+        active
+        onchange={(v) => (setId = v)}
+      />
+    </div>
+    <label class="opt">
+      <span>Lingua delle copie</span>
+      <select class="chip" bind:value={copyLang}>
+        {#each Object.entries(LANG_LABELS) as [code, label] (code)}<option value={code}>{label}</option>{/each}
+      </select>
+    </label>
+  </div>
+
+  <p class="note">
+    {setId
+      ? `Edizione fissa: scrivi solo il numero e premi Invio, il campo si svuota per la carta successiva.`
+      : 'Scrivi quello che vedi in basso sulla carta. Per una pila della stessa edizione, sceglila sopra e scrivi solo i numeri.'}
+  </p>
+
   {#if setError}
     <p class="note warn">Non riesco a caricare questa edizione. Controlla la connessione.</p>
-  {:else if text && !parsed}
-    <p class="note">Scrivi solo il numero: 25, 025, 25/165, TG25/TG30 o SWSH302.</p>
-  {:else if parsed && set && !brief && looking}
-    <p class="note" aria-busy="true">Cerco {parsed.number} nelle altre edizioni…</p>
-  {:else if parsed && set && !brief && elsewhere.length > 1}
-    <section class="choose">
-      <p class="note">{parsed.number} non è in {set.name}. L’ho trovato in:</p>
-      {#each elsewhere as c (c.id)}
-        <button type="button" class="chip" onclick={() => (picked = c)}>{c.name} · {sets.get(c.id.slice(0, c.id.lastIndexOf('-')))?.name ?? c.id}</button>
-      {/each}
+  {:else if text.trim() && setId && !parsed}
+    <p class="note">Con l’edizione fissa scrivi solo il numero: 25, 025, 25/165, TG25.</p>
+  {:else if text.trim() && !brief && looking}
+    <p class="note" aria-busy="true">Cerco…</p>
+  {:else if found.length > 1 && !brief}
+    <section class="choose" aria-label="Carte trovate">
+      <p class="note">Ho trovato {found.length} carte: quale?</p>
+      <ul>
+        {#each found as c (c.id)}
+          {@const s = sets.get(setIdOf(c.id))}
+          <li>
+            <button type="button" onclick={() => (picked = c)}>
+              <span class="mini">{#if c.image}<img src={`${c.image}/low.webp`} alt="" loading="lazy" />{/if}</span>
+              <span class="ctxt">
+                <strong>{c.name}</strong>
+                <span class="num">{s?.name ?? setIdOf(c.id)} · {c.localId}{isDigits(c.localId) && s?.cardCount?.official ? `/${s.cardCount.official}` : ''}</span>
+              </span>
+            </button>
+          </li>
+        {/each}
+      </ul>
     </section>
-  {:else if parsed && set && !brief}
-    <p class="note warn">Nessuna carta con il numero {parsed.number} in {set.name}.</p>
-  {/if}
-  {#if picked && !inSet}
-    <p class="note">Trovata in {briefSet?.name ?? 'un’altra edizione'}.</p>
+  {:else if text.trim() && !brief && (looked || (setId && parsed && set))}
+    <p class="note warn">Nessuna carta trovata{setId && set ? ` con il numero ${parsed?.number} in ${set.name}` : ''}.</p>
   {/if}
   {#if totalMismatch}
     <p class="note warn">Questa edizione ha {totalMismatch} carte, non {parsed?.total}: controlla l’edizione scelta.</p>
@@ -218,6 +269,7 @@
         {:else if variants.length === 1}
           <span class="muted small">{variants[0].label}</span>
         {/if}
+        {#if found.length > 1}<button type="button" class="link" onclick={() => (picked = null)}>Non è questa</button>{/if}
       </span>
     </section>
   {/if}
@@ -240,36 +292,11 @@
 </div>
 
 <style>
-  .choose {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
   .pad {
-    padding: 12px 16px 0;
+    padding: 8px 16px 24px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
-  }
-
-  .selects {
-    display: grid;
-    gap: 10px;
-  }
-
-  .sel {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    font-size: 13px;
-    color: var(--muted);
-  }
-
-  .sel .chip {
-    width: 100%;
-    min-height: 48px;
-    font-size: 15px;
+    gap: 14px;
   }
 
   .number {
@@ -287,20 +314,44 @@
     background: var(--surface);
     color: var(--text);
     font-family: var(--font-display);
-    font-size: 26px;
+    font-size: 24px;
     font-weight: 800;
+    letter-spacing: 0.02em;
     font-variant-numeric: tabular-nums;
   }
 
-  .number input:disabled {
-    border-color: var(--line);
-    font-size: 16px;
-    font-family: var(--font-body);
-    font-weight: 400;
+  .number input::placeholder {
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--muted);
   }
 
   .number .btn {
     min-height: 64px;
+  }
+
+  /* Set and language side by side, same height, labels above. */
+  .opts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .opt {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .opt :global(.chip) {
+    width: 100%;
+    max-width: none;
+    min-height: 48px;
+    font-size: 14px;
+    justify-content: space-between;
   }
 
   .note {
@@ -311,6 +362,57 @@
 
   .warn {
     color: var(--danger);
+  }
+
+  .choose ul {
+    list-style: none;
+    margin: 8px 0 0;
+    padding: 0;
+    border-radius: var(--r-card);
+    background: var(--surface);
+    overflow: hidden;
+  }
+
+  .choose button {
+    width: 100%;
+    min-height: 60px;
+    padding: 6px 12px;
+    border: 0;
+    border-bottom: 1px solid var(--line);
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+  }
+
+  .mini {
+    width: 36px;
+    height: 50px;
+    flex-shrink: 0;
+    border-radius: 5px;
+    overflow: hidden;
+    background: var(--surface-2);
+  }
+
+  .mini img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .ctxt {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .ctxt span {
+    font-size: 12px;
+    color: var(--muted);
   }
 
   .preview {
@@ -388,6 +490,7 @@
   }
 
   .link {
+    align-self: flex-start;
     min-height: 44px;
     padding: 0 12px;
     border: 0;
