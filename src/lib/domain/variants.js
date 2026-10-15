@@ -1,6 +1,6 @@
 // @ts-check
 // Print variants (finish, stamps, special foils) from TCGdex `variants_detailed`.
-// Pure helpers: they will move to src/lib/domain/ in Phase 3.
+// Pure helpers shared by the app and the scan prototype (lab/scan).
 
 /**
  * Reprint sets whose cards keep the number of the original print ("69/132"),

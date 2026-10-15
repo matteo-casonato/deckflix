@@ -10,11 +10,14 @@
     Image01Icon,
     LanguageSkillIcon,
     Analytics01Icon,
+    LockIcon,
   } from '@hugeicons/core-free-icons';
   import Icon from '../lib/ui/Icon.svelte';
   import Avatar from '../lib/ui/Avatar.svelte';
   import ConfirmDialog from '../lib/ui/ConfirmDialog.svelte';
   import { account } from '../lib/stores/account.svelte.js';
+  import { setSetting, settings } from '../lib/stores/settings.svelte.js';
+  import { LANG_LABELS } from '../lib/domain/cards.js';
   import { backupState, relativeTime } from '../lib/domain/backup.js';
   import { backupNow, isConfigured, restoreFromDrive, signOut } from '../lib/sync/sync.js';
 
@@ -113,10 +116,13 @@
 
 <h2 class="section">App</h2>
 <section class="card list">
-  <div class="row disabled">
+  <label class="row">
     <span class="ico"><Icon icon={LanguageSkillIcon} /></span>
-    <span class="text"><strong>Lingua delle carte</strong><span>Italiano · Fase 3</span></span>
-  </div>
+    <span class="text"><strong>Lingua delle carte</strong><span>Nomi, ricerca e immagini</span></span>
+    <select class="chip" value={settings.cardLang} onchange={(e) => setSetting('cardLang', e.currentTarget.value)}>
+      {#each Object.entries(LANG_LABELS) as [code, label] (code)}<option value={code}>{label}</option>{/each}
+    </select>
+  </label>
   <div class="row disabled">
     <span class="ico"><Icon icon={Analytics01Icon} /></span>
     <span class="text"><strong>Prezzo di riferimento</strong><span>Trend Cardmarket · Fase 7</span></span>
@@ -124,6 +130,19 @@
   <div class="row disabled">
     <span class="ico"><Icon icon={Image01Icon} /></span>
     <span class="text"><strong>Cache immagini</strong><span>Fase 4</span></span>
+  </div>
+  <div class="row static">
+    <span class="ico"><Icon icon={LockIcon} /></span>
+    <span class="text">
+      <strong>Dati protetti sul telefono</strong>
+      <span>
+        {settings.persisted === null
+          ? 'Verifica in corso…'
+          : settings.persisted
+            ? 'Sì: il browser non li cancella quando manca spazio'
+            : 'No: se manca spazio il browser potrebbe cancellarli. Installare l’app (Fase 4) aiuta.'}
+      </span>
+    </span>
   </div>
 </section>
 
@@ -293,6 +312,14 @@
     background: transparent;
     border-radius: 28px;
     cursor: pointer;
+  }
+
+  .row.static {
+    cursor: default;
+  }
+
+  .row .chip {
+    max-width: 130px;
   }
 
   .row.disabled,

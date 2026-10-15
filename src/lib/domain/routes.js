@@ -2,14 +2,16 @@
 // Hash routes of the app and a pure matcher, so routing can be unit tested.
 
 /**
- * @typedef {'home' | 'collection' | 'scan' | 'deck' | 'profile' | 'set' | 'card' | 'notFound'} RouteName
- * @typedef {{ name: RouteName, params: Record<string, string> }} Route
+ * @typedef {'home' | 'collection' | 'search' | 'quick' | 'scan' | 'deck' | 'profile' | 'set' | 'card' | 'notFound'} RouteName
+ * @typedef {{ name: RouteName, params: Record<string, string>, query: Record<string, string> }} Route
  */
 
 /** Patterns in priority order. `:name` segments become params. */
 export const ROUTES = /** @type {const} */ ([
   ['home', '/home'],
   ['collection', '/collection'],
+  ['search', '/search'],
+  ['quick', '/quick'],
   ['scan', '/scan'],
   ['deck', '/deck'],
   ['profile', '/profile'],
@@ -20,6 +22,20 @@ export const ROUTES = /** @type {const} */ ([
 /** Routes shown full screen, without the navigation bar. */
 export const FULL_SCREEN = new Set(['scan']);
 
+/** Navigation bar item highlighted for each route. */
+export const NAV_SECTION = /** @type {Record<RouteName, string>} */ ({
+  home: 'home',
+  collection: 'collection',
+  search: 'collection',
+  quick: 'collection',
+  set: 'collection',
+  card: 'collection',
+  scan: 'scan',
+  deck: 'deck',
+  profile: 'profile',
+  notFound: '',
+});
+
 /**
  * Maps a location hash ("#/card/it/sv03.5-025") to a route.
  * An empty hash is the home page; unknown paths give `notFound`.
@@ -27,9 +43,10 @@ export const FULL_SCREEN = new Set(['scan']);
  * @returns {Route}
  */
 export function matchRoute(hash) {
-  const path = hash.replace(/^#/, '').split('?')[0] || '/home';
-  const parts = path.split('/').filter(Boolean);
-  if (!parts.length) return { name: 'home', params: {} };
+  const [rawPath, rawQuery = ''] = hash.replace(/^#/, '').split('?');
+  const query = Object.fromEntries(new URLSearchParams(rawQuery));
+  const parts = (rawPath || '/home').split('/').filter(Boolean);
+  if (!parts.length) return { name: 'home', params: {}, query };
   for (const [name, pattern] of ROUTES) {
     const segs = pattern.split('/').filter(Boolean);
     if (segs.length !== parts.length) continue;
@@ -42,17 +59,22 @@ export function matchRoute(hash) {
       }
       return seg === parts[i];
     });
-    if (ok) return { name, params };
+    if (ok) return { name, params, query };
   }
-  return { name: 'notFound', params: {} };
+  return { name: 'notFound', params: {}, query };
 }
 
 /**
- * Builds a hash for a route, encoding params.
+ * Builds a hash for a route, encoding params and an optional query.
  * @param {RouteName} name
  * @param {Record<string, string>} [params]
+ * @param {Record<string, string | undefined | null>} [query] empty values are left out
  */
-export function hrefFor(name, params = {}) {
+export function hrefFor(name, params = {}, query = {}) {
   const pattern = ROUTES.find(([n]) => n === name)?.[1] ?? '/home';
-  return `#${pattern.replace(/:(\w+)/g, (_, key) => encodeURIComponent(params[key] ?? ''))}`;
+  const path = pattern.replace(/:(\w+)/g, (_, key) => encodeURIComponent(params[key] ?? ''));
+  const qs = new URLSearchParams(
+    /** @type {[string, string][]} */ (Object.entries(query).filter(([, v]) => v != null && v !== '')),
+  ).toString();
+  return `#${path}${qs ? `?${qs}` : ''}`;
 }

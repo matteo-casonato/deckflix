@@ -114,12 +114,32 @@ export const getSet = (lang, setId) => getCachedPath(`/${lang}/sets/${encodeURIC
 /** @param {string} lang */
 export const getSeries = (lang) => getCachedPath(`/${lang}/series`);
 
+/** Results per page in searches. */
+export const PAGE_SIZE = 60;
+
 /**
- * Cards whose name contains `name` (TCGdex filter syntax: https://tcgdex.dev/rest/filtering-sorting-pagination).
+ * Card search with server-side filters (https://tcgdex.dev/rest/filtering-sorting-pagination):
+ * name contains `name`; set, type and rarity are exact. Results are card briefs
+ * ({ id, localId, name, image? }).
  * @param {string} lang
- * @param {string} name
+ * @param {{ name?: string, setId?: string, type?: string, rarity?: string, page?: number }} f
  */
-export const searchCards = (lang, name) => getCachedPath(`/${lang}/cards?name=${encodeURIComponent(name)}`, CARD_TTL);
+export function searchCards(lang, { name, setId, type, rarity, page = 1 }) {
+  const p = new URLSearchParams();
+  if (name) p.set('name', name);
+  if (setId) p.set('set.id', `eq:${setId}`);
+  if (type) p.set('types', type);
+  if (rarity) p.set('rarity', `eq:${rarity}`);
+  p.set('pagination:page', String(page));
+  p.set('pagination:itemsPerPage', String(PAGE_SIZE));
+  return getCachedPath(`/${lang}/cards?${p}`, CARD_TTL);
+}
+
+/** @param {string} lang */
+export const getTypes = (lang) => getCachedPath(`/${lang}/types`);
+
+/** @param {string} lang */
+export const getRarities = (lang) => getCachedPath(`/${lang}/rarities`);
 
 /**
  * Image URL of a card, or null when TCGdex has none (SPEC § 2: fall back to English).

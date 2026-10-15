@@ -6,7 +6,13 @@
   import { router } from './lib/router.svelte.js';
   import { account } from './lib/stores/account.svelte.js';
   import { backupNow, initSync } from './lib/sync/sync.js';
-  import { FULL_SCREEN } from './lib/domain/routes.js';
+  import { FULL_SCREEN, NAV_SECTION } from './lib/domain/routes.js';
+  import { loadSettings } from './lib/stores/settings.svelte.js';
+  import Toast from './lib/ui/Toast.svelte';
+  import Collection from './screens/Collection.svelte';
+  import Search from './screens/Search.svelte';
+  import QuickAdd from './screens/QuickAdd.svelte';
+  import SetScreen from './screens/Set.svelte';
   import Nav from './lib/ui/Nav.svelte';
   import Home from './screens/Home.svelte';
   import Placeholder from './screens/Placeholder.svelte';
@@ -18,6 +24,7 @@
   import Choice from './screens/Choice.svelte';
 
   onMount(() => {
+    loadSettings();
     initSync();
   });
 
@@ -48,12 +55,11 @@
   {#if route.name === 'home'}
     <Home />
   {:else if route.name === 'collection'}
-    <Placeholder
-      title="Le mie carte"
-      emptyTitle="Nessuna carta ancora"
-      emptyText="Scansiona o usa l'inserimento rapido per riempire la collezione."
-      phase="Fase 3"
-    />
+    <Collection query={route.query} />
+  {:else if route.name === 'search'}
+    <Search query={route.query} />
+  {:else if route.name === 'quick'}
+    <QuickAdd query={route.query} />
   {:else if route.name === 'deck'}
     <Placeholder
       title="Deck"
@@ -70,15 +76,18 @@
       <Card lang={route.params.lang} id={route.params.id} />
     {/key}
   {:else if route.name === 'set'}
-    <Placeholder title="Edizione" emptyTitle="Raccoglitore dell'edizione" emptyText={route.params.id} phase="Fase 3" />
+    {#key route.params.id}
+      <SetScreen id={route.params.id} query={route.query} />
+    {/key}
   {:else}
     <Placeholder title="Pagina non trovata" emptyTitle="Qui non c'è niente" emptyText="Torna alla Home dalla barra in basso." phase="—" />
   {/if}
 </main>
 
 {#if showNav}
-  <Nav active={route.name} />
+  <Nav active={NAV_SECTION[route.name]} />
 {/if}
+<Toast />
 {/if}
 
 <style>

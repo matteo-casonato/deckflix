@@ -1,0 +1,409 @@
+<script>
+  // @ts-check
+  // Search (docs/mockups/Cerca.html): all cards or only mine, filters, ownership, add to
+  // collection or wishlist. Offline it searches the cards saved on the phone.
+  import { liveQuery } from 'dexie';
+  import { Add01Icon, FavouriteIcon, Search01Icon, Tick02Icon } from '@hugeicons/core-free-icons';
+  import { db } from '../lib/db.js';
+  import { PAGE_SIZE, getRarities, getTypes, searchCards } from '../lib/api/tcgdex.js';
+  import { settings } from '../lib/stores/settings.svelte.js';
+  import { cachedCards, prefetchCards, setsMap } from '../lib/data/catalog.js';
+  import { addOneCopy, toggleWish } from '../lib/data/actions.js';
+  import { LANG_LABELS, setIdOf } from '../lib/domain/cards.js';
+  import { hrefFor } from '../lib/domain/routes.js';
+  import { replace } from '../lib/router.svelte.js';
+  import BackHeader from '../lib/ui/BackHeader.svelte';
+  import Segmented from '../lib/ui/Segmented.svelte';
+  import Icon from '../lib/ui/Icon.svelte';
+
+  /** @type {{ query: Record<string, string> }} */
+  let { query } = $props();
+
+  // Local copy of the text, so typing doesn't wait for the URL.
+  let text = $state(query.q ?? '');
+  const mine = $derived(query.mine === '1');
+  const lang = $derived(query.lang || settings.cardLang);
+  const filters = $derived({ setId: query.set ?? '', type: query.type ?? '', rarity: query.rarity ?? '' });
+
+  /** @param {Record<string, string | null>} patch */
+  function update(patch) {
+    replace(hrefFor('search', {}, { q: text.trim() || null, mine: mine ? '1' : null, lang: query.lang, ...filters, set: filters.setId, ...patch, setId: undefined }));
+  }
+
+  /** @type {ReturnType<typeof setTimeout> | undefined} */
+  let debounce;
+  function onInput() {
+    clearTimeout(debounce);
+    debounce = setTimeout(() => update({}), 350);
+  }
+
+  // Filter options.
+  /** @type {Map<string, any>} */
+  let sets = $state(new Map());
+  /** @type {string[]} */
+  let types = $state([]);
+  /** @type {string[]} */
+  let rarities = $state([]);
+  $effect(() => {
+    const l = lang;
+    setsMap(l).then((m) => (sets = m));
+    getTypes(l).then((r) => (types = r.data)).catch(() => {});
+    getRarities(l).then((r) => (rarities = r.data)).catch(() => {});
+  });
+  const setOptions = $derived([...sets.values()].reverse());
+
+  // Ownership, live.
+  const owned = liveQuery(async () => {
+    /** @type {Map<string, number>} */
+    const m = new Map();
+    for (const e of await db.collection.toArray()) m.set(e.cardId, (m.get(e.cardId) ?? 0) + e.qty);
+    return m;
+  });
+  const wished = liveQuery(async () => new Set((await db.wishlist.toArray()).map((w) => w.cardId)));
+
+  // Results.
+  /** @type {{ id: string, localId: string, name: string, image?: string }[]} */
+  let results = $state([]);
+  let page = $state(1);
+  let more = $state(false);
+  let loading = $state(false);
+  /** @type {null | 'offline' | 'error'} */
+  let problem = $state(null);
+
+  const q = $derived((query.q ?? '').trim());
+  const canSearch = $derived(q.length >= 2 || !!filters.setId || mine);
+
+  /** Only mine: filter the collection by name (from cached cards), set, type and rarity. */
+  async function searchMine() {
+    const ids = [...($owned?.keys() ?? [])];
+    await prefetchCards(ids, lang);
+    const cards = await cachedCards(ids, lang);
+    const needle = q.toLowerCase();
+    return ids
+      .map((id) => cards.get(id) ?? { id, localId: id.slice(setIdOf(id).length + 1), name: id })
+      .filter((c) => !needle || c.name.toLowerCase().includes(needle))
+      .filter((c) => !filters.setId || setIdOf(c.id) === filters.setId)
+      .filter((c) => !filters.type || (c.types ?? []).includes(filters.type))
+      .filter((c) => !filters.rarity || c.rarity === filters.rarity)
+      .sort((a, b) => a.id.localeCompare(b.id, 'it', { numeric: true }));
+  }
+
+  /** Offline fallback: cards saved on the phone whose name matches. */
+  async function searchCache() {
+    const needle = q.toLowerCase();
+    const rows = await db.cardCache.where('[lang+cardId]').between([lang, ''], [lang, '￿']).toArray();
+    return rows.map((r) => r.data).filter((c) => c.name?.toLowerCase().includes(needle) && (!filters.setId || setIdOf(c.id) === filters.setId));
+  }
+
+  /** @param {number} p */
+  async function run(p) {
+    if (!canSearch) {
+      results = [];
+      return;
+    }
+    loading = true;
+    problem = null;
+    try {
+      if (mine) {
+        results = await searchMine();
+        more = false;
+      } else {
+        const res = await searchCards(lang, { name: q, ...filters, page: p });
+        results = p === 1 ? res.data : [...results, ...res.data];
+        more = res.data.length === PAGE_SIZE;
+        page = p;
+      }
+    } catch (err) {
+      const offline = !navigator.onLine || (err instanceof Error && 'kind' in err && err.kind === 'offline');
+      problem = offline ? 'offline' : 'error';
+      results = offline ? await searchCache() : [];
+      more = false;
+    } finally {
+      loading = false;
+    }
+  }
+
+  $effect(() => {
+    // Re-run when the query in the URL changes.
+    void [q, mine, lang, filters.setId, filters.type, filters.rarity, $owned?.size];
+    run(1);
+  });
+
+  /** @param {{ id: string, localId: string }} c */
+  function subtitle(c) {
+    const set = sets.get(setIdOf(c.id));
+    return `${set?.name ?? setIdOf(c.id)} · ${c.localId}${set?.cardCount?.official ? `/${set.cardCount.official}` : ''}`;
+  }
+
+  const ownedCount = $derived(results.filter((r) => ($owned?.get(r.id) ?? 0) > 0).length);
+</script>
+
+<BackHeader title="Cerca" big fallback={hrefFor('collection')} />
+
+<div class="pad">
+  <label class="field">
+    <Icon icon={Search01Icon} size={20} />
+    <span class="visually-hidden">Cerca una carta</span>
+    <!-- svelte-ignore a11y_autofocus -->
+    <input type="search" placeholder="Nome della carta" bind:value={text} oninput={onInput} autofocus enterkeyhint="search" />
+  </label>
+
+  <Segmented
+    label="Dove cercare"
+    value={mine ? 'mine' : 'all'}
+    options={[
+      { value: 'all', label: 'Tutte le carte' },
+      { value: 'mine', label: 'Solo le mie' },
+    ]}
+    onchange={(v) => update({ mine: v === 'mine' ? '1' : null })}
+  />
+
+  <div class="chips" role="group" aria-label="Filtri">
+    <select class="chip" class:on={!!filters.setId} aria-label="Edizione" value={filters.setId} onchange={(e) => update({ set: e.currentTarget.value || null })}>
+      <option value="">Edizione</option>
+      {#each setOptions as s (s.id)}<option value={s.id}>{s.name}</option>{/each}
+    </select>
+    <select class="chip" class:on={!!filters.type} aria-label="Tipo" value={filters.type} onchange={(e) => update({ type: e.currentTarget.value || null })}>
+      <option value="">Tipo</option>
+      {#each types as t (t)}<option value={t}>{t}</option>{/each}
+    </select>
+    <select class="chip" class:on={!!filters.rarity} aria-label="Rarità" value={filters.rarity} onchange={(e) => update({ rarity: e.currentTarget.value || null })}>
+      <option value="">Rarità</option>
+      {#each rarities as r (r)}<option value={r}>{r}</option>{/each}
+    </select>
+    <select class="chip" class:on={!!query.lang} aria-label="Lingua" value={lang} onchange={(e) => update({ lang: e.currentTarget.value === settings.cardLang ? null : e.currentTarget.value })}>
+      {#each Object.entries(LANG_LABELS) as [code, label] (code)}<option value={code}>{label}</option>{/each}
+    </select>
+  </div>
+
+  {#if problem === 'offline'}
+    <p class="note">Sei offline: cerco tra le carte salvate sul telefono.</p>
+  {:else if problem === 'error'}
+    <p class="note">TCGdex non risponde. <button class="link" onclick={() => run(1)}>Riprova</button></p>
+  {/if}
+
+  {#if canSearch && !loading}
+    <p class="count num">
+      {results.length}{more ? '+' : ''} risultati · {ownedCount} {ownedCount === 1 ? 'posseduto' : 'posseduti'}
+    </p>
+  {/if}
+</div>
+
+{#if !canSearch}
+  <p class="hint">Scrivi almeno due lettere del nome, oppure scegli un’edizione.</p>
+{:else if loading && results.length === 0}
+  <p class="hint" aria-busy="true">Cerco…</p>
+{:else if results.length === 0}
+  <section class="empty card">
+    <p>Nessuna carta trovata.</p>
+    {#if mine}
+      <button class="btn" onclick={() => update({ mine: null })}>Cerca in tutte le carte</button>
+    {:else if filters.setId || filters.type || filters.rarity}
+      <button class="btn" onclick={() => update({ set: null, type: null, rarity: null })}>Togli i filtri</button>
+    {/if}
+  </section>
+{:else}
+  <ul class="results">
+    {#each results as c (c.id)}
+      {@const qty = $owned?.get(c.id) ?? 0}
+      {@const wish = $wished?.has(c.id) ?? false}
+      <li class="row card">
+        <a class="main" href={hrefFor('card', { lang, id: c.id })}>
+          {#if c.image}
+            <img class="thumb" src={`${c.image}/low.webp`} alt="" loading="lazy" />
+          {:else}
+            <span class="thumb dashed"></span>
+          {/if}
+          <span class="txt">
+            <strong>{c.name}</strong>
+            <span class="sub num">{subtitle(c)}</span>
+            {#if qty > 0}
+              <span class="badge yes"><Icon icon={Tick02Icon} size={12} /> Posseduta ×{qty}</span>
+            {:else}
+              <span class="badge">Non posseduta</span>
+            {/if}
+          </span>
+        </a>
+        <button class="icon" class:wish aria-pressed={wish} aria-label={wish ? 'Togli dai desideri' : 'Aggiungi ai desideri'} onclick={() => toggleWish(c.id, c.name)}>
+          <Icon icon={FavouriteIcon} size={20} />
+        </button>
+        <button class="icon add" aria-label="Aggiungi alla collezione" onclick={() => addOneCopy({ cardId: c.id, lang, name: c.name })}>
+          <Icon icon={Add01Icon} size={20} />
+        </button>
+      </li>
+    {/each}
+  </ul>
+  {#if more}
+    <div class="pad"><button class="btn wide" disabled={loading} onclick={() => run(page + 1)}>Mostra altri</button></div>
+  {/if}
+{/if}
+
+<style>
+  .pad {
+    padding: 12px 16px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .field {
+    min-height: 56px;
+    padding: 0 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-radius: 36px;
+    background: var(--surface);
+    border: 1.5px solid var(--accent);
+    color: var(--muted);
+  }
+
+  .field input {
+    flex: 1;
+    min-height: 44px;
+    border: 0;
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    font-size: 16px;
+    outline: none;
+  }
+
+  .note,
+  .count,
+  .hint {
+    margin: 0;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .hint {
+    padding: 24px 20px;
+    text-align: center;
+    font-size: 14px;
+  }
+
+  .link {
+    border: 0;
+    background: none;
+    color: var(--accent);
+    font: inherit;
+    text-decoration: underline;
+    cursor: pointer;
+    min-height: 32px;
+  }
+
+  .results {
+    list-style: none;
+    margin: 0;
+    padding: 12px 16px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .row {
+    padding: 8px 10px 8px 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: var(--r-card);
+    background: var(--surface);
+    border: 1px solid var(--line);
+  }
+
+  .main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--text);
+    text-decoration: none;
+  }
+
+  .thumb {
+    width: 44px;
+    aspect-ratio: 63 / 88;
+    border-radius: 8px;
+    background: var(--surface-2);
+    object-fit: cover;
+    flex-shrink: 0;
+  }
+
+  .thumb.dashed {
+    background: transparent;
+    border: 1.5px dashed var(--line-2);
+  }
+
+  .txt {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+  }
+
+  .txt strong {
+    font-size: 15px;
+  }
+
+  .sub {
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .badge {
+    align-self: flex-start;
+    height: 22px;
+    padding: 0 8px;
+    border-radius: 11px;
+    background: var(--surface-2);
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .badge.yes {
+    background: color-mix(in srgb, var(--success) 16%, var(--surface));
+    color: var(--success);
+  }
+
+  .icon {
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+    border: 0;
+    border-radius: 26px;
+    background: var(--surface-2);
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+
+  .icon.wish {
+    color: var(--danger);
+  }
+
+  .icon.add {
+    background: var(--text);
+    color: var(--on-accent);
+  }
+
+  .empty {
+    margin: 16px;
+    padding: 20px;
+    border-radius: var(--r-section);
+    background: var(--surface);
+    text-align: center;
+    color: var(--muted);
+  }
+
+  .wide {
+    width: 100%;
+  }
+</style>

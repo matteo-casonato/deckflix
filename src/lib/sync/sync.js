@@ -16,6 +16,7 @@ import {
   summarize,
 } from '../domain/backup.js';
 import { createDrive } from './drive.js';
+import { loadSettings } from '../stores/settings.svelte.js';
 import { AuthError, getToken, isConfigured, requestToken, signOut as revoke } from './google-auth.js';
 
 export const DEBOUNCE_MS = 10_000;
@@ -313,6 +314,7 @@ async function importBackup(backup, remoteModifiedTime) {
   account.pending = false;
   account.lastBackupAt = Date.parse(remoteModifiedTime) || Date.now();
   await setSetting('lastBackupAt', account.lastBackupAt);
+  await loadSettings();
 }
 
 /**

@@ -4,7 +4,7 @@
 import { createWorker, PSM } from 'tesseract.js';
 import { parseCollectorNumber, parseSetCode, detectLanguage } from './recognize.js';
 import { findReprints, findWithCorrections, getCard, knownTotals } from './tcgdex.js';
-import { applyStampSuggestion, guessVariant, listVariants } from './variants.js';
+import { applyStampSuggestion, guessVariant, listVariants } from '../../src/lib/domain/variants.js';
 import {
   CARD_H, CARD_W, LEARNED_THRESHOLD, STAMP_H, STAMP_W, cropFeatures, features, findStamp, templateFromJSON, templateToJSON,
 } from './stamp.js';
@@ -458,7 +458,7 @@ let current = null;
 /** @type {HTMLCanvasElement | null} */
 let lastCard = null;
 let ocrText = '';
-/** @type {import('./variants.js').VariantOption[]} */
+/** @type {import('../../src/lib/domain/variants.js').VariantOption[]} */
 let variantOptions = [];
 /** @type {string | null} */
 let chosenVariant = null;

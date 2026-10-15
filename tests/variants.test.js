@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applyStampSuggestion, guessVariant, listVariants, variantPrice } from '../lab/scan/variants.js';
+import { applyStampSuggestion, guessVariant, listVariants, variantPrice } from '../src/lib/domain/variants.js';
 
 // Trimmed from the real TCGdex response for /it/cards/sv10-049 (Gyarados di Misty).
 const gyarados = {
