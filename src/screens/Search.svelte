@@ -18,6 +18,7 @@
   import BackHeader from '../lib/ui/BackHeader.svelte';
   import Segmented from '../lib/ui/Segmented.svelte';
   import Icon from '../lib/ui/Icon.svelte';
+  import SetPicker from '../lib/ui/SetPicker.svelte';
 
   /** @type {{ query: Record<string, string> }} */
   let { query } = $props();
@@ -77,7 +78,6 @@
     getTypes(l).then((r) => (types = r.data)).catch(() => {});
     getRarities(l).then((r) => (rarities = r.data)).catch(() => {});
   });
-  const setOptions = $derived([...sets.values()].reverse());
 
   // Ownership, live.
   const owned = liveQuery(async () => {
@@ -195,10 +195,7 @@
 
   <div class="chips" role="group" aria-label="Filtri">
     <button class="chip" aria-pressed={standard} onclick={() => update({ standard: standard ? (deckId ? '0' : null) : '1' })}>Solo Standard</button>
-    <select class="chip" class:on={!!filters.setId} aria-label="Edizione" value={filters.setId} onchange={(e) => update({ set: e.currentTarget.value || null })}>
-      <option value="">Edizione</option>
-      {#each setOptions as s (s.id)}<option value={s.id}>{s.name}</option>{/each}
-    </select>
+    <SetPicker {sets} value={filters.setId} placeholder="Edizione" noneLabel="Tutte le edizioni" active recent={settings.recentSets} onchange={(v) => update({ set: v || null })} />
     <select class="chip" class:on={!!filters.type} aria-label="Tipo" value={filters.type} onchange={(e) => update({ type: e.currentTarget.value || null })}>
       <option value="">Tipo</option>
       {#each types as t (t)}<option value={t}>{t}</option>{/each}

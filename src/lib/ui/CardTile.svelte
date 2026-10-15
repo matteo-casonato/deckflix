@@ -6,13 +6,27 @@
   /** @type {{ name: string, localId: string, image?: string | null, qty?: number, badge?: string | null, href?: string, price?: string | null, missing?: boolean, ghost?: boolean }} */
   let { name, localId, image = null, qty = 0, badge = null, href, price = null, missing = false, ghost = false } = $props();
 
-  let failed = $state(false);
+  // Fallbacks when the thumbnail doesn't load. Images are cached as opaque responses (CORS
+  // headers on TCGdex assets are sometimes broken), so a missing image once cached as an
+  // error would never come back: retry past the cache, then English, then the large image.
+  const sources = $derived(
+    image
+      ? [`${image}/low.webp`, `${image}/low.webp?retry=1`, ...(/\/(it|fr|de|es|pt)\//.test(image) ? [`${image.replace(/\/(it|fr|de|es|pt)\//, '/en/')}/low.webp`] : []), `${image}/high.webp`]
+      : [],
+  );
+  let attempt = $state(0);
+  $effect(() => {
+    void image;
+    attempt = 0;
+  });
+  const failed = $derived(attempt >= sources.length);
+  const src = $derived(sources[attempt]);
 </script>
 
 <a class="tile" {href} aria-label={`${name}, ${localId}${missing ? ', mancante' : qty ? `, ${qty} ${qty === 1 ? 'copia' : 'copie'}` : ''}`}>
   {#if missing && ghost && image && !failed}
     <span class="art missing ghost">
-      <img src={`${image}/low.webp`} alt="" loading="lazy" decoding="async" onerror={() => (failed = true)} />
+      <img {src} alt="" loading="lazy" decoding="async" onerror={() => attempt++} />
       <span class="no num">{localId}</span>
     </span>
     <span class="caption muted">{name}</span>
@@ -22,7 +36,7 @@
   {:else}
     <span class="art">
       {#if image && !failed}
-        <img src={`${image}/low.webp`} alt="" loading="lazy" decoding="async" onerror={() => (failed = true)} />
+        <img {src} alt="" loading="lazy" decoding="async" onerror={() => attempt++} />
       {:else}
         <span class="ph"><span>{name}</span><span class="num">{localId}</span></span>
       {/if}

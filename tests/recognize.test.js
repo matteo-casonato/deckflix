@@ -124,3 +124,20 @@ describe('set codes glued to the language code', () => {
     expect(parseSetCode('J 30C 157/128')).toBe('30C');
   });
 });
+
+describe('parseSpecialNumber', async () => {
+  const { parseSpecialNumber } = await import('../src/lib/domain/recognize.js');
+  it('reads gallery numbers, also with OCR mistakes', () => {
+    expect(parseSpecialNumber('Illus. 5ban\nTG25/TG30')?.code).toBe('TG25');
+    expect(parseSpecialNumber('T625 / TG30')?.code).toBe('TG25');
+    expect(parseSpecialNumber('GG41/GG70')?.code).toBe('GG41');
+  });
+  it('reads promo numbers without a total', () => {
+    expect(parseSpecialNumber('©2022 Pokémon\nSWSH302')?.code).toBe('SWSH302');
+    expect(parseSpecialNumber('SM 164')?.code).toBe('SM164');
+  });
+  it('ignores ordinary numbers', () => {
+    expect(parseSpecialNumber('025/165')).toBe(null);
+    expect(parseSpecialNumber('Pikachu 60 PS')).toBe(null);
+  });
+});

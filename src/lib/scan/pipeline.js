@@ -4,7 +4,7 @@ import { getCard } from '../api/tcgdex.js';
 import { settings } from '../stores/settings.svelte.js';
 import { applyStampSuggestion, guessVariant, listVariants } from '../domain/variants.js';
 import { readCard } from './ocr.js';
-import { isUncertain, knownTotals, matchCard } from './matcher.js';
+import { isUncertain, knownTotals, matchCard, matchSpecial } from './matcher.js';
 import { detectPlayStamp } from './stamp.js';
 
 /**
@@ -39,6 +39,25 @@ export async function recognize(card) {
   const totals = await totalsFor(settings.cardLang);
   const reading = await readCard(card, totals.size ? totals : null);
   const lang = reading.lang ?? settings.cardLang;
+  if (!reading.num && reading.special) {
+    const candidates = await matchSpecial(reading.special.code, lang, reading.nameText).catch(() => []);
+    let stamp = null;
+    try {
+      stamp = detectPlayStamp(card);
+    } catch {
+      // Only a suggestion.
+    }
+    return {
+      status: candidates.length ? 'found' : 'nomatch',
+      reading,
+      lang,
+      candidates,
+      corrected: null,
+      uncertain: isUncertain(candidates),
+      stamp,
+      ms: performance.now() - t0,
+    };
+  }
   if (!reading.num) {
     return { status: 'unread', reading, lang, candidates: [], corrected: null, uncertain: true, stamp: null, ms: performance.now() - t0 };
   }

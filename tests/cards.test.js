@@ -23,9 +23,11 @@ describe('setIdOf', () => {
 
 describe('parseQuickNumber', () => {
   it('accepts 25, 025 and 25/165 as the same card', () => {
-    expect(parseQuickNumber('25')).toEqual({ number: 25, total: null });
-    expect(parseQuickNumber('025')).toEqual({ number: 25, total: null });
-    expect(parseQuickNumber(' 25 / 165 ')).toEqual({ number: 25, total: 165 });
+    expect(parseQuickNumber('25')).toEqual({ number: '25', total: null });
+    expect(parseQuickNumber('025')).toEqual({ number: '025', total: null });
+    expect(parseQuickNumber('tg25/tg30')).toEqual({ number: 'TG25', total: null });
+    expect(parseQuickNumber('swsh302')).toEqual({ number: 'SWSH302', total: null });
+    expect(parseQuickNumber(' 25 / 165 ')).toEqual({ number: '25', total: 165 });
   });
 
   it('rejects anything else', () => {
@@ -39,6 +41,8 @@ describe('cardByNumber', () => {
   const set = fixture('it/sets/sv03.5');
   it('finds the card in a real set by number', () => {
     expect(cardByNumber(set.cards, 25)?.name).toBe('Pikachu');
+    expect(cardByNumber(set.cards, '025')?.name).toBe('Pikachu');
+    expect(cardByNumber([{ localId: 'TG05', name: 'Gardevoir' }], 'tg5')?.name).toBe('Gardevoir');
     expect(cardByNumber(set.cards, 999)).toBeNull();
   });
 });

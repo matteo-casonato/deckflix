@@ -196,3 +196,26 @@ export function setCodeMatches(read, abbreviation) {
   if (!read || !abbreviation) return false;
   return read === abbreviation || (read.length > abbreviation.length && read.length <= abbreviation.length + 2 && read.startsWith(abbreviation));
 }
+
+/**
+ * Collector numbers with letters, printed on gallery and promo cards: "TG25/TG30",
+ * "GG41/GG70", "RC5/RC32", "SV107/SV122", and promos without a total: "SWSH302", "SM164",
+ * "XY39", "BW95". Returned as TCGdex writes them in `localId` (upper case, no spaces).
+ * @param {string} text
+ * @returns {{ code: string, raw: string } | null}
+ */
+export function parseSpecialNumber(text) {
+  const up = text.toUpperCase();
+  // Gallery subsets: prefix + number + "/" + prefix + total. OCR may read G as 6.
+  const gallery = up.match(/\b(T[G6]|G[G6]|RC|SV|SH)[ \t]?([0-9OODQIL|SB]{1,3})[ \t]*[/\\⁄][ \t]*(?:T[G6]|G[G6]|RC|SV|SH)[ \t]?[0-9OODQIL|SB]{1,3}/);
+  if (gallery) {
+    const digits = fixDigits(gallery[2]);
+    if (/^\d+$/.test(digits)) return { code: `${gallery[1].replace('6', 'G')}${digits}`, raw: gallery[0] };
+  }
+  const promo = up.match(/\b(SWSH|SM|XY|BW)[ \t]?([0-9OODQIL|SB]{1,3})\b/);
+  if (promo) {
+    const digits = fixDigits(promo[2]);
+    if (/^\d+$/.test(digits)) return { code: `${promo[1]}${digits}`, raw: promo[0] };
+  }
+  return null;
+}

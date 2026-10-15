@@ -60,7 +60,7 @@
       <button class="btn primary" onclick={onretry}>Riprova</button>
     </div>
   {:else if rec.status === 'nomatch'}
-    <h2>Numero {rec.reading.num?.number}/{rec.reading.num?.total} non trovato</h2>
+    <h2>Numero {rec.reading.num ? `${rec.reading.num.number}/${rec.reading.num.total}` : (rec.reading.special?.code ?? '')} non trovato</h2>
     <p class="muted">Nessuna edizione con questo totale contiene la carta. Prova di nuovo o inseriscila per numero.</p>
     <div class="actions">
       <a class="btn" href={hrefFor('quick')}>Inserimento rapido</a>

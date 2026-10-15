@@ -1,5 +1,6 @@
 // @ts-check
 // Pure helpers about cards, sets and prices used by the collection screens.
+import { normalizeNumber } from './searchQuery.js';
 import { listVariants } from './variants.js';
 
 /**
@@ -12,26 +13,29 @@ export function setIdOf(cardId) {
 }
 
 /**
- * Number typed in quick add: "25", "025", "25/165" and " 25 / 165 " are the same card.
+ * Number typed in quick add: "25", "025", "25/165", and numbers with letters as printed on
+ * gallery and promo cards: "TG25/TG30", "swsh302", "GG41".
  * @param {string} text
- * @returns {{ number: number, total: number | null } | null}
+ * @returns {{ number: string, total: number | null } | null} number upper case, as typed
  */
 export function parseQuickNumber(text) {
-  const m = text.trim().match(/^0*(\d{1,4})\s*(?:\/\s*0*(\d{1,4}))?$/);
+  const m = text.trim().match(/^#?([a-z]{0,5}\d{1,4}[a-z]?)\s*(?:\/\s*([a-z]{0,5}\d{1,4}))?$/i);
   if (!m) return null;
-  const number = Number(m[1]);
-  if (number < 1) return null;
-  return { number, total: m[2] ? Number(m[2]) : null };
+  const number = m[1].toUpperCase();
+  if (/^\d+$/.test(number) && Number(number) < 1) return null;
+  return { number, total: m[2] && /^\d+$/.test(m[2]) ? Number(m[2]) : null };
 }
 
 /**
- * Card of a set with this collector number (localId "025" or "25"; letters like "TG05" kept).
+ * Card of a set with this collector number, ignoring leading zeros and case
+ * ("25" = "025", "tg5" = "TG05").
  * @template {{ localId: string }} T
  * @param {T[]} cards
- * @param {number} number
+ * @param {string | number} number
  */
 export function cardByNumber(cards, number) {
-  return cards.find((c) => /^\d+$/.test(c.localId) && Number(c.localId) === number) ?? null;
+  const n = normalizeNumber(String(number));
+  return cards.find((c) => normalizeNumber(String(c.localId)) === n) ?? null;
 }
 
 /**

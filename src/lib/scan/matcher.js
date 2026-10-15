@@ -1,7 +1,7 @@
 // @ts-check
 // From what OCR read (number, total, set code, name text) to TCGdex cards (SPEC § 4.1).
 // Every request goes through the app's TCGdex client, so sets are cached in Dexie.
-import { getSet, getSets, searchCards } from '../api/tcgdex.js';
+import { cardsByNumber, getSet, getSets, searchCards } from '../api/tcgdex.js';
 import { confusableNumbers, nameSimilarity, setCodeMatches } from '../domain/recognize.js';
 import { CLASSIC_COLLECTION_SETS } from '../domain/variants.js';
 
@@ -159,4 +159,49 @@ export function isUncertain(c) {
   if (!best.codeMatch && best.nameScore < 0.6) return true;
   if (second && !best.codeMatch && Math.abs(best.nameScore - second.nameScore) < 0.15) return true;
   return false;
+}
+
+/**
+ * Cards with a number that has letters ("TG25", "SWSH302"), from any set: gallery subsets
+ * and promos. Several sets share gallery numbers (four "TG25"), so the name decides.
+ * @param {string} code
+ * @param {string} lang
+ * @param {string} nameText
+ * @returns {Promise<Candidate[]>}
+ */
+export async function matchSpecial(code, lang, nameText) {
+  const m = code.match(/^([A-Z]+)0*(\d+)$/);
+  const forms = m ? [...new Set([code, `${m[1]}${m[2].padStart(2, '0')}`, `${m[1]}${m[2]}`])] : [code];
+  for (const l of lang === 'en' ? ['en'] : [lang, 'en']) {
+    const [lists, sets] = await Promise.all([
+      Promise.all(forms.map((f) => cardsByNumber(l, f).then((r) => /** @type {any[]} */ (r.data)).catch(() => []))),
+      setList(l),
+    ]);
+    const byId = new Map(sets.map((s) => [s.id, s]));
+    const seen = new Set();
+    const out = lists
+      .flat()
+      .filter((c) => !/^[A-Z]/.test(c.id) && !seen.has(c.id) && seen.add(c.id))
+      .map((c) => {
+        const setId = c.id.slice(0, c.id.lastIndexOf('-'));
+        const set = byId.get(setId);
+        return {
+          id: c.id,
+          localId: c.localId,
+          name: c.name,
+          image: c.image,
+          setId,
+          setName: set?.name ?? setId,
+          setCode: null,
+          official: set?.cardCount?.official ?? 0,
+          releaseDate: set?.releaseDate ?? '',
+          lang: l,
+          nameScore: nameSimilarity(c.name, nameText),
+          codeMatch: false,
+        };
+      })
+      .sort((a, b) => b.nameScore - a.nameScore || b.releaseDate.localeCompare(a.releaseDate));
+    if (out.length) return out;
+  }
+  return [];
 }

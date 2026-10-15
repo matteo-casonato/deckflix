@@ -3,7 +3,7 @@
 // Main engine: Google on-device text recognition through Chrome's TextDetector (Play
 // Services / ML Kit on Android; needs the "Experimental Web Platform features" flag).
 // Fallback: Tesseract.js, which runs in its own Web Worker and is loaded only when needed.
-import { detectLanguage, parseCollectorNumber, parseSetCode } from '../domain/recognize.js';
+import { detectLanguage, parseCollectorNumber, parseSetCode, parseSpecialNumber } from '../domain/recognize.js';
 
 export const hasGoogleOcr = typeof window !== 'undefined' && 'TextDetector' in window;
 
@@ -17,7 +17,7 @@ const CORNERS = [
 
 /**
  * @typedef {{ number: number, total: number } | null} Num
- * @typedef {{ num: Num, setCode: string | null, lang: import('../domain/recognize.js').Lang | null, nameText: string, text: string, engine: 'google' | 'tesseract' }} Reading
+ * @typedef {{ num: Num, special?: { code: string, raw: string } | null, setCode: string | null, lang: import('../domain/recognize.js').Lang | null, nameText: string, text: string, engine: 'google' | 'tesseract' }} Reading
  */
 
 /**
@@ -50,13 +50,17 @@ async function readGoogle(card, totals) {
   const text = lines.map((l) => l.text).join('\n');
   const bottom = lines.filter((l) => l.y1 > BOTTOM_START).map((l) => l.text).join('\n');
   let num = parseCollectorNumber(bottom, totals) ?? parseCollectorNumber(text, totals);
+  // Gallery and promo cards print "TG25/TG30" or "SWSH302" instead of "025/165".
+  let special = num ? null : (parseSpecialNumber(bottom) ?? parseSpecialNumber(text));
   for (const c of CORNERS) {
-    if (num) break;
+    if (num || special) break;
     const found = await detector.detect(prepare(card, BOTTOM_START, 1, c.x0, c.x1, {}));
-    num = parseCollectorNumber(found.map((/** @type {any} */ b) => b.rawValue).join('\n'), totals);
+    const cornerText = found.map((/** @type {any} */ b) => b.rawValue).join('\n');
+    num = parseCollectorNumber(cornerText, totals);
+    special = num ? null : parseSpecialNumber(cornerText);
   }
   // Google reads the whole card: the name can be anywhere in the text (photos with margins).
-  return { num, nameText: text, text, bottom, engine: /** @type {const} */ ('google') };
+  return { num, special, nameText: text, text, bottom, engine: /** @type {const} */ ('google') };
 }
 
 // ---------- Tesseract fallback ----------
