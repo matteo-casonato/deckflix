@@ -216,11 +216,11 @@
   {#if ABOUT.contactEmail || ABOUT.donateUrl}
     <p>Hai un’idea o hai trovato un errore? Scrivimi. E se l’app ti è utile, puoi offrirmi un caffè.</p>
     <div class="about-actions">
-      {#if ABOUT.contactEmail}
-        <a class="btn" href={`mailto:${ABOUT.contactEmail}?subject=${encodeURIComponent('Deckflix: suggerimento')}`}>Scrivimi</a>
-      {/if}
       {#if ABOUT.donateUrl}
         <a class="btn primary" href={ABOUT.donateUrl} target="_blank" rel="noopener noreferrer">☕ Offrimi un caffè</a>
+      {/if}
+      {#if ABOUT.contactEmail}
+        <a class="btn" href={`mailto:${ABOUT.contactEmail}?subject=${encodeURIComponent('Deckflix: suggerimento')}`}>Scrivimi un suggerimento</a>
       {/if}
     </div>
   {/if}
@@ -514,11 +514,16 @@
     color: var(--text);
   }
 
+  /* One button per line, full width: the labels don't wrap. */
   .about-actions {
     margin-top: 4px;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+    display: flex;
+    flex-direction: column;
     gap: 10px;
+  }
+
+  .about-actions .btn {
+    width: 100%;
   }
 
   .about .legal {

@@ -13,6 +13,9 @@
   import CardTile from '../../lib/ui/CardTile.svelte';
   import EmptyState from '../../lib/ui/EmptyState.svelte';
   import Stats from './Stats.svelte';
+  import StackRow from '../../lib/ui/StackRow.svelte';
+  import { stackIds } from '../../lib/domain/albums.js';
+  import { cardImage } from '../../lib/api/tcgdex.js';
 
   /** @type {{ query: Record<string, string>, copies: number }} */
   let { query, copies } = $props();
@@ -125,32 +128,26 @@
 {:else if view === 'stats'}
   <Stats {query} />
 {:else if view === 'sets'}
-  <div class="sets">
-    {#each groups as g, i (g.setId)}
-      <section class="set card">
-        <a class="head" href={hrefFor('set', { id: g.setId })}>
-          <span class="code">{g.code}</span>
-          <span class="name">
-            <strong>{g.name}</strong>
-            <span class="num">{g.serie ? `${g.serie} · ` : ''}{g.progress.owned}/{g.progress.total || '?'}</span>
-          </span>
-          <span class="value num">{g.value > 0 ? euro(g.value) : ''}</span>
-        </a>
-        <span class="progress" aria-label={`${g.progress.percent}% dell'edizione`}>
-          <span class="bar"><span style:width="{g.progress.percent}%"></span></span>
-          <span class="num pct">{g.progress.percent}%</span>
-        </span>
-        {#if i === 0}
-          <div class="grid3">
-            {#each g.tiles.slice(0, 6) as t (t.cardId)}
-              <CardTile {...tileProps(t)} />
-            {/each}
-          </div>
-          <a class="btn open" href={hrefFor('set', { id: g.setId })}>Apri l’edizione</a>
-        {/if}
-      </section>
+  <ul class="sets">
+    {#each groups as g (g.setId)}
+      <li>
+        <StackRow
+          href={hrefFor('set', { id: g.setId })}
+          images={stackIds(g.tiles.map((t) => t.cardId), settings.covers[`set:${g.setId}`], (cid) => !!$cards?.get(cid)?.image).map((cid) =>
+            cardImage($cards?.get(cid)),
+          )}
+          title={g.name}
+          sub={`${g.serie ? `${g.serie} · ` : ''}${g.progress.owned}/${g.progress.total || '?'}${g.value > 0 ? ` · ${euro(g.value)}` : ''}`}
+          percent={g.progress.percent}
+          done={g.progress.percent >= 100}
+          label={`${g.name}, ${g.progress.owned} di ${g.progress.total || '?'}, ${g.progress.percent}%`}
+        >
+          <span class="tag accent">{g.code}</span>
+          {#if g.progress.duplicates}<span class="tag">{g.progress.duplicates} doppioni</span>{/if}
+        </StackRow>
+      </li>
     {/each}
-  </div>
+  </ul>
 {:else}
   <div class="grid3 loose">
     {#each allTiles as t (t.cardId)}
@@ -182,90 +179,12 @@
   }
 
   .sets {
-    padding: 14px 16px 0;
+    list-style: none;
+    margin: 14px 0 24px;
+    padding: 0 16px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
-  }
-
-  .set {
-    padding: 16px;
-    border-radius: var(--r-section);
-    background: var(--surface);
-    border: 1px solid var(--line);
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .head {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    color: var(--text);
-    text-decoration: none;
-  }
-
-  .code {
-    width: 44px;
-    height: 40px;
-    flex-shrink: 0;
-    border-radius: 12px;
-    background: var(--bg);
-    border: 1px solid var(--line-2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--muted);
-  }
-
-  .name {
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-    min-width: 0;
-    flex: 1;
-  }
-
-  .name strong {
-    font-size: 16px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .name span,
-  .pct {
-    font-size: 12px;
-    color: var(--muted);
-  }
-
-  .value {
-    font-size: 14px;
-    font-weight: 700;
-  }
-
-  .progress {
-    display: flex;
-    align-items: center;
     gap: 10px;
-  }
-
-  .bar {
-    flex: 1;
-    height: 8px;
-    border-radius: 4px;
-    background: var(--bg);
-    overflow: hidden;
-  }
-
-  .bar span {
-    display: block;
-    height: 100%;
-    background: var(--accent);
-    border-radius: 4px;
   }
 
   .grid3 {
@@ -278,7 +197,4 @@
     padding: 14px 16px 0;
   }
 
-  .open {
-    width: 100%;
-  }
 </style>

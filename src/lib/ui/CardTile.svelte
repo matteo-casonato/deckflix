@@ -3,8 +3,8 @@
   // Card in a grid (docs/mockups/Set.html, Collezione.html): image, quantity and variant
   // badges, or a missing card: dashed slot with its number, or its image greyed out (`ghost`).
   // 63:88 placeholder while loading or without image.
-  /** @type {{ name: string, localId: string, image?: string | null, qty?: number, badge?: string | null, href?: string, price?: string | null, missing?: boolean, ghost?: boolean }} */
-  let { name, localId, image = null, qty = 0, badge = null, href, price = null, missing = false, ghost = false } = $props();
+  /** @type {{ name: string, localId: string, image?: string | null, qty?: number, badge?: string | null, href?: string, price?: string | null, missing?: boolean, ghost?: boolean, starred?: boolean, onhold?: ((e: Event) => void) | null }} */
+  let { name, localId, image = null, qty = 0, badge = null, href, price = null, missing = false, ghost = false, starred = false, onhold = null } = $props();
 
   // Fallbacks when the thumbnail doesn't load. Images are cached as opaque responses (CORS
   // headers on TCGdex assets are sometimes broken), so a missing image once cached as an
@@ -23,7 +23,7 @@
   const src = $derived(sources[attempt]);
 </script>
 
-<a class="tile" {href} aria-label={`${name}, ${localId}${missing ? ', mancante' : qty ? `, ${qty} ${qty === 1 ? 'copia' : 'copie'}` : ''}`}>
+<a class="tile" class:holdable={!!onhold} {href} oncontextmenu={onhold ?? undefined} aria-label={`${name}, ${localId}${missing ? ', mancante' : qty ? `, ${qty} ${qty === 1 ? 'copia' : 'copie'}` : ''}`}>
   {#if missing && ghost && image && !failed}
     <span class="art missing ghost">
       <img {src} alt="" loading="lazy" decoding="async" onerror={() => attempt++} />
@@ -41,6 +41,7 @@
         <span class="ph"><span>{name}</span><span class="num">{localId}</span></span>
       {/if}
       {#if qty > 1}<span class="qty num">×{qty}</span>{/if}
+      {#if starred}<span class="star" title="Copertina">★</span>{/if}
       {#if badge}<span class="badge">{badge}</span>{/if}
     </span>
     <span class="caption"><span class="num">{localId}</span>{#if price}<span class="num">{price}</span>{/if}</span>
@@ -108,6 +109,27 @@
     background: var(--bg);
     color: var(--text);
     font-size: 12px;
+  }
+
+  /* Long press chooses the cover: no text selection or link callout. */
+  .holdable {
+    -webkit-touch-callout: none;
+    user-select: none;
+  }
+
+  .star {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    width: 22px;
+    height: 22px;
+    border-radius: 11px;
+    background: var(--accent);
+    color: var(--on-accent);
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .qty {

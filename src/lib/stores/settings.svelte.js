@@ -13,12 +13,15 @@ export const settings = $state({
   /** Play! Pokémon players (the user, children…): name, Player ID, birth year. */
   /** @type {import('../domain/players.js').Player[]} */
   players: [],
+  /** Cover card chosen with a long press, by list: "set:sv01", "album:top10", "album:<uuid>". */
+  /** @type {Record<string, string>} */
+  covers: {},
   /** navigator.storage.persist() result: true = the browser won't evict IndexedDB. */
   /** @type {boolean | null} */
   persisted: null,
 });
 
-const SYNCED = /** @type {const} */ (['cardLang', 'recentSets', 'missingImages', 'players']);
+const SYNCED = /** @type {const} */ (['cardLang', 'recentSets', 'missingImages', 'players', 'covers']);
 
 export async function loadSettings() {
   const rows = await db.settings.bulkGet([...SYNCED]);
@@ -46,4 +49,19 @@ export async function setSetting(key, value) {
 /** @param {string} setId */
 export function rememberSet(setId) {
   return setSetting('recentSets', [setId, ...settings.recentSets.filter((s) => s !== setId)].slice(0, 6));
+}
+
+/**
+ * Chooses (or, with the same card again, clears) the cover of a set or album.
+ * @param {string} key "set:<id>" or "album:<id>"
+ * @param {string} cardId
+ * @returns {Promise<string | null>} the new cover, null when back to automatic
+ */
+export async function toggleCover(key, cardId) {
+  const covers = { ...settings.covers };
+  const next = covers[key] === cardId ? null : cardId;
+  if (next) covers[key] = next;
+  else delete covers[key];
+  await setSetting('covers', covers);
+  return next;
 }

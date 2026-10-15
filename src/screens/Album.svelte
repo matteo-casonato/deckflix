@@ -5,7 +5,7 @@
   import { liveQuery } from 'dexie';
   import { Cancel01Icon } from '@hugeicons/core-free-icons';
   import { db } from '../lib/db.js';
-  import { settings } from '../lib/stores/settings.svelte.js';
+  import { settings, toggleCover } from '../lib/stores/settings.svelte.js';
   import { showToast } from '../lib/stores/toast.svelte.js';
   import { prefetchCards, liveCards } from '../lib/data/catalog.js';
   import { deleteAlbum, renameAlbum, restoreAlbum, toggleInAlbum } from '../lib/data/albums.js';
@@ -76,10 +76,25 @@
     renaming = false;
   }
 
+  /**
+   * Long press: the card becomes the cover of this album in the Raccolte list.
+   * @param {Event} e
+   * @param {string} cardId
+   */
+  async function chooseCover(e, cardId) {
+    e.preventDefault();
+    const next = await toggleCover(`album:${id}`, cardId);
+    navigator.vibrate?.(20);
+    const name = $cards?.get(cardId)?.name ?? cardId;
+    showToast(next ? `Copertina: ${name}` : 'Copertina automatica', () => toggleCover(`album:${id}`, cardId));
+  }
+
   /** @param {{ cardId: string, qty: number, unit: number, variants: string[] }} t */
   function tileProps(t) {
     const card = $cards?.get(t.cardId);
     return {
+      starred: settings.covers[`album:${id}`] === t.cardId,
+      onhold: editing ? null : (/** @type {Event} */ e) => chooseCover(e, t.cardId),
       name: card?.name ?? t.cardId,
       localId: card?.localId ?? t.cardId.slice(setIdOf(t.cardId).length + 1),
       image: card?.image ?? null,
@@ -107,6 +122,8 @@
   <p class="sub num">
     {#if auto}{meta?.[2]} · {/if}{count} {count === 1 ? 'carta' : 'carte'}{!auto && count ? ` · ${ownedCount} ${ownedCount === 1 ? 'posseduta' : 'possedute'}` : ''}
   </p>
+
+  {#if count && !editing}<p class="hint">Tieni premuta una carta per sceglierla come copertina ★.</p>{/if}
 
   {#if editing}
     <div class="edit">
@@ -159,6 +176,12 @@
 />
 
 <style>
+  .hint {
+    margin: 8px 20px 0;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
   .sub {
     margin: 0 20px;
     font-size: 13px;

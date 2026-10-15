@@ -6,7 +6,8 @@
   import { KeyboardIcon } from '@hugeicons/core-free-icons';
   import { db } from '../lib/db.js';
   import { getSet } from '../lib/api/tcgdex.js';
-  import { settings } from '../lib/stores/settings.svelte.js';
+  import { settings, toggleCover } from '../lib/stores/settings.svelte.js';
+  import { showToast } from '../lib/stores/toast.svelte.js';
   import { prefetchCards, liveCards } from '../lib/data/catalog.js';
   import { copyPrice, euro, setProgress, variantBadge } from '../lib/domain/cards.js';
   import { hrefFor } from '../lib/domain/routes.js';
@@ -40,6 +41,18 @@
   const copiesOf = (cardId) => ($entries ?? []).filter((e) => e.cardId === cardId);
   const value = $derived(($entries ?? []).reduce((s, e) => s + (copyPrice($cards?.get(e.cardId), e.variant) ?? 0) * e.qty, 0));
 
+  /**
+   * Long press on an owned card: it becomes the cover of this set in the Edizioni list.
+   * @param {Event} e
+   * @param {{ id: string, name: string }} c
+   */
+  async function chooseCover(e, c) {
+    e.preventDefault();
+    const next = await toggleCover(`set:${id}`, c.id);
+    navigator.vibrate?.(20);
+    showToast(next ? `Copertina dell’edizione: ${c.name}` : 'Copertina automatica', () => toggleCover(`set:${id}`, c.id));
+  }
+
   /** @param {any} set */
   function view(set) {
     const progress = setProgress({ official: set.cardCount?.official ?? set.cards?.length ?? 0 }, $entries ?? []);
@@ -56,6 +69,8 @@
           qty,
           missing: qty === 0,
           ghost: settings.missingImages,
+          starred: settings.covers[`set:${id}`] === c.id,
+          onhold: qty > 0 ? (/** @type {Event} */ e) => chooseCover(e, c) : null,
           badge: variants.size === 1 ? variantBadge([...variants][0]) : null,
           href: hrefFor('card', { lang: settings.cardLang, id: c.id }),
         },
@@ -106,6 +121,8 @@
     />
   </div>
 
+  <p class="hint">Tieni premuta una tua carta per sceglierla come copertina ★ dell’edizione.</p>
+
   <div class="grid4">
     {#each v.shown as t (t.id)}
       <CardTile {...t.props} />
@@ -120,6 +137,12 @@
 {/await}
 
 <style>
+  .hint {
+    margin: 10px 20px 0;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
   .pad {
     padding: 12px 16px 0;
   }

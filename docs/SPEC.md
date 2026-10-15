@@ -374,6 +374,8 @@ Esporta CSV, invito ad accedere per chi usa l'app senza account, copia di sicure
 
 - **Carta di copertina del deck**: nel dettaglio del deck (lista o griglia) una pressione prolungata su una carta la sceglie come copertina (★, vibrazione, “Annulla”); ripremendola torna automatica. Automatica: il Pokémon con regola (ex, V…) tra i quattro con più copie, altrimenti quello con più copie (`coverCards`). Salvata nel deck (`cover`, nel backup); usata in primo piano nel ventaglio dell'elenco deck e nel deck in evidenza della Home.
 
+- **Righe uniformi** (`src/lib/ui/StackRow.svelte`, `CardStack.svelte`) per deck, edizioni e raccolte: due carte a pila (copertina dritta davanti, la seconda inclinata dietro), nome, dettagli, etichette, anello della percentuale. Edizioni: serie, possedute/totale, valore, sigla e doppioni. Raccolte: “Tua” (con percentuale delle carte possedute) o “Automatica”. Copertina scelta con una pressione prolungata (★) nel raccoglitore dell'edizione (solo carte possedute), nella raccolta, nel dettaglio del deck e nel Deck List Creator; altrimenti automatica (la più preziosa; per i deck il Pokémon con regola tra i quattro più giocati). Edizioni e raccolte salvano la scelta nella preferenza `covers` (nel backup), i deck in `deck.cover`. Nel Profilo “Offrimi un caffè” è il primo pulsante, a tutta larghezza.
+
 ## 9. Fuori ambito
 
 Prezzi per lingua e per condizione, riconoscimento con IA a pagamento, notifiche push e backup a app chiusa (servirebbe un server), profili multipli sullo stesso telefono, backup su servizi diversi da Google Drive, pubblicazione sugli store, app nativa con Capacitor (piano B se la scansione web non basta).

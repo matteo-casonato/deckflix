@@ -262,12 +262,6 @@
     gap: 8px;
   }
 
-  .english {
-    margin: 0;
-    font-size: 13px;
-    color: var(--muted);
-    text-align: center;
-  }
 
   .round {
     width: 48px;

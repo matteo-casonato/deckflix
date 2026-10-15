@@ -8,7 +8,8 @@
   import { changeDeckCard, deckRows, missingToWishlist, ownedMap, resolveDecklist, updateDeck } from '../lib/data/decks.js';
   import { pasteErrorText, readListFromClipboard } from '../lib/data/pasteList.js';
   import { parseDecklist, suggestDeckName } from '../lib/domain/decklist.js';
-  import { DECK_SIZE, MAX_COPIES, deckSummary, isBasicEnergy } from '../lib/domain/deck.js';
+  import { DECK_SIZE, MAX_COPIES, coverCards, deckSummary, isBasicEnergy } from '../lib/domain/deck.js';
+  import { cardImage } from '../lib/api/tcgdex.js';
   import { euro } from '../lib/domain/cards.js';
   import { hrefFor } from '../lib/domain/routes.js';
   import { replace } from '../lib/router.svelte.js';
@@ -35,6 +36,22 @@
   const shown = $derived((rows ?? []).filter((r) => r.section === tab));
   const others = $derived((rows ?? []).filter((r) => r.state === 'other'));
   let showOthers = $state(false);
+
+  // Cover card: long press on a card (Android fires contextmenu), else automatic.
+  const coverId = $derived(rows && $deck ? (coverCards(rows, $deck.cover, (r) => !!cardImage(r.card), 1)[0] ?? null) : null);
+  /**
+   * @param {Event} e
+   * @param {import('../lib/data/decks.js').DeckRow} r
+   */
+  async function chooseCover(e, r) {
+    e.preventDefault();
+    if (!$deck) return;
+    const before = $deck.cover ?? null;
+    const next = before === r.cardId ? null : r.cardId;
+    await updateDeck(id, { cover: next });
+    navigator.vibrate?.(20);
+    showToast(next ? `Copertina: ${r.card?.name ?? r.cardId}` : 'Copertina automatica', () => updateDeck(id, { cover: before }));
+  }
 
   // Empty deck: fill it from a list copied from Limitless or Pokémon TCG Live.
   let pasting = $state(false);
@@ -121,6 +138,8 @@
       onchange={(v) => replace(hrefFor('deckEdit', { id }, { tab: v === 'Pokémon' ? null : v }))}
     />
 
+    <p class="cover-hint">Tieni premuta una carta per sceglierla come copertina ★.</p>
+
     <div class="legend" aria-hidden="true">
       <span><i class="dot owned"></i>Posseduta</span>
       <span><i class="dot other"></i>Altra versione</span>
@@ -139,13 +158,19 @@
     <div class="grid">
       {#each shown as r (r.cardId)}
         <div class="tile {r.state}">
-          <a class="art" href={hrefFor('card', { lang: 'en', id: r.cardId })} aria-label={`${r.card?.name}, ${STATE_LABEL[r.state]}`}>
+          <a
+            class="art"
+            href={hrefFor('card', { lang: 'en', id: r.cardId })}
+            aria-label={`${r.card?.name}, ${STATE_LABEL[r.state]}${r.cardId === coverId ? ', copertina' : ''}`}
+            oncontextmenu={(e) => chooseCover(e, r)}
+          >
             {#if r.card?.image}
               <img src={`${r.card.image}/low.webp`} alt="" loading="lazy" />
             {:else}
               <span class="ph">{r.card?.name ?? r.cardId}</span>
             {/if}
             <span class="qty num">×{r.qty}</span>
+            {#if r.cardId === coverId}<span class="star" title="Copertina">★</span>{/if}
             {#if r.state !== 'owned'}<span class="badge {r.state}">{r.state === 'other' ? 'Altra versione' : `Manca ${r.missing}`}</span>{/if}
           </a>
           <span class="cname">{r.card?.name ?? ''}</span>
@@ -176,6 +201,32 @@
 {/if}
 
 <style>
+  .cover-hint {
+    margin: 0;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .star {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    width: 22px;
+    height: 22px;
+    border-radius: 11px;
+    background: var(--accent);
+    color: var(--on-accent);
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .art {
+    -webkit-touch-callout: none;
+    user-select: none;
+  }
+
   .paste {
     padding: 16px;
     border-radius: var(--r-card);

@@ -157,3 +157,17 @@ export function albumCover(album, cards) {
   }
   return best;
 }
+
+/**
+ * Cards for a list preview, the cover first: the one chosen by the user when it is still in
+ * the list, otherwise the list order (most valuable first). Only cards with an image.
+ * @param {string[]} ordered card ids in preference order
+ * @param {string | null | undefined} chosen
+ * @param {(cardId: string) => boolean} hasImage
+ * @param {number} [count]
+ */
+export function stackIds(ordered, chosen, hasImage, count = 2) {
+  const usable = ordered.filter(hasImage);
+  const main = chosen && usable.includes(chosen) ? chosen : usable[0];
+  return main ? [main, ...usable.filter((id) => id !== main)].slice(0, count) : [];
+}

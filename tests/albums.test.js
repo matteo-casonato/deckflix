@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { albumCover, autoAlbum, isFullArt, ownedTiles } from '../src/lib/domain/albums.js';
+import { albumCover, autoAlbum, isFullArt, ownedTiles, stackIds } from '../src/lib/domain/albums.js';
 
 const card = (id, o = {}) => [id, { id, name: id, rarity: 'Comune', pricing: { cardmarket: { trend: 1, 'trend-holo': 2, avg7: 1, avg30: 1, ...o.cm } }, ...o }];
 const cards = new Map([
@@ -47,5 +47,17 @@ describe('isFullArt and albumCover', () => {
     const album = { id: 'x', name: 'X', cards: [{ cardId: 'a', addedAt: 1 }, { cardId: 'c', addedAt: 2 }, { cardId: 'zz', addedAt: 3 }], createdAt: 0, updatedAt: 0 };
     expect(albumCover(album, cards)).toBe('c');
     expect(albumCover({ ...album, cards: [] }, cards)).toBe(null);
+  });
+});
+
+describe('stackIds', () => {
+  const img = (id) => id !== 'noimg';
+  it('puts the chosen cover first, then the others in order', () => {
+    expect(stackIds(['a', 'b', 'c'], 'c', img)).toEqual(['c', 'a']);
+    expect(stackIds(['a', 'b', 'c'], null, img)).toEqual(['a', 'b']);
+  });
+  it('ignores a cover that is gone and cards without image', () => {
+    expect(stackIds(['noimg', 'b'], 'zz', img)).toEqual(['b']);
+    expect(stackIds([], 'a', img)).toEqual([]);
   });
 });
