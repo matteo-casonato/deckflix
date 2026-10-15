@@ -1,13 +1,13 @@
 <script>
   // @ts-check
   // Set binder (docs/mockups/Set.html): every card in number order, owned ones full,
-  // missing ones dashed; filters all / owned / missing.
+  // missing ones greyed out (or dashed, see Profile); filters all / owned / missing.
   import { liveQuery } from 'dexie';
   import { KeyboardIcon } from '@hugeicons/core-free-icons';
   import { db } from '../lib/db.js';
   import { getSet } from '../lib/api/tcgdex.js';
   import { settings } from '../lib/stores/settings.svelte.js';
-  import { cachedCards, prefetchCards } from '../lib/data/catalog.js';
+  import { prefetchCards, liveCards } from '../lib/data/catalog.js';
   import { copyPrice, euro, setProgress, variantBadge } from '../lib/domain/cards.js';
   import { hrefFor } from '../lib/domain/routes.js';
   import { replace } from '../lib/router.svelte.js';
@@ -31,7 +31,7 @@
 
   const entries = $derived(liveQuery(() => db.collection.where('setId').equals(id).toArray()));
   const ownedIds = $derived([...new Set(($entries ?? []).map((e) => e.cardId))]);
-  const cards = $derived(liveQuery(() => cachedCards(ownedIds, settings.cardLang)));
+  const cards = $derived(liveCards(ownedIds, settings.cardLang));
   $effect(() => {
     if (ownedIds.length) prefetchCards(ownedIds, settings.cardLang);
   });
@@ -55,6 +55,7 @@
           image: c.image ?? null,
           qty,
           missing: qty === 0,
+          ghost: settings.missingImages,
           badge: variants.size === 1 ? variantBadge([...variants][0]) : null,
           href: hrefFor('card', { lang: settings.cardLang, id: c.id }),
         },
@@ -69,11 +70,11 @@
 </script>
 
 {#await request}
-  <BackHeader fallback={hrefFor('collection')} />
+  <BackHeader fallback={hrefFor('collection', {}, { tab: 'owned' })} />
   <p class="muted pad" aria-busy="true">Carico l’edizione…</p>
 {:then set}
   {@const v = view(set)}
-  <BackHeader title={set.name} fallback={hrefFor('collection')}>
+  <BackHeader title={set.name} fallback={hrefFor('collection', {}, { tab: 'owned' })}>
     <a class="round" href={hrefFor('quick', {}, { set: id })} aria-label="Inserimento rapido in questa edizione">
       <Icon icon={KeyboardIcon} size={20} />
     </a>
@@ -111,7 +112,7 @@
     {/each}
   </div>
 {:catch}
-  <BackHeader fallback={hrefFor('collection')} />
+  <BackHeader fallback={hrefFor('collection', {}, { tab: 'owned' })} />
   <section class="error card">
     <p>Non riesco a caricare questa edizione. Se sei offline, riprova quando torna la rete.</p>
     <button class="btn" onclick={() => (request = getSet(settings.cardLang, id).then((r) => r.data))}>Riprova</button>

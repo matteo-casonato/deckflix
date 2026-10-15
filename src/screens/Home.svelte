@@ -6,7 +6,7 @@
   import { db } from '../lib/db.js';
   import { account } from '../lib/stores/account.svelte.js';
   import { settings } from '../lib/stores/settings.svelte.js';
-  import { cachedCards, prefetchCards } from '../lib/data/catalog.js';
+  import { prefetchCards, liveCards } from '../lib/data/catalog.js';
   import { valuedCollection } from '../lib/data/value.js';
   import { isConfigured } from '../lib/sync/sync.js';
   import { REMINDER_SNOOZE_MS, showSignInReminder } from '../lib/domain/backup.js';
@@ -21,7 +21,7 @@
 
   const recent = liveQuery(() => db.collection.orderBy('updatedAt').reverse().limit(9).toArray());
   const ids = $derived([...new Set(($recent ?? []).map((e) => e.cardId))]);
-  const cards = $derived(liveQuery(() => cachedCards(ids, settings.cardLang)));
+  const cards = $derived(liveCards(ids, settings.cardLang));
   $effect(() => {
     if (ids.length) prefetchCards(ids, settings.cardLang);
   });

@@ -3,7 +3,7 @@
   // Card detail: prices per print, quantities per language and variant, wishlist,
   // Cardmarket link (SPEC § 2: TCGdex prices aggregate all languages and conditions).
   import { liveQuery } from 'dexie';
-  import { FavouriteIcon, LinkSquare02Icon } from '@hugeicons/core-free-icons';
+  import { BookmarkAdd02Icon, FavouriteIcon, LinkSquare02Icon } from '@hugeicons/core-free-icons';
   import { db } from '../lib/db.js';
   import { TcgdexError, cardImage, getCard } from '../lib/api/tcgdex.js';
   import { settings } from '../lib/stores/settings.svelte.js';
@@ -18,6 +18,7 @@
   import BackHeader from '../lib/ui/BackHeader.svelte';
   import Icon from '../lib/ui/Icon.svelte';
   import ConfirmDialog from '../lib/ui/ConfirmDialog.svelte';
+  import AlbumPicker from './AlbumPicker.svelte';
 
   /** @type {{ lang: string, id: string }} */
   let { lang, id } = $props();
@@ -57,6 +58,8 @@
   /** @type {{ variant: string, label: string } | null} */
   let confirmRemove = $state(null);
   let confirmMove = $state(false);
+  let picker = $state(false);
+  const inAlbums = $derived(liveQuery(async () => (await db.albums.toArray()).filter((a) => a.cards.some((c) => c.cardId === id)).length));
 
   /**
    * @param {any} card
@@ -94,6 +97,14 @@
 </script>
 
 <BackHeader fallback={hrefFor('set', { id: setIdOf(id) })}>
+  <button
+    class="round"
+    class:on={!!$inAlbums}
+    aria-label={$inAlbums ? `Raccolte: in ${$inAlbums}` : 'Aggiungi a raccolta'}
+    onclick={() => (picker = true)}
+  >
+    <Icon icon={BookmarkAdd02Icon} size={20} />
+  </button>
   {#if $wished !== undefined}
     <button
       class="round"
@@ -198,6 +209,7 @@
       </section>
     </div>
 
+    <AlbumPicker open={picker} cardId={id} cardName={card.name} onclose={() => (picker = false)} />
     <ConfirmDialog
       open={!!confirmRemove}
       title="Rimuovere la carta?"

@@ -6,7 +6,7 @@
   import { Add01Icon, ArrowDownRight01Icon, ArrowUpRight01Icon } from '@hugeicons/core-free-icons';
   import { db } from '../../lib/db.js';
   import { settings } from '../../lib/stores/settings.svelte.js';
-  import { cachedCards, prefetchCards, setsMap } from '../../lib/data/catalog.js';
+  import { prefetchCards, setsMap, liveCards } from '../../lib/data/catalog.js';
   import { copyPrice, euro, priceTrend, setIdOf } from '../../lib/domain/cards.js';
   import { hrefFor } from '../../lib/domain/routes.js';
   import { replace } from '../../lib/router.svelte.js';
@@ -19,7 +19,7 @@
   const sort = $derived(['recent', 'down'].includes(query.sort) ? query.sort : 'price');
   const items = liveQuery(() => db.wishlist.toArray());
   const ids = $derived(($items ?? []).map((w) => w.cardId).sort());
-  const cards = $derived(liveQuery(() => cachedCards(ids, settings.cardLang)));
+  const cards = $derived(liveCards(ids, settings.cardLang));
 
   /** @type {Map<string, any>} */
   let sets = $state(new Map());

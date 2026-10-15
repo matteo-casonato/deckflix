@@ -8,12 +8,14 @@ export const settings = $state({
   /** Sets used recently in quick add, newest first. */
   /** @type {string[]} */
   recentSets: [],
+  /** Set binder: images of missing cards in grey (false = numbers only, saves data). */
+  missingImages: true,
   /** navigator.storage.persist() result: true = the browser won't evict IndexedDB. */
   /** @type {boolean | null} */
   persisted: null,
 });
 
-const SYNCED = /** @type {const} */ (['cardLang', 'recentSets']);
+const SYNCED = /** @type {const} */ (['cardLang', 'recentSets', 'missingImages']);
 
 export async function loadSettings() {
   const rows = await db.settings.bulkGet([...SYNCED]);

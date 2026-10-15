@@ -21,6 +21,7 @@ const tables = {
   ],
   wishlist: [{ cardId: 'sv01-081' }],
   decks: [{ id: 'd1', name: 'Elettrico veloce', cards: [] }],
+  albums: [{ id: 'a1', name: 'Preferite', cards: [], createdAt: 0, updatedAt: 0 }],
   priceSnapshots: [{ date: '2026-10-15', totalValue: 1.2 }],
   settings: [
     { key: 'cardLang', value: 'it' },

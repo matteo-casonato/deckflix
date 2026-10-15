@@ -239,7 +239,7 @@
     {#each results as c (c.id)}
       {@const qty = $owned?.get(c.id) ?? 0}
       {@const wish = $wished?.has(c.id) ?? false}
-      <li class="row card">
+      <li class="row card" class:owned={qty > 0}>
         <a class="main" href={hrefFor('card', { lang, id: c.id })}>
           {#if c.image}
             <img class="thumb" src={`${c.image}/low.webp`} alt="" loading="lazy" />
@@ -349,6 +349,12 @@
     border-radius: var(--r-card);
     background: var(--surface);
     border: 1px solid var(--line);
+  }
+
+  /* Owned cards stand out when searching all cards (SPEC Phase 9). */
+  .row.owned {
+    border-color: color-mix(in srgb, var(--success) 55%, var(--line));
+    background: color-mix(in srgb, var(--success) 7%, var(--surface));
   }
 
   .main {

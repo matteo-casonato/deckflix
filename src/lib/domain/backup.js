@@ -4,13 +4,14 @@
 export const BACKUP_FILE = 'deckflix-backup.json';
 /** Safety copy: the backup as it was at the end of the previous day it was saved. */
 export const BACKUP_PREV_FILE = 'deckflix-backup-prev.json';
-export const SCHEMA_VERSION = 1;
+// v2: albums. An older app refuses a v2 backup instead of dropping the albums on its next save.
+export const SCHEMA_VERSION = 2;
 
 /** Settings that describe this device or the sync itself: never sent to Drive. */
 export const LOCAL_ONLY_SETTINGS = new Set(['account', 'lastBackupAt', 'lastRemoteBackupAt', 'firstRunDone', 'signInReminderUntil', 'lastExportAt']);
 
 /**
- * @typedef {{ collection: any[], wishlist: any[], decks: any[], priceSnapshots: any[], settings: { key: string, value: any }[] }} BackupTables
+ * @typedef {{ collection: any[], wishlist: any[], decks: any[], albums: any[], priceSnapshots: any[], settings: { key: string, value: any }[] }} BackupTables
  * @typedef {BackupTables & { app: 'deckflix', schemaVersion: number, exportedAt: string, device: string }} BackupFile
  * @typedef {{ cards: number, entries: number, decks: number, wishlist: number, exportedAt: string | null }} BackupSummary
  */
@@ -29,6 +30,7 @@ export function buildBackup(tables, { now, device }) {
     collection: tables.collection,
     wishlist: tables.wishlist,
     decks: tables.decks,
+    albums: tables.albums,
     priceSnapshots: tables.priceSnapshots,
     settings: tables.settings.filter((s) => !LOCAL_ONLY_SETTINGS.has(s.key)),
   };
@@ -54,10 +56,9 @@ export function parseBackup(json) {
   if (version > SCHEMA_VERSION) {
     throw new BackupFormatError('newer', "Il backup è stato creato da una versione più recente dell'app: aggiorna Deckflix");
   }
-  for (const key of ['collection', 'wishlist', 'decks', 'priceSnapshots', 'settings']) {
+  for (const key of ['collection', 'wishlist', 'decks', 'albums', 'priceSnapshots', 'settings']) {
     if (json[key] !== undefined && !Array.isArray(json[key])) throw new BackupFormatError('invalid', `Campo ${key} non valido`);
   }
-  // Future migrations go here: if (version < 2) { ... }
   return {
     app: 'deckflix',
     schemaVersion: SCHEMA_VERSION,
@@ -66,6 +67,7 @@ export function parseBackup(json) {
     collection: json.collection ?? [],
     wishlist: json.wishlist ?? [],
     decks: json.decks ?? [],
+    albums: json.albums ?? [], // v1 backups have none
     priceSnapshots: json.priceSnapshots ?? [],
     settings: (json.settings ?? []).filter((/** @type {any} */ s) => !LOCAL_ONLY_SETTINGS.has(s?.key)),
   };

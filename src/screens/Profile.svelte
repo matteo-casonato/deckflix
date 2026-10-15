@@ -11,6 +11,7 @@
     LanguageSkillIcon,
     Analytics01Icon,
     LockIcon,
+    GridViewIcon,
   } from '@hugeicons/core-free-icons';
   import Icon from '../lib/ui/Icon.svelte';
   import Avatar from '../lib/ui/Avatar.svelte';
@@ -133,6 +134,11 @@
     <select class="chip" value={settings.cardLang} onchange={(e) => setSetting('cardLang', e.currentTarget.value)}>
       {#each Object.entries(LANG_LABELS) as [code, label] (code)}<option value={code}>{label}</option>{/each}
     </select>
+  </label>
+  <label class="row">
+    <span class="ico"><Icon icon={GridViewIcon} /></span>
+    <span class="text"><strong>Carte mancanti in grigio</strong><span>Nelle edizioni; spento mostra solo i numeri e risparmia dati</span></span>
+    <input class="switch" type="checkbox" role="switch" checked={settings.missingImages} onchange={(e) => setSetting('missingImages', e.currentTarget.checked)} />
   </label>
   <div class="row static">
     <span class="ico"><Icon icon={Analytics01Icon} /></span>
@@ -340,6 +346,40 @@
     cursor: pointer;
     color: inherit;
     text-decoration: none;
+  }
+
+  .switch {
+    appearance: none;
+    flex-shrink: 0;
+    width: 52px;
+    height: 32px;
+    margin: 0;
+    border-radius: 16px;
+    background: var(--line-2);
+    position: relative;
+    cursor: pointer;
+    transition: background 150ms;
+  }
+
+  .switch::after {
+    content: '';
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    width: 24px;
+    height: 24px;
+    border-radius: 12px;
+    background: var(--muted);
+    transition: transform 150ms;
+  }
+
+  .switch:checked {
+    background: var(--accent);
+  }
+
+  .switch:checked::after {
+    background: var(--on-accent);
+    transform: translateX(20px);
   }
 
   .row.static {

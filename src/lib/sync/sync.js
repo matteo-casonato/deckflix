@@ -1,6 +1,6 @@
 // @ts-check
 // Automatic backup to Google Drive (docs/SPEC.md § 7): runs only while the app is open.
-// - Any change to collection, wishlist, decks, snapshots or settings marks "to sync".
+// - Any change to collection, wishlist, decks, albums, snapshots or settings marks "to sync".
 // - The backup starts 10 s after the last change and when the app goes to background.
 // - Offline: no attempt; it retries on the `online` event.
 // - Before overwriting, a newer file on Drive (another phone) asks the user to choose.
@@ -24,7 +24,7 @@ import { AuthError, getToken, isConfigured, requestToken, signOut as revoke } fr
 export const DEBOUNCE_MS = 10_000;
 /** Retry delays when Drive is unreachable while the browser says "online" (Wi-Fi without internet). */
 const RETRY_MS = [30_000, 60_000, 120_000, 300_000];
-const DATA_TABLES = /** @type {const} */ (['collection', 'wishlist', 'decks', 'priceSnapshots']);
+const DATA_TABLES = /** @type {const} */ (['collection', 'wishlist', 'decks', 'albums', 'priceSnapshots']);
 
 const MOCK = import.meta.env.VITE_GOOGLE_MOCK === '1';
 const drive = createDrive({
@@ -157,14 +157,15 @@ function deviceName() {
 }
 
 async function readTables() {
-  const [collection, wishlist, decks, priceSnapshots, settings] = await Promise.all([
+  const [collection, wishlist, decks, albums, priceSnapshots, settings] = await Promise.all([
     db.collection.toArray(),
     db.wishlist.toArray(),
     db.decks.toArray(),
+    db.albums.toArray(),
     db.priceSnapshots.toArray(),
     db.settings.toArray(),
   ]);
-  return { collection, wishlist, decks, priceSnapshots, settings };
+  return { collection, wishlist, decks, albums, priceSnapshots, settings };
 }
 
 /** @param {unknown} err */
@@ -316,7 +317,7 @@ async function afterDriveAccess() {
 async function importBackup(backup, remoteModifiedTime) {
   quiet++;
   try {
-    await db.transaction('rw', [db.collection, db.wishlist, db.decks, db.priceSnapshots, db.settings, db.syncQueue], async () => {
+    await db.transaction('rw', [db.collection, db.wishlist, db.decks, db.albums, db.priceSnapshots, db.settings, db.syncQueue], async () => {
       for (const name of DATA_TABLES) {
         await db.table(name).clear();
         await db.table(name).bulkPut(backup[name]);
@@ -389,7 +390,7 @@ export async function signOut({ wipe }) {
   quiet++;
   try {
     if (wipe) {
-      await db.transaction('rw', [db.collection, db.wishlist, db.decks, db.priceSnapshots, db.settings, db.syncQueue], async () => {
+      await db.transaction('rw', [db.collection, db.wishlist, db.decks, db.albums, db.priceSnapshots, db.settings, db.syncQueue], async () => {
         for (const name of DATA_TABLES) await db.table(name).clear();
         await db.settings.clear();
         await db.syncQueue.clear();

@@ -1,15 +1,22 @@
 <script>
   // @ts-check
   // Card in a grid (docs/mockups/Set.html, Collezione.html): image, quantity and variant
-  // badges, or a dashed slot for a missing card. 63:88 placeholder while loading or without image.
-  /** @type {{ name: string, localId: string, image?: string | null, qty?: number, badge?: string | null, href?: string, price?: string | null, missing?: boolean }} */
-  let { name, localId, image = null, qty = 0, badge = null, href, price = null, missing = false } = $props();
+  // badges, or a missing card: dashed slot with its number, or its image greyed out (`ghost`).
+  // 63:88 placeholder while loading or without image.
+  /** @type {{ name: string, localId: string, image?: string | null, qty?: number, badge?: string | null, href?: string, price?: string | null, missing?: boolean, ghost?: boolean }} */
+  let { name, localId, image = null, qty = 0, badge = null, href, price = null, missing = false, ghost = false } = $props();
 
   let failed = $state(false);
 </script>
 
 <a class="tile" {href} aria-label={`${name}, ${localId}${missing ? ', mancante' : qty ? `, ${qty} ${qty === 1 ? 'copia' : 'copie'}` : ''}`}>
-  {#if missing}
+  {#if missing && ghost && image && !failed}
+    <span class="art missing ghost">
+      <img src={`${image}/low.webp`} alt="" loading="lazy" decoding="async" onerror={() => (failed = true)} />
+      <span class="no num">{localId}</span>
+    </span>
+    <span class="caption muted">{name}</span>
+  {:else if missing}
     <span class="art missing num">{localId}</span>
     <span class="caption muted">{name}</span>
   {:else}
@@ -71,6 +78,22 @@
     justify-content: center;
     color: var(--muted);
     font-size: 13px;
+  }
+
+  .ghost img {
+    position: absolute;
+    inset: 0;
+    filter: grayscale(1);
+    opacity: 0.3;
+  }
+
+  .ghost .no {
+    position: relative;
+    padding: 2px 8px;
+    border-radius: 9px;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 12px;
   }
 
   .qty {

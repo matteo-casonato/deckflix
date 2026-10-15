@@ -1,11 +1,11 @@
 <script>
   // @ts-check
-  // Owned cards: by set (default), all, recent. Statistics arrive in Phase 7.
+  // "Edizioni": owned cards by set (default), all, recent, statistics.
   import { liveQuery } from 'dexie';
   import { Search01Icon } from '@hugeicons/core-free-icons';
   import { db } from '../../lib/db.js';
   import { settings } from '../../lib/stores/settings.svelte.js';
-  import { cachedCards, prefetchCards, setDetails, setsMap } from '../../lib/data/catalog.js';
+  import { prefetchCards, setDetails, setsMap, liveCards } from '../../lib/data/catalog.js';
   import { copyPrice, euro, setIdOf, setProgress, variantBadge } from '../../lib/domain/cards.js';
   import { hrefFor } from '../../lib/domain/routes.js';
   import { replace } from '../../lib/router.svelte.js';
@@ -20,7 +20,7 @@
   const view = $derived(['all', 'recent', 'stats'].includes(query.view) ? query.view : 'sets');
   const entries = liveQuery(() => db.collection.toArray());
   const ids = $derived([...new Set(($entries ?? []).map((e) => e.cardId))].sort());
-  const cards = $derived(liveQuery(() => cachedCards(ids, settings.cardLang)));
+  const cards = $derived(liveCards(ids, settings.cardLang));
 
   /** @type {Map<string, any>} */
   let sets = $state(new Map());
@@ -101,7 +101,7 @@
   };
 
   /** @param {string | null} v */
-  const setView = (v) => replace(hrefFor('collection', {}, { view: v }));
+  const setView = (v) => replace(hrefFor('collection', {}, { tab: 'owned', view: v }));
 </script>
 
 <div class="pad">

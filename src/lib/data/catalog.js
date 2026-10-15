@@ -1,4 +1,5 @@
 // @ts-check
+import { liveQuery } from 'dexie';
 // Read helpers over the TCGdex cache for the collection screens.
 import { db } from '../db.js';
 import { getCard, getSet, getSets } from '../api/tcgdex.js';
@@ -69,3 +70,12 @@ export async function setDetails(setIds, lang) {
   );
   return new Map(/** @type {[string, any][]} */ (rows.filter(Boolean)));
 }
+
+/**
+ * Live map of cached cards. Takes the ids as arguments so that, inside `$derived`, they are
+ * read right away and a new query starts when they change (a closure would read them only
+ * when the query first runs).
+ * @param {string[]} cardIds
+ * @param {string} lang
+ */
+export const liveCards = (cardIds, lang) => liveQuery(() => cachedCards(cardIds, lang));

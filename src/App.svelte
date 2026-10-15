@@ -28,6 +28,7 @@
   import Card from './screens/Card.svelte';
   import Profile from './screens/Profile.svelte';
   import Csv from './screens/Csv.svelte';
+  import Album from './screens/Album.svelte';
   import Access from './screens/Access.svelte';
   import Restore from './screens/Restore.svelte';
   import Choice from './screens/Choice.svelte';
@@ -81,6 +82,8 @@
     {#key route.params.id}<DeckBuilder id={route.params.id} query={route.query} />{/key}
   {:else if route.name === 'profile'}
     <Profile />
+  {:else if route.name === 'album'}
+    {#key route.params.id}<Album id={route.params.id} />{/key}
   {:else if route.name === 'csv'}
     <Csv query={route.query} />
   {:else if route.name === 'scan'}
