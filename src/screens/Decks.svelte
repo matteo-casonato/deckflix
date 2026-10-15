@@ -30,9 +30,7 @@
         const rows = await deckRows(d, own);
         // Preview: the cover (long press in the deck, or automatic) on top, two more behind.
         const ids = coverCards(rows, d.cover, (r) => !!cardImage(r.card));
-        const fan = [...ids.slice(1).reverse(), ids[0]]
-          .filter(Boolean)
-          .map((cid) => /** @type {string} */ (cardImage(rows.find((r) => r.cardId === cid)?.card)));
+        const fan = ids.map((cid) => /** @type {string} */ (cardImage(rows.find((r) => r.cardId === cid)?.card)));
         return /** @type {const} */ ([d.id, { summary: deckSummary(rows), check: deckCheck(rows), fan }]);
       }),
     ).then((pairs) => (infos = new Map(pairs)));
@@ -86,8 +84,9 @@
       <li>
         <a class="deck card" href={hrefFor('deckDetail', { id: d.id })}>
           <span class="fan" aria-hidden="true">
-            {#each info?.fan ?? [] as src, i (src)}
-              <img {src} alt="" loading="lazy" style:--i={i} />
+            <!-- Back cards first, the cover last so it sits in front. -->
+            {#each [...(info?.fan ?? [])].reverse() as src, i (src)}
+              <img {src} alt="" loading="lazy" style:--p={(info?.fan.length ?? 1) - 1 - i} />
             {:else}
               <span class="ph"></span>
             {/each}
@@ -195,7 +194,7 @@
 
   .list {
     list-style: none;
-    margin: 0;
+    margin: 14px 0 0;
     padding: 0 16px;
     display: flex;
     flex-direction: column;
@@ -214,10 +213,11 @@
     text-decoration: none;
   }
 
-  /* Three cards overlapped and fanned out to the right. */
+  /* Like a stack of cards: the cover upright in front, the others tilted behind it to the
+     right, all pivoting on the bottom-left corner. */
   .fan {
     position: relative;
-    width: 76px;
+    width: 66px;
     height: 72px;
     flex-shrink: 0;
   }
@@ -225,19 +225,19 @@
   .fan img,
   .ph {
     position: absolute;
-    top: 4px;
-    left: calc(var(--i) * 16px);
+    left: 2px;
+    bottom: 4px;
     width: 46px;
     aspect-ratio: 63 / 88;
     border-radius: 5px;
     object-fit: cover;
-    box-shadow: 0 4px 10px rgb(0 0 0 / 0.4);
-    transform: rotate(calc((var(--i) - 1) * 7deg));
-    transform-origin: 50% 100%;
+    box-shadow: 0 3px 8px rgb(0 0 0 / 0.45);
+    transform: rotate(calc(var(--p) * 11deg));
+    transform-origin: 15% 100%;
   }
 
   .ph {
-    --i: 1;
+    --p: 0;
     background: var(--surface-2);
     border: 1.5px dashed var(--line-2);
     box-shadow: none;

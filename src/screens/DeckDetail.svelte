@@ -229,8 +229,9 @@
 {/if}
 
 <style>
-  .cover-hint {
-    margin-top: 8px;
+  /* .pad .cover-hint: more specific than .muted (margin: 0), declared later. */
+  .pad .cover-hint {
+    margin: 10px 4px 0;
     font-size: 12px;
   }
 
