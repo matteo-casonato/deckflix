@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CARD_H, CARD_W, cropFeatures, findStamp, templateFromJSON, templateToJSON } from '../lab/scan/stamp.js';
+import { CARD_H, CARD_W, cropFeatures, findStamp, templateFromJSON, templateToJSON } from '../src/lib/domain/stamp.js';
 
 /** Deterministic textured "card" as features, optionally with a distinctive patch. */
 function card(seed = 7) {

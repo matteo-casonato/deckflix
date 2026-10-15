@@ -2,12 +2,12 @@
 // Phase 0 scan prototype: camera → crop top/bottom strips → Tesseract.js → TCGdex lookup.
 // No persistence except the test log in localStorage. The photo is never stored.
 import { createWorker, PSM } from 'tesseract.js';
-import { parseCollectorNumber, parseSetCode, detectLanguage } from './recognize.js';
+import { parseCollectorNumber, parseSetCode, detectLanguage } from '../../src/lib/domain/recognize.js';
 import { findReprints, findWithCorrections, getCard, knownTotals } from './tcgdex.js';
 import { applyStampSuggestion, guessVariant, listVariants } from '../../src/lib/domain/variants.js';
 import {
   CARD_H, CARD_W, LEARNED_THRESHOLD, STAMP_H, STAMP_W, cropFeatures, features, findStamp, templateFromJSON, templateToJSON,
-} from './stamp.js';
+} from '../../src/lib/domain/stamp.js';
 
 /** @template {HTMLElement} T @param {string} id @returns {T} */
 const $ = (id) => /** @type {T} */ (document.getElementById(id));
@@ -762,7 +762,7 @@ function featuresOf(img, w, h) {
  * Geometric drawing of the Play! Pokémon stamp (rounded box, red top and black bottom,
  * ball top left, light silhouette): close enough to find where the stamp is, not to
  * decide whether it is there. Not a copy of the logo.
- * @type {import('./stamp.js').Features | null}
+ * @type {import('../../src/lib/domain/stamp.js').Features | null}
  */
 let drawnTemplate = null;
 function getDrawnTemplate() {

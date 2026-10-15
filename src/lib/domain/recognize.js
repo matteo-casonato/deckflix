@@ -1,5 +1,5 @@
 // @ts-check
-// Pure parsing helpers for the scan prototype. They will move to src/lib/domain/ in Phase 5.
+// Pure parsing helpers for card recognition (app scanner and lab/scan prototype).
 
 /** @typedef {'it' | 'en' | 'de' | 'fr' | 'es' | 'pt'} Lang */
 

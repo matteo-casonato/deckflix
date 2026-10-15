@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { confusableNumbers, detectLanguage, nameSimilarity, parseCollectorNumber, parseSetCode, setCodeMatches } from '../lab/scan/recognize.js';
+import { confusableNumbers, detectLanguage, nameSimilarity, parseCollectorNumber, parseSetCode, setCodeMatches } from '../src/lib/domain/recognize.js';
 
 describe('parseCollectorNumber', () => {
   it('reads a clean number', () => {

@@ -27,6 +27,24 @@
     }),
   );
 
+  // Scan button: tap = single mode, long press = burst mode (SPEC § 5).
+  /** @type {ReturnType<typeof setTimeout> | undefined} */
+  let pressTimer;
+  let longPressed = false;
+  function pressStart() {
+    longPressed = false;
+    pressTimer = setTimeout(() => {
+      longPressed = true;
+      navigator.vibrate?.(20);
+      location.hash = hrefFor('scan', {}, { mode: 'burst' });
+    }, 500);
+  }
+  const pressEnd = () => clearTimeout(pressTimer);
+  /** @param {MouseEvent} e */
+  function onScanClick(e) {
+    if (longPressed) e.preventDefault();
+  }
+
   const STATE_TEXT = { saved: 'backup completato', pending: 'modifiche da salvare', idle: 'backup in pausa', none: '' };
   const profileLabel = $derived(
     account.user ? `Profilo di ${account.user.givenName || account.user.name}, ${STATE_TEXT[status]}` : 'Profilo',
@@ -48,7 +66,17 @@
 <nav class="nav" aria-label="Navigazione principale">
   {@render item(items[0])}
   {@render item(items[1])}
-  <a class="scan" href={hrefFor('scan')} aria-label="Scansiona carte">
+  <a
+    class="scan"
+    href={hrefFor('scan')}
+    aria-label="Scansiona carte (tieni premuto per la raffica)"
+    onpointerdown={pressStart}
+    onpointerup={pressEnd}
+    onpointerleave={pressEnd}
+    onpointercancel={pressEnd}
+    onclick={onScanClick}
+    oncontextmenu={(e) => e.preventDefault()}
+  >
     <Icon icon={ScanIcon} size={26} strokeWidth={1.6} />
   </a>
   {@render item(items[2])}
@@ -123,6 +151,8 @@
   }
 
   .scan {
+    -webkit-touch-callout: none;
+    user-select: none;
     width: 56px;
     height: 56px;
     margin: 0 4px;

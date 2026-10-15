@@ -73,7 +73,7 @@
   {:else if route.name === 'profile'}
     <Profile />
   {:else if route.name === 'scan'}
-    <Scan />
+    <Scan query={route.query} />
   {:else if route.name === 'card'}
     {#key `${route.params.lang}/${route.params.id}`}
       <Card lang={route.params.lang} id={route.params.id} />

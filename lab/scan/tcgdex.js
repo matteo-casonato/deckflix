@@ -1,6 +1,6 @@
 // @ts-check
 // Minimal TCGdex client for the scan prototype (in-memory + sessionStorage cache).
-import { confusableNumbers, nameSimilarity, setCodeMatches } from './recognize.js';
+import { confusableNumbers, nameSimilarity, setCodeMatches } from '../../src/lib/domain/recognize.js';
 import { CLASSIC_COLLECTION_SETS } from '../../src/lib/domain/variants.js';
 
 const BASE = 'https://api.tcgdex.net/v2';
