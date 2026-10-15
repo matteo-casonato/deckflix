@@ -22,6 +22,12 @@ describe('matchRoute', () => {
     expect(matchRoute('#/search?q=char%20ex&mine=1').query).toEqual({ q: 'char ex', mine: '1' });
   });
 
+  it('matches deck routes, the static import before the id', () => {
+    expect(matchRoute('#/deck/import').name).toBe('deckImport');
+    expect(matchRoute('#/deck/abc-123')).toMatchObject({ name: 'deckDetail', params: { id: 'abc-123' } });
+    expect(matchRoute('#/deck/abc-123/edit')).toMatchObject({ name: 'deckEdit', params: { id: 'abc-123' } });
+  });
+
   it('returns notFound for unknown paths', () => {
     expect(matchRoute('#/nope').name).toBe('notFound');
     expect(matchRoute('#/card/it').name).toBe('notFound');

@@ -15,6 +15,10 @@
   import Search from './screens/Search.svelte';
   import QuickAdd from './screens/QuickAdd.svelte';
   import SetScreen from './screens/Set.svelte';
+  import Decks from './screens/Decks.svelte';
+  import DeckDetail from './screens/DeckDetail.svelte';
+  import DeckBuilder from './screens/DeckBuilder.svelte';
+  import DeckImport from './screens/DeckImport.svelte';
   import Nav from './lib/ui/Nav.svelte';
   import Home from './screens/Home.svelte';
   import Placeholder from './screens/Placeholder.svelte';
@@ -64,12 +68,13 @@
   {:else if route.name === 'quick'}
     <QuickAdd query={route.query} />
   {:else if route.name === 'deck'}
-    <Placeholder
-      title="Deck"
-      emptyTitle="Crea il tuo primo deck"
-      emptyText="Potrai crearne uno nuovo o importare una lista da un sito di tornei."
-      phase="Fase 6"
-    />
+    <Decks />
+  {:else if route.name === 'deckImport'}
+    <DeckImport />
+  {:else if route.name === 'deckDetail'}
+    {#key route.params.id}<DeckDetail id={route.params.id} />{/key}
+  {:else if route.name === 'deckEdit'}
+    {#key route.params.id}<DeckBuilder id={route.params.id} query={route.query} />{/key}
   {:else if route.name === 'profile'}
     <Profile />
   {:else if route.name === 'scan'}

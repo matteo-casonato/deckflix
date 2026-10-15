@@ -9,6 +9,8 @@
   import { settings } from '../lib/stores/settings.svelte.js';
   import { cachedCards, prefetchCards, setsMap } from '../lib/data/catalog.js';
   import { addOneCopy, toggleWish } from '../lib/data/actions.js';
+  import { changeDeckCard } from '../lib/data/decks.js';
+  import { showToast } from '../lib/stores/toast.svelte.js';
   import { LANG_LABELS, setIdOf } from '../lib/domain/cards.js';
   import { hrefFor } from '../lib/domain/routes.js';
   import { replace } from '../lib/router.svelte.js';
@@ -24,10 +26,34 @@
   const mine = $derived(query.mine === '1');
   const lang = $derived(query.lang || settings.cardLang);
   const filters = $derived({ setId: query.set ?? '', type: query.type ?? '', rarity: query.rarity ?? '' });
+  // "Aggiungi al deck" (docs/mockups/CercaCarte.html): + adds to the deck, Standard only by default.
+  const deckId = $derived(query.deck ?? '');
+  const standard = $derived(deckId ? query.standard !== '0' : query.standard === '1');
+  const deck = $derived(liveQuery(() => (deckId ? db.decks.get(deckId) : Promise.resolve(undefined))));
+  /** @param {string} cardId */
+  const inDeck = (cardId) => $deck?.cards.find((c) => c.cardId === cardId)?.qty ?? 0;
+
+  /** @param {{ id: string, name: string }} c */
+  async function addToDeck(c) {
+    await changeDeckCard(deckId, c.id, 1);
+    showToast(`${c.name} nel deck · ${inDeck(c.id) + 1}`, () => changeDeckCard(deckId, c.id, -1));
+  }
 
   /** @param {Record<string, string | null>} patch */
   function update(patch) {
-    replace(hrefFor('search', {}, { q: text.trim() || null, mine: mine ? '1' : null, lang: query.lang, ...filters, set: filters.setId, ...patch, setId: undefined }));
+    replace(
+      hrefFor('search', {}, {
+        q: text.trim() || null,
+        mine: mine ? '1' : null,
+        lang: query.lang,
+        deck: deckId || null,
+        standard: query.standard,
+        ...filters,
+        set: filters.setId,
+        ...patch,
+        setId: undefined,
+      }),
+    );
   }
 
   /** @type {ReturnType<typeof setTimeout> | undefined} */
@@ -108,7 +134,7 @@
         results = await searchMine();
         more = false;
       } else {
-        const res = await searchCards(lang, { name: q, ...filters, page: p });
+        const res = await searchCards(lang, { name: q, ...filters, standard, page: p });
         results = p === 1 ? res.data : [...results, ...res.data];
         more = res.data.length === PAGE_SIZE;
         page = p;
@@ -125,7 +151,7 @@
 
   $effect(() => {
     // Re-run when the query in the URL changes.
-    void [q, mine, lang, filters.setId, filters.type, filters.rarity, $owned?.size];
+    void [q, mine, lang, filters.setId, filters.type, filters.rarity, standard, $owned?.size];
     run(1);
   });
 
@@ -138,7 +164,12 @@
   const ownedCount = $derived(results.filter((r) => ($owned?.get(r.id) ?? 0) > 0).length);
 </script>
 
-<BackHeader title="Cerca" big fallback={hrefFor('collection')} />
+<BackHeader
+  title={deckId ? 'Aggiungi al deck' : 'Cerca'}
+  big
+  fallback={deckId ? hrefFor('deckEdit', { id: deckId }) : hrefFor('collection')}
+/>
+{#if deckId && $deck}<p class="deckname">{$deck.name} · <span class="num">{$deck.cards.reduce((n, c) => n + c.qty, 0)}</span>/60</p>{/if}
 
 <div class="pad">
   <label class="field">
@@ -159,6 +190,7 @@
   />
 
   <div class="chips" role="group" aria-label="Filtri">
+    <button class="chip" aria-pressed={standard} onclick={() => update({ standard: standard ? (deckId ? '0' : null) : '1' })}>Solo Standard</button>
     <select class="chip" class:on={!!filters.setId} aria-label="Edizione" value={filters.setId} onchange={(e) => update({ set: e.currentTarget.value || null })}>
       <option value="">Edizione</option>
       {#each setOptions as s (s.id)}<option value={s.id}>{s.name}</option>{/each}
@@ -217,17 +249,24 @@
           <span class="txt">
             <strong>{c.name}</strong>
             <span class="sub num">{subtitle(c)}</span>
-            {#if qty > 0}
-              <span class="badge yes"><Icon icon={Tick02Icon} size={12} /> Posseduta ×{qty}</span>
-            {:else}
-              <span class="badge">Non posseduta</span>
-            {/if}
+            <span class="badges">
+              {#if qty > 0}
+                <span class="badge yes"><Icon icon={Tick02Icon} size={12} /> Posseduta ×{qty}</span>
+              {:else}
+                <span class="badge">Non posseduta</span>
+              {/if}
+              {#if deckId && inDeck(c.id)}<span class="badge deck">Nel deck ×{inDeck(c.id)}</span>{/if}
+            </span>
           </span>
         </a>
         <button class="icon" class:wish aria-pressed={wish} aria-label={wish ? 'Togli dai desideri' : 'Aggiungi ai desideri'} onclick={() => toggleWish(c.id, c.name)}>
           <Icon icon={FavouriteIcon} size={20} />
         </button>
-        <button class="icon add" aria-label="Aggiungi alla collezione" onclick={() => addOneCopy({ cardId: c.id, lang, name: c.name })}>
+        <button
+          class="icon add"
+          aria-label={deckId ? 'Aggiungi al deck' : 'Aggiungi alla collezione'}
+          onclick={() => (deckId ? addToDeck(c) : addOneCopy({ cardId: c.id, lang, name: c.name }))}
+        >
           <Icon icon={Add01Icon} size={20} />
         </button>
       </li>
@@ -364,6 +403,24 @@
     display: inline-flex;
     align-items: center;
     gap: 4px;
+  }
+
+  .badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .badge.deck {
+    background: color-mix(in srgb, var(--accent) 16%, var(--surface));
+    color: var(--accent);
+  }
+
+  .deckname {
+    margin: 0;
+    padding: 0 20px;
+    color: var(--muted);
+    font-size: 13px;
   }
 
   .badge.yes {

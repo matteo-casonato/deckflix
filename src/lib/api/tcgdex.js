@@ -122,11 +122,12 @@ export const PAGE_SIZE = 60;
  * name contains `name`; set, type and rarity are exact. Results are card briefs
  * ({ id, localId, name, image? }).
  * @param {string} lang
- * @param {{ name?: string, setId?: string, type?: string, rarity?: string, page?: number }} f
+ * @param {{ name?: string, setId?: string, type?: string, rarity?: string, standard?: boolean, page?: number }} f
  */
-export function searchCards(lang, { name, setId, type, rarity, page = 1 }) {
+export function searchCards(lang, { name, setId, type, rarity, standard, page = 1 }) {
   const p = new URLSearchParams();
   if (name) p.set('name', name);
+  if (standard) p.set('legal.standard', 'true');
   if (setId) p.set('set.id', `eq:${setId}`);
   if (type) p.set('types', type);
   if (rarity) p.set('rarity', `eq:${rarity}`);
@@ -149,3 +150,17 @@ export const getRarities = (lang) => getCachedPath(`/${lang}/rarities`);
 export function cardImage(card, quality = 'low') {
   return card?.image ? `${card.image}/${quality}.webp` : null;
 }
+
+/**
+ * Sets whose official abbreviation is `code` (the "SVI" of deck lists). Usually one;
+ * a few codes are shared (e.g. a set and its classic collection).
+ * @param {string} code
+ */
+export const findSetsByCode = (code) => getCachedPath(`/en/sets?abbreviation.official=eq:${encodeURIComponent(code)}`);
+
+/**
+ * Every print with exactly this name (for "altra versione" in decks).
+ * @param {string} lang
+ * @param {string} name
+ */
+export const cardsNamed = (lang, name) => getCachedPath(`/${lang}/cards?name=eq:${encodeURIComponent(name)}`, CARD_TTL);

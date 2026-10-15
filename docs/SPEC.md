@@ -136,7 +136,7 @@ Energy: 10
 ```
 
 - Ogni riga: quantità, nome (in inglese), sigla dell'edizione, numero.
-- Le sigle sono esposte da TCGdex nell'oggetto edizione come `abbreviation.official` (es. `sv01` → `SVI`, `swsh6` → `CRE`; verificato il 15/10/2026). Per le edizioni in cui manca, mantenere una tabella di corrispondenza in `src/lib/domain/setCodes.js`.
+- Le sigle sono esposte da TCGdex nell'oggetto edizione come `abbreviation.official` (es. `sv01` → `SVI`, `swsh6` → `CRE`) e si cercano lato server con `/en/sets?abbreviation.official=eq:SVI`; le Energie base sono nell'edizione `sve` (`SVE 4` → `sve-004`). Verificato il 15/10/2026 su una lista di 60 carte con edizioni dal 2022 (BRS, ASR, PGO, CRZ) al 2024: tutte le righe trovate, quindi niente tabella `setCodes.js` per ora.
 - L'import cerca la carta in inglese, ne ricava l'`id` (uguale in tutte le lingue su TCGdex) e calcola subito i tre stati (posseduta / mancante / altra versione).
 - Le righe non riconosciute vengono mostrate all'utente per la correzione manuale, mai scartate in silenzio.
 - L'export copia il testo negli appunti o lo condivide con la Web Share API.
@@ -328,6 +328,8 @@ Fotocamera (area dello scanner a forma di carta, tocco per scattare, zoom), OCR 
 **Fase 6 — Deck**
 Elenco deck, Deck List Creator, aggiunta dalla ricerca con "Solo Standard", stati posseduta/mancante/altra versione, mancanti ai desideri, import ed export delle liste in formato testo.
 ✅ Una lista da 60 carte incollata da un sito di tornei crea il deck e mostra correttamente i tre stati; l'export produce un testo reimportabile identico.
+
+**Esito (15/10/2026)**: elenco deck (completamento, mancanti e costo), dettaglio (sezioni, valore, stati per carta, condividi lista con Web Share o appunti, mancanti ai desideri, elimina), Deck List Creator (griglia con posseduta/altra versione/mancante, avviso sulle altre versioni, massimo 4 copie tranne le Energie base, conteggio su 60), "Aggiungi al deck" dalla ricerca con "Solo Standard" (`legal.standard=true`), import con righe non trovate mostrate per la correzione. "Altra versione": per ogni carta del deck si cercano le stampe con lo stesso nome inglese (`/en/cards?name=eq:`), si incrociano con la collezione e si confrontano attacchi e abilità (solo il nome per Allenatori ed Energie). Verificato nel browser con una lista Miraidon ex da 60 carte: 26 righe su 26 trovate, stati corretti (Miraidon posseduta, Raikou V e Nest Ball altra versione, Iono "manca 2"), export → import → export identico. L'export scrive le Energie base come Pokémon TCG Live ("Basic {L} Energy").
 
 **Fase 7 — Valore e statistiche**
 Calcolo del valore, istantanee giornaliere, schermata Statistiche, card in Home.
