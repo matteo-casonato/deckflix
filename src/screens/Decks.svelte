@@ -5,6 +5,7 @@
   import { Add01Icon, Search01Icon } from '@hugeicons/core-free-icons';
   import { db } from '../lib/db.js';
   import { createDeck, deckRows, ownedMap } from '../lib/data/decks.js';
+  import { pasteErrorText, readListFromClipboard, setPendingList } from '../lib/data/pasteList.js';
   import { deckSummary } from '../lib/domain/deck.js';
   import { euro } from '../lib/domain/cards.js';
   import { hrefFor } from '../lib/domain/routes.js';
@@ -25,6 +26,13 @@
       (pairs) => (summaries = new Map(pairs)),
     );
   });
+
+  async function pasteList() {
+    const r = await readListFromClipboard();
+    if ('error' in r) showToast(pasteErrorText(r.error));
+    else setPendingList(r.text);
+    navigate(hrefFor('deckImport'));
+  }
 
   async function newDeck() {
     const id = await createDeck('Nuovo deck');
@@ -51,7 +59,7 @@
 {#if $decks && $decks.length === 0}
   <EmptyState title="Crea il tuo primo deck" text="Parti da zero o incolla una lista da un sito di tornei o da Pokémon TCG Live.">
     <button class="btn light" onclick={newDeck}>Nuovo deck</button>
-    <a class="btn" href={hrefFor('deckImport')}>Importa lista</a>
+    <button class="btn" onclick={pasteList}>Incolla lista</button>
   </EmptyState>
 {:else if $decks}
   {@const [hero, ...rest] = $decks}
@@ -94,10 +102,20 @@
     {/each}
   </ul>
 
-  <div class="pad"><a class="btn wide" href={hrefFor('deckImport')}>Importa una lista</a></div>
+  <div class="pad">
+    <button class="btn wide" onclick={pasteList}>Incolla una lista</button>
+    <p class="hint">Copiata da Limitless (“Copy to Clipboard”) o da Pokémon TCG Live.</p>
+  </div>
 {/if}
 
 <style>
+  .hint {
+    margin: 8px 4px 0;
+    font-size: 12px;
+    color: var(--muted);
+    text-align: center;
+  }
+
   .top {
     padding: 20px 16px 4px;
     display: flex;

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { listName, listNumber, parseDecklist, serializeDecklist } from '../src/lib/domain/decklist.js';
-import { deckSummary, entryState, sameCard, sectionOfCard } from '../src/lib/domain/deck.js';
+import { listName, listNumber, parseDecklist, serializeDecklist, suggestDeckName } from '../src/lib/domain/decklist.js';
+import { deckBreakdown, deckSummary, entryState, openingHand, sameCard, sectionOfCard } from '../src/lib/domain/deck.js';
 
 const LIST = `Pokémon: 16
 3 Miraidon ex SVI 81
@@ -106,5 +106,51 @@ describe('deckSummary and sectionOfCard', () => {
     expect(sectionOfCard({ category: 'Energy' })).toBe('Energy');
     expect(sectionOfCard({ category: 'Allenatore' })).toBe('Trainer');
     expect(sectionOfCard({ category: 'Pokemon' })).toBe('Pokémon');
+  });
+});
+
+describe('suggestDeckName', () => {
+  it('names the deck after its main rule-box Pokémon', () => {
+    const { lines } = parseDecklist('Pokémon: 19\n4 Dreepy TWM 128\n3 Dragapult ex TWM 130\n1 Meowth ex POR 62\n\nTrainer: 1\n4 Ultra Ball MEG 131');
+    expect(suggestDeckName(lines)).toBe('Dragapult ex');
+  });
+  it('falls back to the most played Pokémon, or nothing', () => {
+    expect(suggestDeckName(parseDecklist('Pokémon: 6\n2 Pikachu SVI 1\n4 Raichu SVI 2').lines)).toBe('Raichu');
+    expect(suggestDeckName([])).toBe('');
+  });
+});
+
+// The Dragapult ex list from Limitless (my.limitlesstcg.com builder shows these numbers).
+const P = (cardId, qty, stage) => ({ cardId, qty, section: 'Pokémon', card: { name: cardId, stage } });
+const T = (cardId, qty, trainerType) => ({ cardId, qty, section: 'Trainer', card: { trainerType } });
+const DRAGAPULT = [
+  P('Dreepy', 4, 'Basic'), P('Drakloak', 4, 'Stage1'), P('Dragapult ex', 3, 'Stage2'), P('Munkidori', 2, 'Basic'),
+  P('Budew', 2, 'Basic'), P('Dunsparce', 1, 'Basic'), P('Dudunsparce', 1, 'Stage1'), P('Meowth ex', 1, 'Basic'), P('Fezandipiti ex', 1, 'Basic'),
+  T('sup', 11, 'Supporter'), T('item', 19, 'Item'), T('stadium', 2, 'Stadium'),
+  { cardId: 'e', qty: 9, section: 'Energy', card: { energyType: 'Normal' } },
+];
+
+describe('deckBreakdown', () => {
+  it('counts Basic/other Pokémon, trainer kinds and energy kinds', () => {
+    expect(deckBreakdown(DRAGAPULT)).toEqual({
+      pokemon: { basic: 11, other: 8, total: 19 },
+      trainer: { item: 19, supporter: 11, stadium: 2, tool: 0, total: 32 },
+      energy: { basic: 9, special: 0, total: 9 },
+    });
+  });
+});
+
+describe('openingHand', () => {
+  it('matches the Limitless builder odds', () => {
+    const h = openingHand(DRAGAPULT);
+    const pct = (x) => Math.round(x * 10000) / 100;
+    expect([pct(h.mulligan), pct(h.exactlyOne), pct(h.twoOrMore)]).toEqual([22.24, 51.22, 48.78]);
+    expect(h.starters.slice(0, 2).map((s) => [s.name, pct(s.possible), pct(s.forced)])).toEqual([
+      ['Dreepy', 51.38, 22.72],
+      ['Munkidori', 28.48, 9.95],
+    ]);
+  });
+  it('needs at least a hand of cards', () => {
+    expect(openingHand([P('a', 3, 'Basic')])).toBe(null);
   });
 });

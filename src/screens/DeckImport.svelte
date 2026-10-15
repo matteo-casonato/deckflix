@@ -3,7 +3,8 @@
   // Import a deck list (SPEC § 4.2 bis): paste, preview recognised and unrecognised lines,
   // name, create. Unrecognised lines are shown for manual correction, never dropped.
   import { createDeck, resolveDecklist } from '../lib/data/decks.js';
-  import { parseDecklist } from '../lib/domain/decklist.js';
+  import { parseDecklist, suggestDeckName } from '../lib/domain/decklist.js';
+  import { pasteErrorText, readListFromClipboard, takePendingList } from '../lib/data/pasteList.js';
   import { hrefFor } from '../lib/domain/routes.js';
   import { navigate } from '../lib/router.svelte.js';
   import { showToast } from '../lib/stores/toast.svelte.js';
@@ -24,9 +25,17 @@
     result = null;
     try {
       result = await resolveDecklist(text, (done, total) => (progress = { done, total }));
+      if (!name.trim()) name = suggestDeckName(parsed.lines);
     } finally {
       checking = false;
     }
+  }
+
+  // Arriving from "Incolla lista": the list is already read, check it right away.
+  const handed = takePendingList();
+  if (handed) {
+    text = handed;
+    check();
   }
 
   async function create() {
@@ -37,18 +46,18 @@
   }
 
   async function paste() {
-    try {
-      text = await navigator.clipboard.readText();
-    } catch {
-      showToast('Incolla la lista nel riquadro');
-    }
+    const r = await readListFromClipboard();
+    if ('error' in r) return showToast(pasteErrorText(r.error));
+    text = r.text;
+    name = '';
+    check();
   }
 </script>
 
 <BackHeader title="Importa lista" big fallback={hrefFor('deck')} />
 
 <div class="pad">
-  <p class="muted">Incolla una lista da Pokémon TCG Live o da un sito di tornei (es. Limitless): quantità, nome inglese, sigla e numero.</p>
+  <p class="muted">Su Limitless apri un mazzo e tocca “Copy to Clipboard”, poi qui “Incolla”. Va bene anche una lista esportata da Pokémon TCG Live: quantità, nome inglese, sigla e numero.</p>
   <label class="visually-hidden" for="deck-text">Lista del deck</label>
   <textarea
     id="deck-text"

@@ -1,7 +1,8 @@
 <script>
   // @ts-check
   // Deck summary (docs/mockups/DeckDettaglio.html): sections, value, completion, every card
-  // with its state; edit, share the list, missing cards to the wishlist, delete.
+  // with its state, breakdown and opening-hand odds; edit, share the list, missing cards to
+  // the wishlist, delete.
   import { liveQuery } from 'dexie';
   import { db } from '../lib/db.js';
   import { deckRows, deleteDeck, exportDecklist, missingToWishlist, ownedMap } from '../lib/data/decks.js';
@@ -13,6 +14,7 @@
   import { showToast } from '../lib/stores/toast.svelte.js';
   import BackHeader from '../lib/ui/BackHeader.svelte';
   import ConfirmDialog from '../lib/ui/ConfirmDialog.svelte';
+  import DeckStats from './deck/DeckStats.svelte';
 
   /** @type {{ id: string }} */
   let { id } = $props();
@@ -128,6 +130,8 @@
     {/each}
     {#if !rows.length}
       <p class="pad muted">Il deck è vuoto: tocca Modifica per aggiungere carte.</p>
+    {:else}
+      <DeckStats {rows} />
     {/if}
   {/if}
 

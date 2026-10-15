@@ -5,7 +5,9 @@
   import { liveQuery } from 'dexie';
   import { Add01Icon } from '@hugeicons/core-free-icons';
   import { db } from '../lib/db.js';
-  import { changeDeckCard, deckRows, missingToWishlist, ownedMap, updateDeck } from '../lib/data/decks.js';
+  import { changeDeckCard, deckRows, missingToWishlist, ownedMap, resolveDecklist, updateDeck } from '../lib/data/decks.js';
+  import { pasteErrorText, readListFromClipboard } from '../lib/data/pasteList.js';
+  import { parseDecklist, suggestDeckName } from '../lib/domain/decklist.js';
   import { DECK_SIZE, MAX_COPIES, deckSummary } from '../lib/domain/deck.js';
   import { euro } from '../lib/domain/cards.js';
   import { hrefFor } from '../lib/domain/routes.js';
@@ -33,6 +35,24 @@
   const shown = $derived((rows ?? []).filter((r) => r.section === tab));
   const others = $derived((rows ?? []).filter((r) => r.state === 'other'));
   let showOthers = $state(false);
+
+  // Empty deck: fill it from a list copied from Limitless or Pokémon TCG Live.
+  let pasting = $state(false);
+  async function pasteList() {
+    const r = await readListFromClipboard();
+    if ('error' in r) return showToast(pasteErrorText(r.error));
+    pasting = true;
+    try {
+      const res = await resolveDecklist(r.text, () => {});
+      const patch = { cards: res.cards.map((c) => ({ cardId: c.cardId, qty: c.qty })) };
+      if (!name.trim() || name === 'Nuovo deck') name = suggestDeckName(parseDecklist(r.text).lines) || name;
+      await updateDeck(id, { ...patch, name: name.trim() || 'Nuovo deck' });
+      const n = res.cards.reduce((s, c) => s + c.qty, 0);
+      showToast(res.unresolved.length ? `${n} carte importate · ${res.unresolved.length} righe non trovate` : `${n} carte importate`);
+    } finally {
+      pasting = false;
+    }
+  }
 
   /** @type {string} */
   let name = $state('');
@@ -67,6 +87,14 @@
       onchange={() => updateDeck(id, { name: name.trim() || 'Nuovo deck' })}
       onblur={() => updateDeck(id, { name: name.trim() || 'Nuovo deck' })}
     />
+
+    {#if $deck.cards.length === 0}
+      <section class="paste card">
+        <strong>Hai una lista pronta?</strong>
+        <span class="muted">Copiala su Limitless con “Copy to Clipboard” (o da Pokémon TCG Live) e incollala qui.</span>
+        <button class="btn primary" disabled={pasting} onclick={pasteList}>{pasting ? 'Cerco le carte…' : 'Incolla lista'}</button>
+      </section>
+    {/if}
 
     {#if others.length}
       <div class="notice">
@@ -149,6 +177,16 @@
 {/if}
 
 <style>
+  .paste {
+    padding: 16px;
+    border-radius: var(--r-card);
+    background: var(--surface);
+    border: 1px dashed var(--line-2);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
   .pad {
     padding: 8px 16px 0;
     display: flex;

@@ -103,3 +103,16 @@ export function listName(name, section) {
   const m = section === 'Energy' ? name.match(/^(?:Basic )?(\w+) Energy$/) : null;
   return m && ENERGY_SYMBOL[m[1]] ? `Basic {${ENERGY_SYMBOL[m[1]]}} Energy` : name;
 }
+
+/**
+ * Name suggested for an imported deck: its main rule-box Pokémon (ex, V, VSTAR, VMAX, GX),
+ * most copies first, as tournament sites name archetypes ("Dragapult ex"). Lists copied from
+ * Limitless carry only the cards, not the deck name.
+ * @param {ListLine[]} lines
+ */
+export function suggestDeckName(lines) {
+  const pokemon = lines.filter((l) => l.section === 'Pokémon' || l.section === null);
+  const rule = pokemon.filter((l) => /\b(ex|EX|V|VSTAR|VMAX|GX)$/.test(l.name));
+  const pick = [...(rule.length ? rule : pokemon)].sort((a, b) => b.qty - a.qty || a.line - b.line)[0];
+  return pick?.name ?? '';
+}

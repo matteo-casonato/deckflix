@@ -12,6 +12,7 @@
     Analytics01Icon,
     LockIcon,
     GridViewIcon,
+    LinkSquare02Icon,
   } from '@hugeicons/core-free-icons';
   import Icon from '../lib/ui/Icon.svelte';
   import Avatar from '../lib/ui/Avatar.svelte';
@@ -20,6 +21,7 @@
   import { setSetting, settings } from '../lib/stores/settings.svelte.js';
   import { LANG_LABELS } from '../lib/domain/cards.js';
   import { hrefFor } from '../lib/domain/routes.js';
+  import { USEFUL_LINKS, hostOf } from '../lib/domain/links.js';
   import { clearImageCache, imageCacheInfo } from '../lib/data/imageCache.js';
   import { backupState, relativeTime } from '../lib/domain/backup.js';
   import { backupNow, isConfigured, restoreFromDrive, signOut } from '../lib/sync/sync.js';
@@ -124,6 +126,18 @@
     <span class="text"><strong>Ripristina da Drive</strong><span>Sostituisce i dati di questo telefono</span></span>
     <span class="chev"><Icon icon={ArrowRight01Icon} size={20} /></span>
   </button>
+</section>
+
+<h2 class="section">Utility</h2>
+<section class="card list">
+  {#each USEFUL_LINKS as l (l.url)}
+    <a class="row" href={l.url} target="_blank" rel="noopener noreferrer">
+      <span class="ico fav" aria-hidden="true">{l.name[0]}</span>
+      <span class="text"><strong>{l.name}</strong><span>{l.text} · {hostOf(l.url)}</span></span>
+      <span class="chev" aria-hidden="true"><Icon icon={LinkSquare02Icon} size={18} /></span>
+      <span class="visually-hidden">(si apre in una nuova scheda)</span>
+    </a>
+  {/each}
 </section>
 
 <h2 class="section">App</h2>
@@ -405,6 +419,13 @@
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+  }
+
+  .fav {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 18px;
+    color: var(--accent);
   }
 
   .chev {
