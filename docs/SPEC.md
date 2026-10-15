@@ -28,9 +28,10 @@ Campi utilizzati della carta:
 
 - `id`, `localId` (numero nell'edizione), `name`, `set` (`id`, `name`, `cardCount`), `rarity`, `category` (Pokémon / Allenatore / Energia), `types`, `attacks`, `abilities`
 - `image`: URL base, a cui si aggiunge `/{low|high}.{webp|png}` → liste con `low.webp`, dettaglio con `high.webp`. **Può mancare**: usare l'immagine della versione inglese come ripiego, altrimenti un segnaposto.
-- `variants`: quali stampe esistono (`normal`, `reverse`, `holo`, `firstEdition`…)
+- `variants`: quali stampe esistono (`normal`, `reverse`, `holo`, `firstEdition`…). Ripiego quando manca `variants_detailed`.
+- `variants_detailed[]`: **una voce per ogni stampa reale**, con `type` (Normale / Reverse / Olografica / Metallica), `stamp[]` (timbri: `30th-anniversary`, `player-rewards-program`, `set-logo`/"Logo set", `staff`, `snowflake`, `pokemon-together`, `30th-pokeday`…, in parte già tradotti nell'API italiana), `foil` (`cosmos`, `gold`, `rainbow`, `league`…), `variantId` e un proprio `pricing.cardmarket` con un prodotto Cardmarket distinto. Esempio `sv10-049` Gyarados di Misty: Normale 7,22 €, Olografica 0,33 €, Olografica con timbro Logo set 24,01 € (verificato il 15/10/2026).
 - `legal.standard`, `legal.expanded`: legalità nei formati di gioco
-- `pricing.cardmarket`: prezzi aggiornati una volta al giorno (l'oggetto ha anche `updated`, `unit`, `idProduct`; esiste inoltre `variants_detailed[]` con prezzi per singola stampa, da valutare). Campi: `avg`, `low`, `trend`, `avg1`, `avg7`, `avg30` e gli equivalenti con suffisso `-holo` (es. `trend-holo`, `low-holo`). **Può mancare.**
+- `pricing.cardmarket`: prezzi aggiornati una volta al giorno (l'oggetto ha anche `updated`, `unit`, `idProduct`). Per il valore di una copia si usa il prezzo della sua voce in `variants_detailed` (vedi § 4.3); il `pricing` della carta resta il ripiego. Campi: `avg`, `low`, `trend`, `avg1`, `avg7`, `avg30` e gli equivalenti con suffisso `-holo` (es. `trend-holo`, `low-holo`). **Può mancare.**
 
 Limiti noti da comunicare nell'interfaccia:
 
@@ -57,7 +58,7 @@ db.version(1).stores({
 
 | Store | Chiave | Contenuto |
 |---|---|---|
-| `collection` | `key` = `cardId|lang|variant` | `{ key, cardId, setId, lang, variant, qty, condition?, purchasePrice?, addedAt, updatedAt }` |
+| `collection` | `key` = `cardId|lang|variant` | `{ key, cardId, setId, lang, variant, qty, condition?, purchasePrice?, addedAt, updatedAt }` — `variant` è la chiave stabile della stampa (es. `normal`, `holo`, `holo+stamp-set-logo`, `reverse+foil-cosmos`), costruita da `variants_detailed` |
 | `wishlist` | `cardId` | `{ cardId, lang?, variant?, priority?, addedAt }` |
 | `decks` | `id` | `{ id, name, format: 'standard', cards: [{ cardId, qty }], createdAt, updatedAt }` |
 | `priceSnapshots` | `date` | `{ date, totalValue }` — uno al giorno per lo storico del valore |
@@ -67,7 +68,7 @@ db.version(1).stores({
 
 Regole:
 
-- **Copie uguali** = stessa carta + stessa lingua + stessa variante → si incrementa `qty`. Qualsiasi differenza crea una voce separata.
+- **Copie uguali** = stessa carta + stessa lingua + stessa variante (finitura, foil e timbri) → si incrementa `qty`. Qualsiasi differenza crea una voce separata: una carta con timbro è una voce diversa dalla stessa carta senza timbro.
 - `qty = 0` equivale a rimuovere la voce.
 - Le immagini delle carte non si salvano nei dati: si mettono in cache con la Cache API quando vengono visualizzate.
 
@@ -76,10 +77,11 @@ Regole:
 ### 4.1 Scansione e riconoscimento
 
 1. Fotocamera con `getUserMedia` (camera posteriore), mirino con il rapporto di una carta (63 × 88).
-2. Si ritaglia la fascia bassa della carta (numero `025/165`) e la parte alta (nome, PS/HP) e si passano a Tesseract.js in un Web Worker.
+2. **OCR**: motore principale è l'OCR di Google sul dispositivo tramite la Shape Detection API di Chrome (`TextDetector`, su Android usa il riconoscimento testo di Google Play Services / ML Kit): gratuito, offline, senza chiavi; legge la carta intera in un passaggio (~0,7–2 s). Oggi richiede in Chrome il flag "Experimental Web Platform features": l'app lo spiega quando il motore non è disponibile. Ripiego: Tesseract.js in un Web Worker, con passaggi solo cifre sugli angoli in basso (sinistro per le carte recenti, destro per le vecchie). Esito della Fase 0: con Tesseract il numero non veniva letto dal telefono; con l'OCR di Google 4 carte su 4 riconosciute dalla fotocamera.
 3. **Lingua** dedotta da parole chiave: `PS` → it/es/pt, `HP` → en, `KP` → de, `PV` → fr (distinguere con altre parole come "Debolezza", "Weakness", "Schwäche", "Faiblesse", "Debilidad", "Fraqueza"). Le carte Scarlatto e Violetto stampano anche il codice lingua accanto al numero (`SVI EN 081/198`): è il segnale più affidabile.
 4. Ricerca su TCGdex per numero + totale dell'edizione (`set.cardCount.official`) + nome come conferma; la sigla stampata sulle carte recenti (`SVI`) corrisponde a `set.abbreviation.official` e distingue edizioni con lo stesso totale. Se ci sono più corrispondenze, l'utente sceglie.
-5. **Variante**: dalla fotocamera non si distingue in modo affidabile. Se `variants` ne indica una sola, si imposta da sola; altrimenti l'utente sceglie con un tocco (Normale / Reverse / Holo).
+5. **Variante**: finitura, foil speciali e timbri non si distinguono in modo affidabile dalla fotocamera (i timbri sono quasi sempre simboli, es. il Pikachu del 30° anniversario o il logo dell'edizione). Si mostrano le voci di `variants_detailed` con il prezzo di ciascuna; se ce n'è una sola si imposta da sola, se il testo letto contiene una parola del timbro (`STAFF`, `PRERELEASE`) si preseleziona quella, altrimenti si preseleziona `normal` e l'utente cambia con un tocco.
+5 bis. **Ristampe delle collezioni classiche** (`cel25cc` Celebrations Classic Collection, `30th-c` Collezione Classica del 30°): riportano il numero della carta originale (es. Jigglypuff di Erika `69/132`), quindi la ricerca per numero trova l'originale. Dopo la ricerca per numero si cercano anche per nome (`/cards?name=`) le carte omonime in queste edizioni e si propongono come "Ristampa".
 6. La foto non viene mai salvata.
 7. Modalità **Singola**: dopo il riconoscimento compare un pannello con lingua, variante, quantità ("Ne hai già 1 → aggiorna a 2") e i pulsanti Riprova / Aggiungi.
 8. Modalità **Raffica**: scatto automatico quando la carta è a fuoco e ferma, messaggio di conferma, coda delle carte riconosciute; alla fine "Rivedi e salva N carte". Le carte con riconoscimento incerto vanno segnalate come "da verificare".
@@ -136,7 +138,7 @@ Energy: 10
 
 ### 4.3 Valore e statistiche
 
-- Prezzo di riferimento configurabile (predefinito `trend`); si usa la variante `-holo` per le copie holo e reverse quando esiste.
+- Prezzo di riferimento configurabile (predefinito `trend`), preso dalla voce di `variants_detailed` della copia: per Reverse e Olografica che condividono il prodotto base si usa il campo `-holo` (es. `trend-holo`) se maggiore di zero; per le stampe con un prodotto proprio (timbri, foil speciali) si usa `trend`. Se la voce non ha prezzi, ripiego sul `pricing` della carta.
 - Valore della collezione = somma di `prezzo × qty`.
 - Al primo avvio della giornata si salva un'istantanea del valore totale.
 - La data di aggiornamento dei prezzi è sempre visibile vicino ai valori ("Prezzi di oggi", "Prezzi del 12/10"); se i dati in cache hanno più di 3 giorni, segnalarlo.
@@ -276,7 +278,7 @@ Revoca del token (`google.accounts.oauth2.revoke`), i dati restano sul telefono;
 Ogni fase si chiude con i criteri di accettazione verificati.
 
 **Fase 0 — Prova della scansione**
-Prototipo isolato (una pagina, nessuna persistenza): fotocamera, ritaglio delle zone, Tesseract.js in un worker, riconoscimento di numero, lingua e nome, ricerca su TCGdex.
+Prototipo isolato (una pagina, nessuna persistenza, `lab/scan/`): fotocamera, ritaglio delle zone, OCR (Google `TextDetector`, ripiego Tesseract.js), riconoscimento di numero, lingua, sigla e nome, ricerca su TCGdex, scelta della variante.
 ✅ Su 30 carte reali di edizioni, lingue e finiture diverse (comprese holo e reverse), almeno l'85% riconosciute correttamente in condizioni di luce normali. Annotare tempi, errori tipici e regolazioni utili (contrasto, soglia, area di ritaglio). Se la soglia non è raggiunta, fermarsi e discutere alternative prima della Fase 1.
 
 **Fase 1 — Fondamenta**

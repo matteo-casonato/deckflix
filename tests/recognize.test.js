@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { confusableNumbers, detectLanguage, nameSimilarity, parseCollectorNumber, parseSetCode } from '../lab/scan/recognize.js';
+import { confusableNumbers, detectLanguage, nameSimilarity, parseCollectorNumber, parseSetCode, setCodeMatches } from '../lab/scan/recognize.js';
 
 describe('parseCollectorNumber', () => {
   it('reads a clean number', () => {
@@ -108,5 +108,19 @@ describe('parseCollectorNumber edge cases from real OCR output', () => {
 
   it('drops one spurious trailing digit after the total', () => {
     expect(parseCollectorNumber('0 050/1820', new Set([182]))).toMatchObject({ number: 50, total: 182 });
+  });
+});
+
+describe('set codes glued to the language code', () => {
+  it('matches "DRIT" with DRI', () => {
+    expect(parseSetCode('DRIT\n178/182')).toBe('DRIT');
+    expect(setCodeMatches('DRIT', 'DRI')).toBe(true);
+    expect(setCodeMatches('DRI', 'DRI')).toBe(true);
+    expect(setCodeMatches('DRIT', 'SVI')).toBe(false);
+    expect(setCodeMatches('D', 'DRI')).toBe(false);
+  });
+
+  it('keeps codes with digits like 30C', () => {
+    expect(parseSetCode('J 30C 157/128')).toBe('30C');
   });
 });

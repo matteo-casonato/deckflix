@@ -3,7 +3,8 @@
 // No persistence except the test log in localStorage. The photo is never stored.
 import { createWorker, PSM } from 'tesseract.js';
 import { parseCollectorNumber, parseSetCode, detectLanguage } from './recognize.js';
-import { findWithCorrections, knownTotals } from './tcgdex.js';
+import { findReprints, findWithCorrections, getCard, knownTotals } from './tcgdex.js';
+import { guessVariant, listVariants } from './variants.js';
 
 /** @template {HTMLElement} T @param {string} id @returns {T} */
 const $ = (id) => /** @type {T} */ (document.getElementById(id));
@@ -405,6 +406,11 @@ let chosen = 0;
 let current = null;
 /** @type {HTMLCanvasElement | null} */
 let lastCard = null;
+let ocrText = '';
+/** @type {import('./variants.js').VariantOption[]} */
+let variantOptions = [];
+/** @type {string | null} */
+let chosenVariant = null;
 
 const DIGITS = '0123456789/';
 
@@ -427,7 +433,7 @@ function drawPreview(card, s) {
 }
 
 /**
- * @typedef {{ num: ReturnType<typeof parseCollectorNumber>, top: string, bottom: string, digitsText: string, attempts: number }} OcrResult
+ * @typedef {{ num: ReturnType<typeof parseCollectorNumber>, top: string, bottom: string, all: string, digitsText: string, attempts: number }} OcrResult
  */
 
 /**
@@ -477,7 +483,7 @@ async function ocrTesseract(card, s, totals) {
     prepareStrip(card, 0, s.topEnd, topCanvas, s);
   }
   await w.setParameters({ tessedit_char_whitelist: '' });
-  return { num, top, bottom, digitsText, attempts };
+  return { num, top, bottom, all: `${top}\n${bottom}`, digitsText, attempts };
 }
 
 /**
@@ -514,7 +520,7 @@ async function ocrGoogle(card, s, totals) {
     num = parseCollectorNumber(text, totals);
   }
   prepareStrip(card, 0, s.topEnd, /** @type {HTMLCanvasElement} */ ($('topCanvas')), s);
-  return { num, top, bottom, digitsText, attempts };
+  return { num, top, bottom, all: lines.map((l) => l.text).join('\n'), digitsText, attempts };
 }
 
 const CORNERS = [
@@ -534,7 +540,7 @@ async function recognize(card, source) {
   try {
     // Sets are listed in Italian and English; good enough to validate any language here.
     const totals = await knownTotals('it').catch(() => null);
-    const { num, top, bottom, digitsText, attempts } =
+    const { num, top, bottom, all, digitsText, attempts } =
       engine === 'google' ? await ocrGoogle(card, s, totals) : await ocrTesseract(card, s, totals);
     const tOcr = performance.now() - t0;
     $('topText').textContent = top || '(non letta)';
@@ -542,17 +548,25 @@ async function recognize(card, source) {
     drawPreview(card, s);
     $('cropInfo').textContent = `Sorgente: ${source} · carta ritagliata ${card.width}×${card.height} px · numero alto circa ${Math.round(card.height * NUMBER_HEIGHT_RATIO)} px`;
 
-    const { lang, scores } = detectLanguage(`${top}\n${bottom}`);
-    const setCode = parseSetCode(bottom);
+    // Google reads the whole card in one go: use all of it, so uploaded photos with
+    // margins (where the zones don't line up) still find the name and set code.
+    const nameText = engine === 'google' ? all : top;
+    const { lang, scores } = detectLanguage(all);
+    const setCode = parseSetCode(bottom) ?? parseSetCode(all);
+    ocrText = all;
     candidates = [];
     chosen = 0;
     /** @type {string | null} */
     let corrected = null;
     if (num) {
       statusEl.textContent = 'Ricerca su TCGdex…';
-      const found = await findWithCorrections({ number: num.number, total: num.total, lang: lang ?? 'it', nameText: top, setCode });
+      const found = await findWithCorrections({ number: num.number, total: num.total, lang: lang ?? 'it', nameText, setCode });
       corrected = found.corrected ?? null;
       candidates = [...found];
+      // Classic-collection reprints keep the original number: add them by name.
+      const names = candidates.filter((c) => c.nameScore >= 0.7).slice(0, 3).map((c) => c.name);
+      const reprints = await findReprints(names, candidates[0]?.lang ?? lang ?? 'it', nameText).catch(() => []);
+      candidates.push(...reprints.filter((r) => !candidates.some((c) => c.id === r.id)));
     }
     const tTotal = performance.now() - t0;
 
@@ -571,7 +585,7 @@ async function recognize(card, source) {
       totalMs: Math.round(tTotal),
       topText: top.trim(),
       bottomText: `${digitsText}${bottom}`.trim(),
-      candidates: candidates.slice(0, 5).map((c) => ({ id: c.id, name: c.name, score: +c.nameScore.toFixed(2) })),
+      candidates: candidates.slice(0, 6).map((c) => ({ id: c.id, name: c.name, score: +c.nameScore.toFixed(2), ...(c.reprint ? { reprint: true } : {}) })),
       settings: s,
     };
     renderResult();
@@ -616,15 +630,60 @@ function renderResult() {
     text.innerHTML = '<strong></strong><small></small>';
     /** @type {HTMLElement} */ (text.firstChild).textContent = c.name;
     /** @type {HTMLElement} */ (text.lastChild).textContent =
-      `${c.setName}${c.setCode ? ` (${c.setCode})` : ''} · ${c.localId} · ${c.lang.toUpperCase()} · nome ${Math.round(c.nameScore * 100)}%${c.codeMatch ? ' · sigla ✓' : ''}`;
+      `${c.reprint ? 'Ristampa · ' : ''}${c.setName}${c.setCode ? ` (${c.setCode})` : ''} · ${c.localId} · ${c.lang.toUpperCase()} · nome ${Math.round(c.nameScore * 100)}%${c.codeMatch ? ' · sigla ✓' : ''}`;
     btn.append(img ?? Object.assign(document.createElement('span'), { className: 'ph' }), text);
     btn.addEventListener('click', () => {
       chosen = i;
       list.querySelectorAll('button').forEach((b, j) => b.setAttribute('aria-pressed', String(j === i)));
+      loadVariants();
     });
     li.append(btn);
     list.append(li);
   });
+  loadVariants();
+}
+
+const priceFormat = new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' });
+
+/** Loads the print variants of the chosen candidate and preselects the likely one. */
+async function loadVariants() {
+  const box = $('variants');
+  const pick = candidates[chosen];
+  variantOptions = [];
+  chosenVariant = null;
+  box.replaceChildren();
+  if (!pick) return;
+  box.textContent = 'Carico le varianti…';
+  try {
+    const card = await getCard(pick.lang, pick.id);
+    if (candidates[chosen] !== pick) return;
+    variantOptions = listVariants(card);
+    chosenVariant = guessVariant(variantOptions, ocrText);
+  } catch (err) {
+    console.error(err);
+  }
+  renderVariants();
+}
+
+function renderVariants() {
+  const box = $('variants');
+  box.replaceChildren();
+  if (!variantOptions.length) {
+    box.textContent = 'Varianti non disponibili.';
+    return;
+  }
+  for (const v of variantOptions) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'chip';
+    btn.setAttribute('aria-pressed', String(v.key === chosenVariant));
+    btn.textContent = `${v.label} · ${v.price != null ? priceFormat.format(v.price) : 'prezzo n.d.'}`;
+    btn.addEventListener('click', () => {
+      chosenVariant = v.key;
+      renderVariants();
+    });
+    box.append(btn);
+  }
 }
 
 // ---------- log ----------
@@ -664,7 +723,7 @@ function renderLog() {
         const mark = document.createElement('span');
         mark.className = e.correct ? 'ok' : 'ko';
         mark.textContent = e.correct ? '✓ ' : '✗ ';
-        li.append(mark, `${e.number ?? '—'} · ${e.lang ?? '?'} · ${e.chosen ?? 'nessuna'} · ${(e.totalMs / 1000).toFixed(1)} s${e.note ? ` · ${e.note}` : ''}`);
+        li.append(mark, `${e.number ?? '—'} · ${e.lang ?? '?'} · ${e.chosen ?? 'nessuna'}${e.variant ? ` · ${e.variant.label}` : ''} · ${(e.totalMs / 1000).toFixed(1)} s${e.note ? ` · ${e.note}` : ''}`);
         return li;
       }),
   );
@@ -675,7 +734,19 @@ function mark(correct) {
   if (!current) return;
   const note = /** @type {HTMLInputElement} */ ($('note')).value.trim();
   const pick = candidates[chosen];
-  writeLog([...readLog(), { ...current, correct, chosenIndex: correct ? chosen : null, chosen: pick ? `${pick.name} (${pick.id})` : null, note }]);
+  const variant = variantOptions.find((v) => v.key === chosenVariant);
+  writeLog([
+    ...readLog(),
+    {
+      ...current,
+      correct,
+      chosenIndex: correct ? chosen : null,
+      chosen: pick ? `${pick.name} (${pick.id})` : null,
+      variant: variant ? { key: variant.key, label: variant.label, price: variant.price } : null,
+      variantsAvailable: variantOptions.length,
+      note,
+    },
+  ]);
   current = null;
   $('result').hidden = true;
   statusEl.textContent = 'Registrato. Prossima carta.';

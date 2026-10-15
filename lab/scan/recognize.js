@@ -180,8 +180,19 @@ const LANG_CODES = new Set(['EN', 'IT', 'DE', 'FR', 'ES', 'PT']);
  * @returns {string | null}
  */
 export function parseSetCode(text) {
-  const m = text.toUpperCase().match(/\b([A-Z]{2,4})\s+(?:([A-Z]{2})\s+)?[0-9O]{1,3}\s*\//);
+  const m = text.toUpperCase().match(/\b([A-Z0-9]{2,6})\s+(?:([A-Z]{2})\s+)?[0-9O]{1,3}\s*\//);
   if (!m || LANG_CODES.has(m[1])) return null;
   if (m[2] && !LANG_CODES.has(m[2])) return null;
-  return m[1];
+  return /[A-Z]/.test(m[1]) ? m[1] : null;
+}
+
+/**
+ * Whether the set code read by OCR is `abbreviation`. OCR often glues the language
+ * code to it ("DRIT" for "DRI IT"), so a longer reading starting with it also matches.
+ * @param {string | null} read
+ * @param {string | null | undefined} abbreviation
+ */
+export function setCodeMatches(read, abbreviation) {
+  if (!read || !abbreviation) return false;
+  return read === abbreviation || (read.length > abbreviation.length && read.length <= abbreviation.length + 2 && read.startsWith(abbreviation));
 }

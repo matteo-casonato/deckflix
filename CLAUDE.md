@@ -24,7 +24,7 @@ La specifica completa è in `docs/SPEC.md`. I mockup di riferimento sono in `doc
 | Database locale | **Dexie.js** (IndexedDB) con `liveQuery` per l'aggiornamento automatico dell'interfaccia |
 | Dati carte | TCGdex API v2 — `https://api.tcgdex.net/v2/{lang}/...` |
 | Prezzi | Campo `pricing.cardmarket` delle carte TCGdex |
-| OCR | **Tesseract.js** in un Web Worker |
+| OCR | **OCR di Google sul dispositivo** via `TextDetector` di Chrome (Shape Detection API); ripiego **Tesseract.js** in un Web Worker (vedi SPEC § 4.1) |
 | Icone | `@hugeicons/core-free-icons` (stile stroke rounded, licenza MIT), renderizzate da un componente `Icon.svelte` |
 | Linguaggio | JavaScript con **JSDoc** e `// @ts-check` (niente TypeScript) |
 | Font | Bricolage Grotesque (titoli, numeri), DM Sans (testo) — self-hosted in `public/fonts/` |

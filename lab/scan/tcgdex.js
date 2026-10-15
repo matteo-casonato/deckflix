@@ -1,6 +1,7 @@
 // @ts-check
 // Minimal TCGdex client for the scan prototype (in-memory + sessionStorage cache).
-import { confusableNumbers, nameSimilarity } from './recognize.js';
+import { confusableNumbers, nameSimilarity, setCodeMatches } from './recognize.js';
+import { CLASSIC_COLLECTION_SETS } from './variants.js';
 
 const BASE = 'https://api.tcgdex.net/v2';
 
@@ -30,7 +31,7 @@ async function get(path) {
 }
 
 /**
- * @typedef {{ id: string, localId: string, name: string, image?: string, setId: string, setName: string, setCode: string | null, releaseDate: string, lang: string, nameScore: number, codeMatch: boolean }} Candidate
+ * @typedef {{ id: string, localId: string, name: string, image?: string, setId: string, setName: string, setCode: string | null, releaseDate: string, lang: string, nameScore: number, codeMatch: boolean, reprint?: boolean }} Candidate
  */
 
 /**
@@ -67,7 +68,7 @@ export async function findCandidates({ number, total, lang, nameText, setCode = 
           releaseDate: set.releaseDate ?? '',
           lang: l,
           nameScore: nameSimilarity(card.name, nameText),
-          codeMatch: !!setCode && set.abbreviation?.official === setCode,
+          codeMatch: setCodeMatches(setCode, set.abbreviation?.official),
         });
       }
     }
@@ -122,4 +123,49 @@ export async function findWithCorrections(q) {
     }
   }
   return first;
+}
+
+/**
+ * Full card (with variants_detailed and prices).
+ * @param {string} lang
+ * @param {string} id
+ */
+export function getCard(lang, id) {
+  return get(`/${lang}/cards/${encodeURIComponent(id)}`);
+}
+
+/**
+ * Same-name cards in classic-collection reprint sets (e.g. 30th Classic Collection),
+ * which print the number of the original card and cannot be found by number.
+ * @param {string[]} names
+ * @param {string} lang
+ * @param {string} nameText
+ * @returns {Promise<Candidate[]>}
+ */
+export async function findReprints(names, lang, nameText) {
+  /** @type {Candidate[]} */
+  const out = [];
+  for (const name of new Set(names)) {
+    const hits = (await get(`/${lang}/cards?name=${encodeURIComponent(name)}`)) ?? [];
+    for (const hit of hits) {
+      const setId = CLASSIC_COLLECTION_SETS.find((id) => hit.id.startsWith(`${id}-`));
+      if (!setId || hit.name !== name) continue;
+      const set = await get(`/${lang}/sets/${setId}`);
+      out.push({
+        id: hit.id,
+        localId: hit.localId,
+        name: hit.name,
+        image: hit.image,
+        setId,
+        setName: set?.name ?? setId,
+        setCode: set?.abbreviation?.official ?? null,
+        releaseDate: set?.releaseDate ?? '',
+        lang,
+        nameScore: nameSimilarity(hit.name, nameText),
+        codeMatch: false,
+        reprint: true,
+      });
+    }
+  }
+  return out;
 }

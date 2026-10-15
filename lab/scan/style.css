@@ -156,3 +156,17 @@ pre { white-space: pre-wrap; font-size: 13px; color: var(--muted); background: v
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
 }
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 12px; color: var(--muted); font-size: 14px; }
+.chip {
+  min-height: 48px;
+  padding: 0 16px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-chip);
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+}
+.chip[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+@supports (corner-shape: squircle) { .chip { corner-shape: squircle; } }
