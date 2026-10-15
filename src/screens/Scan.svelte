@@ -221,7 +221,7 @@
     showToast(`${n} ${n === 1 ? 'carta salvata' : 'carte salvate'} nella collezione`, async () => {
       for (const s of saved.reverse()) await restoreEntry(s.key, s.before);
     });
-    navigate(hrefFor('collection', {}, { view: 'recent' }));
+    navigate(hrefFor('collection', {}, { tab: 'all', view: 'recent' }));
   }
 
   function exit() {

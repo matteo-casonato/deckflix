@@ -127,7 +127,7 @@
     </section>
   {/if}
 
-  <a class="value card" href={hrefFor('collection', {}, { view: 'stats' })}>
+  <a class="value card" href={hrefFor('collection', {}, { tab: 'all', view: 'stats' })}>
     <span class="col">
       <span class="muted">La tua collezione</span>
       <strong class="num">{value ? euro(value.total) : '…'}</strong>
@@ -183,7 +183,7 @@
 
   <div class="section-head">
     <h2>Aggiunte di recente</h2>
-    <a href={hrefFor('collection', {}, { view: 'recent' })}>Tutte</a>
+    <a href={hrefFor('collection', {}, { tab: 'all', view: 'recent' })}>Tutte</a>
   </div>
   <CardStrip label="Aggiunte di recente" items={recentItems} />
 

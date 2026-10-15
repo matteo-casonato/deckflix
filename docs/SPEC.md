@@ -379,6 +379,8 @@ Esporta CSV, invito ad accedere per chi usa l'app senza account, copia di sicure
 - **Lampo del login Google**: senza backend non c'è refresh token, e il rinnovo “silenzioso” del token di Drive (scade dopo un'ora e, per regola, resta solo in memoria, quindi manca a ogni apertura) apre per un istante la finestra di Google. Per ridurlo: il valore giornaliero non fa più partire un backup da solo (viaggia con il successivo); senza token valido il backup non parte 10 s dopo la modifica ma quando l'app va in background, o al più tardi dopo 5 minuti; se il browser blocca la finestra in background si riprova più tardi senza chiedere l'accesso. Con il token valido resta il backup a 10 s. Il lampo resta possibile al massimo una volta per sessione di modifiche.
 - **Deck in evidenza**: le carte a ventaglio stanno nel flusso sopra il titolo (non più in posizione assoluta), il titolo va al massimo su due righe.
 
+- **Cards (hub)**: riquadro grande “Tutte le mie carte” (dentro: Tutte · Recenti · Statistiche), poi tre riquadri Edizioni (solo l'elenco delle edizioni), Raccolte, Desideri. I link `?view=recent|stats` della Home e della scansione aprono “Tutte le mie carte”.
+
 ## 9. Fuori ambito
 
 Prezzi per lingua e per condizione, riconoscimento con IA a pagamento, notifiche push e backup a app chiusa (servirebbe un server), profili multipli sullo stesso telefono, backup su servizi diversi da Google Drive, pubblicazione sugli store, app nativa con Capacitor (piano B se la scansione web non basta).

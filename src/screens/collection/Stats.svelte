@@ -74,7 +74,7 @@
 
     <div class="chips" role="group" aria-label="Periodo">
       {#each PERIODS as [key, label] (key)}
-        <button class="chip" aria-pressed={period[0] === key} onclick={() => replace(hrefFor('collection', {}, { view: 'stats', period: key === '30' ? null : key }))}>
+        <button class="chip" aria-pressed={period[0] === key} onclick={() => replace(hrefFor('collection', {}, { tab: 'all', view: 'stats', period: key === '30' ? null : key }))}>
           {label}
         </button>
       {/each}

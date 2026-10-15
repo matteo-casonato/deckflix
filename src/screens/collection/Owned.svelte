@@ -17,10 +17,11 @@
   import { stackIds } from '../../lib/domain/albums.js';
   import { cardImage } from '../../lib/api/tcgdex.js';
 
-  /** @type {{ query: Record<string, string>, copies: number }} */
-  let { query, copies } = $props();
+  /** @type {{ query: Record<string, string>, copies: number, mode: 'sets' | 'cards' }} */
+  let { query, copies, mode } = $props();
 
-  const view = $derived(['all', 'recent', 'stats'].includes(query.view) ? query.view : 'sets');
+  // Edizioni: only the set list. "Tutte le mie carte": all, recent, statistics.
+  const view = $derived(mode === 'sets' ? 'sets' : ['recent', 'stats'].includes(query.view) ? query.view : 'all');
   const entries = liveQuery(() => db.collection.toArray());
   const ids = $derived([...new Set(($entries ?? []).map((e) => e.cardId))].sort());
   const cards = $derived(liveCards(ids, settings.cardLang));
@@ -104,7 +105,7 @@
   };
 
   /** @param {string | null} v */
-  const setView = (v) => replace(hrefFor('collection', {}, { tab: 'owned', view: v }));
+  const setView = (v) => replace(hrefFor('collection', {}, { tab: 'all', view: v }));
 </script>
 
 <div class="pad">
@@ -112,12 +113,13 @@
     <Icon icon={Search01Icon} size={20} />
     <span>{copies === 1 ? 'Cerca nella tua carta' : `Cerca nelle mie ${copies} carte`}</span>
   </a>
-  <div class="chips" role="group" aria-label="Vista">
-    <button class="chip" aria-pressed={view === 'sets'} onclick={() => setView(null)}>Per edizione</button>
-    <button class="chip" aria-pressed={view === 'all'} onclick={() => setView('all')}>Tutte</button>
-    <button class="chip" aria-pressed={view === 'recent'} onclick={() => setView('recent')}>Recenti</button>
-    <button class="chip" aria-pressed={view === 'stats'} onclick={() => setView('stats')}>Statistiche</button>
-  </div>
+  {#if mode === 'cards'}
+    <div class="chips" role="group" aria-label="Vista">
+      <button class="chip" aria-pressed={view === 'all'} onclick={() => setView(null)}>Tutte</button>
+      <button class="chip" aria-pressed={view === 'recent'} onclick={() => setView('recent')}>Recenti</button>
+      <button class="chip" aria-pressed={view === 'stats'} onclick={() => setView('stats')}>Statistiche</button>
+    </div>
+  {/if}
 </div>
 
 {#if $entries && $entries.length === 0}

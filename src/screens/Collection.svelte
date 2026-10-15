@@ -21,7 +21,8 @@
   let { query } = $props();
 
   const section = $derived(
-    ['owned', 'wishlist', 'albums'].includes(query.tab) ? query.tab : query.view ? 'owned' : 'hub',
+    // ?view= without a tab (Home links to Recenti and Statistiche) opens "Tutte le mie carte".
+    ['owned', 'all', 'wishlist', 'albums'].includes(query.tab) ? query.tab : query.view ? 'all' : 'hub',
   );
 
   const entries = liveQuery(() => db.collection.toArray());
@@ -57,10 +58,22 @@
         )
       : [],
   );
+  // Edizioni: the most valuable card of the three sets touched last.
+  const setCovers = $derived.by(() => {
+    if (!$cards || !$entries) return [];
+    const bySet = new Map();
+    for (const t of ownedTiles($entries, $cards).sort((a, b) => b.unit - a.unit)) {
+      const setId = t.cardId.slice(0, t.cardId.lastIndexOf('-'));
+      if (!bySet.has(setId) && $cards.get(t.cardId)?.image) bySet.set(setId, t.cardId);
+    }
+    const last = new Map();
+    for (const e of $entries) last.set(e.setId, Math.max(last.get(e.setId) ?? 0, e.updatedAt));
+    return images([...bySet.entries()].sort((a, b) => (last.get(b[0]) ?? 0) - (last.get(a[0]) ?? 0)).map(([, id]) => id));
+  });
   const albumCovers = $derived($cards ? images(($albums ?? []).map((a) => albumCover(a, $cards))) : []);
   const wishCovers = $derived($cards ? images(wishIds) : []);
 
-  const TITLES = /** @type {Record<string, string>} */ ({ owned: 'Edizioni', wishlist: 'Desideri', albums: 'Raccolte' });
+  const TITLES = /** @type {Record<string, string>} */ ({ owned: 'Edizioni', all: 'Tutte le mie carte', wishlist: 'Desideri', albums: 'Raccolte' });
 </script>
 
 {#if section === 'hub'}
@@ -74,12 +87,19 @@
   </div>
 
   <nav class="hub" aria-label="Sezioni della collezione">
-    <a class="tile big card" href={hrefFor('collection', {}, { tab: 'owned' })}>
+    <a class="tile big card" href={hrefFor('collection', {}, { tab: 'all' })}>
       <span class="txt">
-        <strong>Edizioni</strong>
-        <span class="num">{copies} {copies === 1 ? 'carta' : 'carte'} · {setCount} {setCount === 1 ? 'edizione' : 'edizioni'}</span>
+        <strong>Tutte le mie carte</strong>
+        <span class="num">{copies} {copies === 1 ? 'carta' : 'carte'} · recenti e statistiche</span>
       </span>
       {@render fan(ownedCovers)}
+    </a>
+    <a class="tile card" href={hrefFor('collection', {}, { tab: 'owned' })}>
+      <span class="txt">
+        <strong>Edizioni</strong>
+        <span class="num">{setCount} {setCount === 1 ? 'edizione' : 'edizioni'}</span>
+      </span>
+      {@render fan(setCovers.length ? setCovers : ownedCovers)}
     </a>
     <a class="tile card" href={hrefFor('collection', {}, { tab: 'albums' })}>
       <span class="txt">
@@ -99,7 +119,9 @@
 {:else}
   <BackHeader title={TITLES[section]} big fallback={hrefFor('collection')} />
   {#if section === 'owned'}
-    <Owned {query} {copies} />
+    <Owned {query} {copies} mode="sets" />
+  {:else if section === 'all'}
+    <Owned {query} {copies} mode="cards" />
   {:else if section === 'albums'}
     <Albums />
   {:else}
@@ -145,14 +167,14 @@
   .hub {
     padding: 14px 16px 24px;
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
   }
 
   .tile {
     position: relative;
-    min-height: 200px;
-    padding: 18px;
+    min-height: 170px;
+    padding: 14px;
     border-radius: var(--r-section);
     background: var(--surface);
     border: 1px solid var(--line);
@@ -168,6 +190,7 @@
   .tile.big {
     grid-column: 1 / -1;
     min-height: 220px;
+    padding: 18px;
   }
 
   .txt {
@@ -179,8 +202,9 @@
 
   .txt strong {
     font-family: var(--font-display);
-    font-size: 24px;
+    font-size: 17px;
     font-weight: 800;
+    line-height: 1.15;
   }
 
   .big .txt strong {
@@ -188,13 +212,17 @@
   }
 
   .txt span {
-    font-size: 13px;
+    font-size: 12px;
     color: var(--muted);
+  }
+
+  .big .txt span {
+    font-size: 13px;
   }
 
   .fan {
     position: relative;
-    height: 112px;
+    height: 74px;
     display: block;
   }
 
@@ -205,9 +233,9 @@
   .fan img,
   .ph {
     position: absolute;
-    bottom: -34px;
+    bottom: -28px;
     left: 50%;
-    height: 140px;
+    height: 96px;
     aspect-ratio: 63 / 88;
     border-radius: 9px;
     box-shadow: 0 10px 22px rgb(0 0 0 / 0.45);
@@ -217,6 +245,7 @@
   }
 
   .big .fan img {
+    bottom: -34px;
     height: 160px;
     transform: translateX(calc(-50% + (var(--i) - (var(--n) - 1) / 2) * 62%)) rotate(calc((var(--i) - (var(--n) - 1) / 2) * 8deg));
   }
