@@ -168,5 +168,6 @@ pre { white-space: pre-wrap; font-size: 13px; color: var(--muted); background: v
   font: inherit;
   font-variant-numeric: tabular-nums;
 }
+.chip.hinted { border-color: var(--accent); }
 .chip[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
 @supports (corner-shape: squircle) { .chip { corner-shape: squircle; } }

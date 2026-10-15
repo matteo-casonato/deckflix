@@ -4,7 +4,10 @@
 import { createWorker, PSM } from 'tesseract.js';
 import { parseCollectorNumber, parseSetCode, detectLanguage } from './recognize.js';
 import { findReprints, findWithCorrections, getCard, knownTotals } from './tcgdex.js';
-import { guessVariant, listVariants } from './variants.js';
+import { applyStampSuggestion, guessVariant, listVariants } from './variants.js';
+import {
+  GRID_H, GRID_W, MIN_ALIGNMENT, STAMP_MIN_SCORE, STAMP_MIN_VALUE, STAMP_SUGGESTIONS_ENABLED, anomalyMap, bestShift, strongestBlob,
+} from './stamp.js';
 
 /** @template {HTMLElement} T @param {string} id @returns {T} */
 const $ = (id) => /** @type {T} */ (document.getElementById(id));
@@ -411,6 +414,10 @@ let ocrText = '';
 let variantOptions = [];
 /** @type {string | null} */
 let chosenVariant = null;
+/** @type {string[]} */
+let highlightedVariants = [];
+/** @type {any} */
+let stampResult = null;
 
 const DIGITS = '0123456789/';
 
@@ -419,17 +426,41 @@ const DIGITS = '0123456789/';
  * Small preview of the cropped card with the OCR zones, to check the crop at a glance.
  * @param {HTMLCanvasElement} card
  * @param {ReturnType<typeof readSettings>} s
+ * @param {any} [stamp] result of detectStamp, to draw the mismatch map
  */
-function drawPreview(card, s) {
+function drawPreview(card, s, stamp = null) {
   const out = /** @type {HTMLCanvasElement} */ ($('preview'));
   out.height = 240;
   out.width = Math.round((card.width / card.height) * out.height);
   const ctx = /** @type {CanvasRenderingContext2D} */ (out.getContext('2d'));
   ctx.drawImage(card, 0, 0, out.width, out.height);
-  ctx.fillStyle = 'rgb(255 203 69 / 0.35)';
-  ctx.fillRect(0, s.bottomStart * out.height, out.width * 0.45, out.height);
-  ctx.fillRect(out.width * 0.55, s.bottomStart * out.height, out.width * 0.45, out.height);
-  ctx.fillRect(0, 0, out.width, s.topEnd * out.height);
+  if (!stamp) {
+    ctx.fillStyle = 'rgb(255 203 69 / 0.35)';
+    ctx.fillRect(0, s.bottomStart * out.height, out.width * 0.45, out.height);
+    ctx.fillRect(out.width * 0.55, s.bottomStart * out.height, out.width * 0.45, out.height);
+    ctx.fillRect(0, 0, out.width, s.topEnd * out.height);
+    return;
+  }
+  // Mismatch heat map against the official scan, in the photo's coordinates.
+  const { map, keep, dx, dy } = stamp;
+  const cw = (out.width * keep) / map.cols;
+  const ch = (out.height * keep) / map.rows;
+  const ox = (out.width * (1 - keep)) / 2 + (dx / GRID_W) * out.width * keep;
+  const oy = (out.height * (1 - keep)) / 2 + (dy / GRID_H) * out.height * keep;
+  for (let r = 0; r < map.rows; r++) {
+    for (let c = 0; c < map.cols; c++) {
+      const v = map.values[r * map.cols + c];
+      if (v < 0.35) continue;
+      ctx.fillStyle = `rgb(255 122 107 / ${Math.min(0.6, v * 0.6)})`;
+      ctx.fillRect(ox + c * cw, oy + r * ch, cw, ch);
+    }
+  }
+  if (stamp.blob) {
+    ctx.strokeStyle = stamp.suggested ? '#FFCB45' : '#9AA1AE';
+    ctx.lineWidth = 3;
+    const b = stamp.blob;
+    ctx.strokeRect(ox + b.x * map.cols * cw - 4, oy + b.y * map.rows * ch - 4, b.w * map.cols * cw + 8, b.h * map.rows * ch + 8);
+  }
 }
 
 /**
@@ -651,18 +682,89 @@ async function loadVariants() {
   const pick = candidates[chosen];
   variantOptions = [];
   chosenVariant = null;
+  highlightedVariants = [];
+  stampResult = null;
+  $('stampInfo').textContent = '';
   box.replaceChildren();
   if (!pick) return;
-  box.textContent = 'Carico le varianti…';
+  box.textContent = 'Carico le varianti e confronto con la carta ufficiale…';
   try {
-    const card = await getCard(pick.lang, pick.id);
+    const [card, stamp] = await Promise.all([
+      getCard(pick.lang, pick.id),
+      lastCard && pick.image ? detectStamp(lastCard, pick.image).catch((err) => (console.error(err), null)) : null,
+    ]);
     if (candidates[chosen] !== pick) return;
-    variantOptions = listVariants(card);
-    chosenVariant = guessVariant(variantOptions, ocrText);
+    stampResult = stamp;
+    const listed = listVariants(card);
+    const r = applyStampSuggestion(listed, guessVariant(listed, ocrText), !!stamp?.suggested);
+    variantOptions = r.options;
+    chosenVariant = r.preselect;
+    highlightedVariants = r.highlighted;
+    if (lastCard) drawPreview(lastCard, readSettings(), stamp);
+    $('stampInfo').textContent = !stamp
+      ? 'Confronto con la carta ufficiale non disponibile.'
+      : stamp.alignment < MIN_ALIGNMENT
+        ? `Confronto incerto: la foto non si allinea bene alla carta ufficiale (${stamp.alignment}).`
+        : stamp.suggested
+          ? `Possibile timbro nel riquadro giallo (forza ${stamp.blob.score.toFixed(1)}). Controlla la variante suggerita.`
+          : `Sperimentale: in rosso le zone diverse dalla carta ufficiale, nel riquadro la più diversa (forza ${stamp.blob?.score.toFixed(1) ?? '—'}). Non ancora affidabile per riconoscere i timbri: scegli tu la variante.`;
   } catch (err) {
     console.error(err);
   }
   renderVariants();
+}
+
+// ---------- stamp detection (experimental) ----------
+
+/**
+ * Grey levels of an image resized to the working grid, optionally cropping a centred
+ * fraction first (the card may not fill the whole guide).
+ * @param {CanvasImageSource & { width: number, height: number }} img
+ * @param {number} w
+ * @param {number} h
+ * @param {number} [keep] fraction of the image kept around the centre
+ * @returns {import('./stamp.js').Gray}
+ */
+function grayOf(img, w, h, keep = 1) {
+  const c = document.createElement('canvas');
+  c.width = w;
+  c.height = h;
+  const ctx = /** @type {CanvasRenderingContext2D} */ (c.getContext('2d', { willReadFrequently: true }));
+  const sw = img.width * keep, sh = img.height * keep;
+  ctx.drawImage(img, (img.width - sw) / 2, (img.height - sh) / 2, sw, sh, 0, 0, w, h);
+  const d = ctx.getImageData(0, 0, w, h).data;
+  const data = new Float32Array(w * h);
+  for (let i = 0, p = 0; i < d.length; i += 4, p++) data[p] = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+  return { data, w, h };
+}
+
+/**
+ * Compares the photographed card with the official scan and looks for a logo that is
+ * only on the photo. Tries a few crops (the card may sit inside the guide with margins)
+ * and small shifts, keeping the best alignment.
+ * @param {HTMLCanvasElement} photoCanvas
+ * @param {string} imageBase TCGdex image base URL
+ */
+async function detectStamp(photoCanvas, imageBase) {
+  const res = await fetch(`${imageBase}/high.png`);
+  if (!res.ok) return null;
+  const refBitmap = await createImageBitmap(await res.blob());
+  const ref = grayOf(refBitmap, GRID_W, GRID_H);
+  const refSmall = grayOf(refBitmap, GRID_W / 2, GRID_H / 2);
+  refBitmap.close();
+
+  let best = { keep: 1, dx: 0, dy: 0, ncc: -Infinity };
+  for (const keep of [1, 0.97, 0.94, 0.91, 0.88]) {
+    const shift = bestShift(grayOf(photoCanvas, GRID_W / 2, GRID_H / 2, keep), refSmall, 5);
+    if (shift.ncc > best.ncc) best = { keep, ...shift };
+  }
+  const photo = grayOf(photoCanvas, GRID_W, GRID_H, best.keep);
+  const fine = bestShift(photo, ref, 2 * 5 + 2);
+  const map = anomalyMap(photo, ref, fine.dx, fine.dy);
+  const blob = strongestBlob(map);
+  const suggested =
+    STAMP_SUGGESTIONS_ENABLED && !!blob && fine.ncc >= MIN_ALIGNMENT && blob.score >= STAMP_MIN_SCORE && blob.value >= STAMP_MIN_VALUE;
+  return { alignment: +fine.ncc.toFixed(2), keep: best.keep, dx: fine.dx, dy: fine.dy, map, blob, suggested };
 }
 
 function renderVariants() {
@@ -677,7 +779,9 @@ function renderVariants() {
     btn.type = 'button';
     btn.className = 'chip';
     btn.setAttribute('aria-pressed', String(v.key === chosenVariant));
-    btn.textContent = `${v.label} · ${v.price != null ? priceFormat.format(v.price) : 'prezzo n.d.'}`;
+    const hint = highlightedVariants.includes(v.key) ? '★ timbro rilevato? · ' : '';
+    if (hint) btn.classList.add('hinted');
+    btn.textContent = `${hint}${v.label} · ${v.price != null ? priceFormat.format(v.price) : 'prezzo n.d.'}`;
     btn.addEventListener('click', () => {
       chosenVariant = v.key;
       renderVariants();
@@ -744,6 +848,15 @@ function mark(correct) {
       chosen: pick ? `${pick.name} (${pick.id})` : null,
       variant: variant ? { key: variant.key, label: variant.label, price: variant.price } : null,
       variantsAvailable: variantOptions.length,
+      stamp: stampResult
+        ? {
+            suggested: stampResult.suggested,
+            alignment: stampResult.alignment,
+            score: stampResult.blob ? +stampResult.blob.score.toFixed(1) : null,
+            value: stampResult.blob ? +stampResult.blob.value.toFixed(2) : null,
+            at: stampResult.blob ? [+stampResult.blob.x.toFixed(2), +stampResult.blob.y.toFixed(2)] : null,
+          }
+        : null,
       note,
     },
   ]);

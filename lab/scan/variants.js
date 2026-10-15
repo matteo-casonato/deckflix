@@ -138,3 +138,32 @@ export function guessVariant(options, ocrText) {
   }
   return options.find((o) => o.key === 'normal')?.key ?? null;
 }
+
+/** Manual entry for stamped prints TCGdex doesn't list yet (e.g. sv10-010 with Play! stamp). */
+export const UNLISTED_STAMP = /** @type {VariantOption} */ ({
+  key: 'normal+stamp-unlisted',
+  label: 'Con timbro non in elenco',
+  finish: 'normal',
+  stamps: ['unlisted'],
+  foil: null,
+  price: null,
+});
+
+/**
+ * Adds the manual "unlisted stamp" entry and, when the image comparison suggests a stamp,
+ * picks the stamped print to preselect: the only listed stamped one, else the unlisted entry.
+ * With several stamped prints the guess is left to the user (they are all highlighted).
+ * @param {VariantOption[]} options
+ * @param {string | null} current preselected key
+ * @param {boolean} stampLikely
+ * @returns {{ options: VariantOption[], preselect: string | null, highlighted: string[] }}
+ */
+export function applyStampSuggestion(options, current, stampLikely) {
+  const all = [...options, UNLISTED_STAMP];
+  if (!stampLikely) return { options: all, preselect: current, highlighted: [] };
+  const stamped = options.filter((o) => o.stamps.length);
+  if (!stamped.length) return { options: all, preselect: UNLISTED_STAMP.key, highlighted: [UNLISTED_STAMP.key] };
+  const keys = stamped.map((o) => o.key);
+  const keepCurrent = current && keys.includes(current);
+  return { options: all, preselect: keepCurrent ? current : stamped.length === 1 ? stamped[0].key : current, highlighted: keys };
+}

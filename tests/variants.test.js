@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { guessVariant, listVariants, variantPrice } from '../lab/scan/variants.js';
+import { applyStampSuggestion, guessVariant, listVariants, variantPrice } from '../lab/scan/variants.js';
 
 // Trimmed from the real TCGdex response for /it/cards/sv10-049 (Gyarados di Misty).
 const gyarados = {
@@ -77,5 +77,28 @@ describe('guessVariant', () => {
     expect(guessVariant(listVariants({ variants_detailed: [{ type: 'Olografica', stamp: ['30th-anniversary'] }] }), '')).toBe(
       'holo+stamp-30th-anniversary',
     );
+  });
+});
+
+describe('applyStampSuggestion', () => {
+  const plain = listVariants({ variants_detailed: [{ type: 'Normale' }, { type: 'Reverse' }] });
+  const withPlay = listVariants({
+    variants_detailed: [{ type: 'Normale' }, { type: 'Reverse' }, { type: 'Normale', stamp: ['player-rewards-program'] }],
+  });
+
+  it('always offers the unlisted-stamp entry', () => {
+    const r = applyStampSuggestion(plain, 'normal', false);
+    expect(r.options.at(-1).key).toBe('normal+stamp-unlisted');
+    expect(r.preselect).toBe('normal');
+  });
+
+  it('preselects the only stamped print when a stamp is likely', () => {
+    const r = applyStampSuggestion(withPlay, 'normal', true);
+    expect(r.preselect).toBe('normal+stamp-player-rewards-program');
+    expect(r.highlighted).toEqual(['normal+stamp-player-rewards-program']);
+  });
+
+  it('falls back to the unlisted entry when TCGdex has no stamped print', () => {
+    expect(applyStampSuggestion(plain, 'normal', true).preselect).toBe('normal+stamp-unlisted');
   });
 });
