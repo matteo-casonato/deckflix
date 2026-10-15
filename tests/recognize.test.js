@@ -92,3 +92,21 @@ describe('parseSetCode', () => {
     expect(parseSetCode('018/172')).toBeNull();
   });
 });
+
+describe('parseCollectorNumber with known totals', () => {
+  it('skips readings whose total is not a set size', () => {
+    const totals = new Set([165, 198]);
+    expect(parseCollectorNumber('22/25 025/165', totals)).toMatchObject({ number: 25, total: 165 });
+    expect(parseCollectorNumber('22/25', totals)).toBeNull();
+  });
+});
+
+describe('parseCollectorNumber edge cases from real OCR output', () => {
+  it('does not join digits across lines', () => {
+    expect(parseCollectorNumber('22\n\n/\n\n025/165\n\n02023/')).toMatchObject({ number: 25, total: 165 });
+  });
+
+  it('drops one spurious trailing digit after the total', () => {
+    expect(parseCollectorNumber('0 050/1820', new Set([182]))).toMatchObject({ number: 50, total: 182 });
+  });
+});

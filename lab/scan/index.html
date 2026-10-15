@@ -33,6 +33,7 @@
     </label>
   </div>
   <p class="muted small" id="status">Caricamento OCR…</p>
+  <p class="muted small" id="camInfo"></p>
 
   <section class="panel" id="result" hidden>
     <div class="row">
@@ -47,18 +48,25 @@
       <button class="btn danger" id="markKo">Sbagliata</button>
     </div>
     <input class="field" id="note" placeholder="Nota (finitura, luce, errore…)">
+    <button class="btn secondary wide" id="saveCrop">Salva il ritaglio (per inviarmelo)</button>
   </section>
 
   <details class="panel">
     <summary>Regolazioni</summary>
+    <label class="ctl">Fotocamera
+      <select id="camera" class="field"></select>
+    </label>
+    <label class="ctl check"><input type="checkbox" id="still" checked> Foto ad alta risoluzione (più nitida, scatto più lento)</label>
+    <label class="ctl">Dimensione cornice: <output id="guideOut"></output>
+      <input type="range" id="guideSize" min="45" max="90" value="70"></label>
     <label class="ctl">Fascia alta: <output id="topOut"></output>
       <input type="range" id="topEnd" min="6" max="25" value="13"></label>
     <label class="ctl">Fascia bassa da: <output id="bottomOut"></output>
       <input type="range" id="bottomStart" min="75" max="95" value="87"></label>
     <label class="ctl">Contrasto: <output id="contrastOut"></output>
-      <input type="range" id="contrast" min="1" max="3" step="0.1" value="1.6"></label>
-    <label class="ctl">Ingrandimento: <output id="scaleOut"></output>
-      <input type="range" id="scale" min="1" max="4" step="0.5" value="2"></label>
+      <input type="range" id="contrast" min="0.6" max="3" step="0.1" value="1.2"></label>
+    <label class="ctl">Ingrandimento massimo: <output id="scaleOut"></output>
+      <input type="range" id="scale" min="1" max="6" step="0.5" value="4"></label>
     <label class="ctl check"><input type="checkbox" id="threshold"> Soglia bianco/nero (Otsu)</label>
     <label class="ctl check"><input type="checkbox" id="invert"> Inverti (testo chiaro su scuro)</label>
     <label class="ctl">Lingue OCR
@@ -72,10 +80,11 @@
 
   <details class="panel" id="debug">
     <summary>Dettagli OCR</summary>
+    <p class="muted small" id="cropInfo"></p>
     <p class="label">Fascia alta</p>
     <canvas id="topCanvas"></canvas>
     <pre id="topText"></pre>
-    <p class="label">Fascia bassa</p>
+    <p class="label">Fascia bassa (ultimo passaggio)</p>
     <canvas id="bottomCanvas"></canvas>
     <pre id="bottomText"></pre>
   </details>

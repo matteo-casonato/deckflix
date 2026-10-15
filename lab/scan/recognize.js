@@ -26,24 +26,34 @@ const fixDigits = (token) => token.replace(/[OoDQIli|!ZzSsBG]/g, (c) => DIGIT_FI
 /**
  * Finds the collector number ("025/165") in OCR text.
  * Returns the most plausible match: number <= total * 2 and total >= 10.
+ * With `totals`, only readings whose total is an existing set size are accepted.
  * @param {string} text
+ * @param {Set<number> | null} [totals]
  * @returns {{ number: number, total: number, raw: string } | null}
  */
-export function parseCollectorNumber(text) {
-  const re = /([0-9OoDQIli|!ZzSsBG]{1,3})\s*[/\\⁄]\s*([0-9OoDQIli|!ZzSsBG]{2,3})(?![0-9])/g;
+export function parseCollectorNumber(text, totals = null) {
+  // Same line only ([ \t], not \s): OCR puts stray digits on lines above the number.
+  // The total may carry one spurious trailing character ("050/1820").
+  const re = /([0-9OoDQIli|!ZzSsBG]{1,3})[ \t]*[/\\⁄][ \t]*([0-9OoDQIli|!ZzSsBG]{2,4})/g;
   /** @type {{ number: number, total: number, raw: string, score: number }[]} */
   const found = [];
   for (const m of text.matchAll(re)) {
     const a = fixDigits(m[1]);
-    const b = fixDigits(m[2]);
-    if (!/^\d+$/.test(a) || !/^\d+$/.test(b)) continue;
+    if (!/^\d+$/.test(a)) continue;
     const number = Number(a);
-    const total = Number(b);
-    if (total < 10 || number < 1 || number > total * 2) continue;
-    // Prefer matches that needed no character fixes and use 3-digit padding.
-    const clean = /^\d+$/.test(m[1]) && /^\d+$/.test(m[2]);
-    const score = (clean ? 2 : 0) + (a.length === 3 ? 1 : 0);
-    found.push({ number, total, raw: m[0], score });
+    for (const len of [3, 2]) {
+      const rawTotal = m[2].slice(0, len);
+      if (rawTotal.length !== len) continue;
+      const b = fixDigits(rawTotal);
+      if (!/^\d+$/.test(b)) continue;
+      const total = Number(b);
+      if (total < 10 || number < 1 || number > total * 2) continue;
+      if (totals && !totals.has(total)) continue;
+      // Prefer readings that needed no fixes, use 3-digit padding and consume the whole token.
+      const clean = /^\d+$/.test(m[1]) && /^\d+$/.test(rawTotal);
+      const score = (clean ? 2 : 0) + (a.length === 3 ? 1 : 0) + (rawTotal.length === m[2].length ? 1 : 0);
+      found.push({ number, total, raw: m[0], score });
+    }
   }
   if (!found.length) return null;
   found.sort((x, y) => y.score - x.score);

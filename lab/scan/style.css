@@ -50,7 +50,7 @@ h2 { font-size: 18px; margin-bottom: 12px; }
   position: absolute;
   left: 50%;
   top: 50%;
-  height: 88%;
+  height: 70%;
   aspect-ratio: 63 / 88;
   transform: translate(-50%, -50%);
   border: 2px solid var(--accent);
@@ -83,6 +83,7 @@ h2 { font-size: 18px; margin-bottom: 12px; }
 .btn.secondary { background: var(--surface-2); }
 .btn.success { flex: 1; background: var(--success); color: var(--on-accent); }
 .btn.danger { flex: 1; background: var(--danger); color: var(--on-accent); }
+.btn.wide { width: 100%; margin-top: 12px; }
 .btn.icon { width: 48px; padding: 0; border-radius: 50%; }
 .btn.icon[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
 

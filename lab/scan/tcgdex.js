@@ -82,6 +82,17 @@ export async function findCandidates({ number, total, lang, nameText, setCode = 
   );
 }
 
+/**
+ * Official card counts of all known sets, to reject OCR readings like "22/25"
+ * when no set has 25 cards.
+ * @param {string} lang
+ * @returns {Promise<Set<number>>}
+ */
+export async function knownTotals(lang) {
+  const lists = await Promise.all([get(`/${lang}/sets`), get('/en/sets')]);
+  return new Set(lists.flatMap((l) => l ?? []).map((/** @type {any} */ s) => s.cardCount?.official));
+}
+
 /** Name score above which a candidate is trusted without trying other numbers. */
 const NAME_OK = 0.7;
 
@@ -95,8 +106,7 @@ export async function findWithCorrections(q) {
   const first = await findCandidates(q);
   if (first[0]?.codeMatch || first[0]?.nameScore >= NAME_OK || !q.nameText.trim()) return first;
 
-  const sets = [...((await get(`/${q.lang}/sets`)) ?? []), ...((await get('/en/sets')) ?? [])];
-  const totals = new Set(sets.map((/** @type {any} */ s) => s.cardCount?.official));
+  const totals = await knownTotals(q.lang);
   const pairs = [
     ...confusableNumbers(q.total).filter((t) => totals.has(t)).map((total) => ({ number: q.number, total })),
     ...confusableNumbers(q.number).map((number) => ({ number, total: q.total })),

@@ -3,3 +3,4 @@ dist/
 .env.local
 .certs/
 .DS_Store
+lab/samples/

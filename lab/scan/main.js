@@ -3,7 +3,7 @@
 // No persistence except the test log in localStorage. The photo is never stored.
 import { createWorker, PSM } from 'tesseract.js';
 import { parseCollectorNumber, parseSetCode, detectLanguage } from './recognize.js';
-import { findWithCorrections } from './tcgdex.js';
+import { findWithCorrections, knownTotals } from './tcgdex.js';
 
 /** @template {HTMLElement} T @param {string} id @returns {T} */
 const $ = (id) => /** @type {T} */ (document.getElementById(id));
@@ -23,10 +23,12 @@ const controls = {
   scale: /** @type {HTMLInputElement} */ ($('scale')),
   threshold: /** @type {HTMLInputElement} */ ($('threshold')),
   invert: /** @type {HTMLInputElement} */ ($('invert')),
+  still: /** @type {HTMLInputElement} */ ($('still')),
+  guideSize: /** @type {HTMLInputElement} */ ($('guideSize')),
   ocrLangs: /** @type {HTMLSelectElement} */ ($('ocrLangs')),
 };
 
-const SETTINGS_KEY = 'deckflix-lab-settings';
+const SETTINGS_KEY = 'deckflix-lab-settings-v3';
 const LOG_KEY = 'deckflix-lab-log';
 
 // ---------- settings ----------
@@ -50,6 +52,8 @@ function readSettings() {
     scale: Number(controls.scale.value),
     threshold: controls.threshold.checked,
     invert: controls.invert.checked,
+    still: controls.still.checked,
+    guideSize: Number(controls.guideSize.value) / 100,
     ocrLangs: controls.ocrLangs.value,
   };
 }
@@ -60,6 +64,8 @@ function renderSettings() {
   $('bottomOut').textContent = `${Math.round(s.bottomStart * 100)}%`;
   $('contrastOut').textContent = `×${s.contrast.toFixed(1)}`;
   $('scaleOut').textContent = `×${s.scale}`;
+  $('guideOut').textContent = `${Math.round(s.guideSize * 100)}%`;
+  guide.style.height = `${s.guideSize * 100}%`;
   $('topBand').style.height = `${s.topEnd * 100}%`;
   $('bottomBand').style.height = `${(1 - s.bottomStart) * 100}%`;
   try {
@@ -97,14 +103,22 @@ async function ensureWorker() {
 /** @type {MediaStreamTrack | null} */
 let track = null;
 
-async function startCamera() {
+/** @type {ImageCapture | null} */
+let imageCapture = null;
+
+async function startCamera(deviceId = '') {
   if (!navigator.mediaDevices?.getUserMedia) {
     viewerMsg.textContent = 'Fotocamera non disponibile: serve HTTPS. Usa "Carica foto".';
     return;
   }
+  track?.stop();
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1440 } },
+      video: {
+        ...(deviceId ? { deviceId: { exact: deviceId } } : { facingMode: { ideal: 'environment' } }),
+        width: { ideal: 3840 },
+        height: { ideal: 2160 },
+      },
       audio: false,
     });
     video.srcObject = stream;
@@ -113,12 +127,38 @@ async function startCamera() {
     viewerMsg.textContent = '';
     shootBtn.disabled = !worker;
     const caps = /** @type {any} */ (track.getCapabilities?.() ?? {});
-    if (caps.torch) torchBtn.hidden = false;
+    torchBtn.hidden = !caps.torch;
+    if (caps.focusMode?.includes('continuous')) {
+      await track.applyConstraints(/** @type {any} */ ({ advanced: [{ focusMode: 'continuous' }] })).catch(() => {});
+    }
+    imageCapture = 'ImageCapture' in window ? new ImageCapture(track) : null;
+    let photoInfo = '';
+    if (imageCapture) {
+      const pc = await imageCapture.getPhotoCapabilities().catch(() => null);
+      if (pc?.imageWidth?.max) photoInfo = ` · foto fino a ${pc.imageWidth.max}×${pc.imageHeight?.max}`;
+    }
+    $('camInfo').textContent = `Video ${video.videoWidth}×${video.videoHeight}${photoInfo}`;
+    await listCameras(track.getSettings().deviceId ?? '');
   } catch (err) {
     console.error(err);
     viewerMsg.textContent =
       'Accesso alla fotocamera negato. Riattivalo dalle impostazioni del sito in Chrome, oppure usa "Carica foto".';
   }
+}
+
+/** Fills the camera picker (labels are available only after permission). @param {string} activeId */
+async function listCameras(activeId) {
+  const select = /** @type {HTMLSelectElement} */ ($('camera'));
+  const cams = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === 'videoinput');
+  select.replaceChildren(
+    ...cams.map((d, i) => {
+      const o = document.createElement('option');
+      o.value = d.deviceId;
+      o.textContent = d.label || `Fotocamera ${i + 1}`;
+      o.selected = d.deviceId === activeId;
+      return o;
+    }),
+  );
 }
 
 torchBtn.addEventListener('click', async () => {
@@ -134,10 +174,10 @@ torchBtn.addEventListener('click', async () => {
 });
 
 /**
- * Copies the part of the video under the card guide into a canvas.
+ * Guide rectangle as fractions of the video frame.
  * The video uses object-fit: cover, so map guide coordinates back to video pixels.
  */
-function grabCardFromVideo() {
+function guideInVideo() {
   const vw = video.videoWidth;
   const vh = video.videoHeight;
   const box = viewer.getBoundingClientRect();
@@ -145,15 +185,64 @@ function grabCardFromVideo() {
   const scale = Math.max(box.width / vw, box.height / vh);
   const offX = (box.width - vw * scale) / 2;
   const offY = (box.height - vh * scale) / 2;
-  const sx = (g.left - box.left - offX) / scale;
-  const sy = (g.top - box.top - offY) / scale;
-  const sw = g.width / scale;
-  const sh = g.height / scale;
+  return {
+    x: (g.left - box.left - offX) / scale / vw,
+    y: (g.top - box.top - offY) / scale / vh,
+    w: g.width / scale / vw,
+    h: g.height / scale / vh,
+  };
+}
+
+/**
+ * Copies the card under the guide into a canvas. Uses a full-resolution still photo
+ * (ImageCapture) when available, because video frames are often only 720p.
+ * The video is assumed to be a centred crop of the photo when aspect ratios differ.
+ * @returns {Promise<{ canvas: HTMLCanvasElement, source: string }>}
+ */
+async function grabCardFromCamera() {
+  const r = guideInVideo();
+  const va = video.videoWidth / video.videoHeight;
+  /** @type {CanvasImageSource} */
+  let src = video;
+  let sw = video.videoWidth;
+  let sh = video.videoHeight;
+  let source = `video ${sw}×${sh}`;
+  let ox = 0;
+  let oy = 0;
+  let fw = sw;
+  let fh = sh;
+
+  if (imageCapture && readSettings().still) {
+    try {
+      const bitmap = await createImageBitmap(await imageCapture.takePhoto());
+      const pa = bitmap.width / bitmap.height;
+      // A still in the other orientation cannot be mapped reliably: keep the video frame.
+      if (pa > 1 === va > 1) {
+        src = bitmap;
+        sw = bitmap.width;
+        sh = bitmap.height;
+        fw = pa > va ? sh * va : sw;
+        fh = pa > va ? sh : sw / va;
+        ox = (sw - fw) / 2;
+        oy = (sh - fh) / 2;
+        source = `foto ${sw}×${sh}`;
+      } else {
+        source += ` (foto ${bitmap.width}×${bitmap.height} scartata: orientamento diverso)`;
+      }
+    } catch (err) {
+      console.error(err);
+      source += ' (foto non riuscita)';
+    }
+  }
+
   const canvas = document.createElement('canvas');
-  canvas.width = Math.round(sw);
-  canvas.height = Math.round(sh);
-  /** @type {CanvasRenderingContext2D} */ (canvas.getContext('2d')).drawImage(video, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
-  return canvas;
+  canvas.width = Math.round(r.w * fw);
+  canvas.height = Math.round(r.h * fh);
+  /** @type {CanvasRenderingContext2D} */ (canvas.getContext('2d')).drawImage(
+    src, ox + r.x * fw, oy + r.y * fh, r.w * fw, r.h * fh, 0, 0, canvas.width, canvas.height,
+  );
+  if (src instanceof ImageBitmap) src.close();
+  return { canvas, source };
 }
 
 /** An uploaded photo is assumed to be already cropped to the card. @param {File} file */
@@ -169,22 +258,34 @@ async function grabCardFromFile(file) {
 
 // ---------- preprocessing ----------
 
+/** Widest prepared crop: bigger only slows OCR down. */
+const MAX_CROP_WIDTH = 1800;
+
 /**
- * Crops a horizontal strip of the card and prepares it for OCR.
+ * @typedef {{ contrast: number, scale: number, threshold: boolean, invert: boolean, adaptive?: boolean }} StripOptions
+ */
+
+/**
+ * Crops a region of the card and prepares it for OCR.
  * @param {HTMLCanvasElement} card
  * @param {number} y0 fraction of card height
  * @param {number} y1 fraction of card height
  * @param {HTMLCanvasElement} out
- * @param {ReturnType<typeof readSettings>} s
+ * @param {StripOptions} s
+ * @param {number} [x0] fraction of card width
+ * @param {number} [x1] fraction of card width
  */
-function prepareStrip(card, y0, y1, out, s) {
+function prepareStrip(card, y0, y1, out, s, x0 = 0, x1 = 1) {
+  const sx = Math.round(card.width * x0);
+  const sw = Math.max(1, Math.round(card.width * (x1 - x0)));
   const sy = Math.round(card.height * y0);
   const sh = Math.max(1, Math.round(card.height * (y1 - y0)));
-  out.width = Math.round(card.width * s.scale);
-  out.height = Math.round(sh * s.scale);
+  const k = Math.max(1, Math.min(s.scale, MAX_CROP_WIDTH / sw));
+  out.width = Math.round(sw * k);
+  out.height = Math.round(sh * k);
   const ctx = /** @type {CanvasRenderingContext2D} */ (out.getContext('2d', { willReadFrequently: true }));
   ctx.imageSmoothingQuality = 'high';
-  ctx.drawImage(card, 0, sy, card.width, sh, 0, 0, out.width, out.height);
+  ctx.drawImage(card, sx, sy, sw, sh, 0, 0, out.width, out.height);
 
   const img = ctx.getImageData(0, 0, out.width, out.height);
   const d = img.data;
@@ -193,13 +294,44 @@ function prepareStrip(card, y0, y1, out, s) {
     const y = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
     gray[p] = (y - 128) * s.contrast + 128;
   }
-  const t = s.threshold ? otsu(gray) : -1;
+  const bin = s.adaptive ? adaptiveThreshold(gray, out.width, out.height) : null;
+  const t = !bin && s.threshold ? otsu(gray) : -1;
   for (let i = 0, p = 0; i < d.length; i += 4, p++) {
-    let v = t >= 0 ? (gray[p] > t ? 255 : 0) : gray[p];
+    let v = bin ? bin[p] : t >= 0 ? (gray[p] > t ? 255 : 0) : gray[p];
     if (s.invert) v = 255 - v;
     d[i] = d[i + 1] = d[i + 2] = v;
   }
   ctx.putImageData(img, 0, 0);
+}
+
+/**
+ * Bradley local threshold: compares each pixel with the mean of its neighbourhood,
+ * which copes with holo foil and uneven light better than a global threshold.
+ * @param {Uint8ClampedArray} gray
+ * @param {number} w
+ * @param {number} h
+ */
+function adaptiveThreshold(gray, w, h) {
+  const integral = new Float64Array((w + 1) * (h + 1));
+  for (let y = 0; y < h; y++) {
+    let row = 0;
+    for (let x = 0; x < w; x++) {
+      row += gray[y * w + x];
+      integral[(y + 1) * (w + 1) + x + 1] = integral[y * (w + 1) + x + 1] + row;
+    }
+  }
+  const r = Math.max(4, Math.round(h / 4));
+  const out = new Uint8ClampedArray(gray.length);
+  for (let y = 0; y < h; y++) {
+    const y0 = Math.max(0, y - r), y1 = Math.min(h, y + r + 1);
+    for (let x = 0; x < w; x++) {
+      const x0 = Math.max(0, x - r), x1 = Math.min(w, x + r + 1);
+      const sum = integral[y1 * (w + 1) + x1] - integral[y0 * (w + 1) + x1] - integral[y1 * (w + 1) + x0] + integral[y0 * (w + 1) + x0];
+      const mean = sum / ((x1 - x0) * (y1 - y0));
+      out[y * w + x] = gray[y * w + x] < mean * 0.85 ? 0 : 255;
+    }
+  }
+  return out;
 }
 
 /** @param {Uint8ClampedArray} gray */
@@ -234,43 +366,75 @@ let candidates = [];
 let chosen = 0;
 /** @type {any} */
 let current = null;
+/** @type {HTMLCanvasElement | null} */
+let lastCard = null;
 
-/** @param {HTMLCanvasElement} card */
-async function recognize(card) {
+const DIGITS = '0123456789/';
+
+/** @param {HTMLCanvasElement} card @param {string} source */
+async function recognize(card, source) {
   const s = readSettings();
   const w = await ensureWorker();
   shootBtn.disabled = true;
-  statusEl.textContent = 'Lettura in corso…';
+  statusEl.textContent = 'Lettura del numero…';
   const t0 = performance.now();
+  lastCard = card;
 
   const topCanvas = /** @type {HTMLCanvasElement} */ ($('topCanvas'));
   const bottomCanvas = /** @type {HTMLCanvasElement} */ ($('bottomCanvas'));
-  prepareStrip(card, 0, s.topEnd, topCanvas, s);
-  prepareStrip(card, s.bottomStart, 1, bottomCanvas, s);
 
   try {
-    await w.setParameters({ tessedit_pageseg_mode: PSM.SPARSE_TEXT });
-    let bottom = (await w.recognize(bottomCanvas)).data.text;
-    let num = parseCollectorNumber(bottom);
-    // Light numbers on coloured bands (e.g. Sword & Shield) need inverted or binarised input.
-    const retries = [
-      { ...s, invert: !s.invert },
-      { ...s, threshold: true, invert: !s.invert },
+    // 1. Collector number: digits-only passes on each bottom corner (left on recent cards,
+    //    right on older ones), from cheapest to most aggressive preprocessing.
+    await w.setParameters({ tessedit_pageseg_mode: PSM.SPARSE_TEXT, tessedit_char_whitelist: DIGITS });
+    const looks = [
+      { name: 'grigio', opts: { ...s } },
+      { name: 'invertito', opts: { ...s, invert: !s.invert } },
+      { name: 'soglia locale', opts: { ...s, threshold: false, adaptive: true } },
+      { name: 'soglia locale invertita', opts: { ...s, threshold: false, adaptive: true, invert: !s.invert } },
     ];
-    let attempts = 1;
-    for (const alt of retries) {
-      if (num) break;
+    const corners = [
+      { name: 'sx', x0: 0, x1: 0.5 },
+      { name: 'dx', x0: 0.5, x1: 1 },
+    ];
+    const passes = looks.flatMap((look) => corners.map((c) => ({ ...look, ...c, name: `${look.name} ${c.name}` })));
+    let digitsText = '';
+    /** @type {ReturnType<typeof parseCollectorNumber>} */
+    let num = null;
+    let attempts = 0;
+    // Sets are listed in Italian and English; good enough to validate any language here.
+    const totals = await knownTotals('it').catch(() => null);
+    for (const pass of passes) {
       attempts++;
-      prepareStrip(card, s.bottomStart, 1, bottomCanvas, alt);
+      prepareStrip(card, s.bottomStart, 1, bottomCanvas, pass.opts, pass.x0, pass.x1);
       const text = (await w.recognize(bottomCanvas)).data.text;
-      bottom += `\n--- tentativo ${attempts} ---\n${text}`;
-      num = parseCollectorNumber(text);
+      digitsText += `[${pass.name}] ${text.trim()}\n`;
+      const found = parseCollectorNumber(text, totals);
+      if (found) {
+        num = found;
+        break;
+      }
     }
-    await w.setParameters({ tessedit_pageseg_mode: PSM.SINGLE_BLOCK });
-    const top = (await w.recognize(topCanvas)).data.text;
+
+    // 2. Language, set code and name: full-alphabet passes, only when the number was found.
+    let bottom = '';
+    let top = '';
+    if (num) {
+      statusEl.textContent = 'Lettura di nome e lingua…';
+      await w.setParameters({ tessedit_char_whitelist: '' });
+      prepareStrip(card, s.bottomStart, 1, bottomCanvas, s);
+      bottom = (await w.recognize(bottomCanvas)).data.text;
+      await w.setParameters({ tessedit_pageseg_mode: PSM.SINGLE_BLOCK });
+      prepareStrip(card, 0, s.topEnd, topCanvas, s);
+      top = (await w.recognize(topCanvas)).data.text;
+    } else {
+      prepareStrip(card, 0, s.topEnd, topCanvas, s);
+    }
+    await w.setParameters({ tessedit_char_whitelist: '' });
     const tOcr = performance.now() - t0;
-    $('topText').textContent = top || '(vuoto)';
-    $('bottomText').textContent = bottom || '(vuoto)';
+    $('topText').textContent = top || '(non letta)';
+    $('bottomText').textContent = `${digitsText}${bottom ? `[testo] ${bottom}` : ''}`;
+    $('cropInfo').textContent = `Sorgente: ${source} · carta ritagliata ${card.width}×${card.height} px · numero alto circa ${Math.round(card.height * 0.018)} px`;
 
     const { lang, scores } = detectLanguage(`${top}\n${bottom}`);
     const setCode = parseSetCode(bottom);
@@ -294,10 +458,12 @@ async function recognize(card) {
       lang,
       langScores: scores,
       attempts,
+      source,
+      cardPx: `${card.width}×${card.height}`,
       ocrMs: Math.round(tOcr),
       totalMs: Math.round(tTotal),
       topText: top.trim(),
-      bottomText: bottom.trim(),
+      bottomText: `${digitsText}${bottom}`.trim(),
       candidates: candidates.slice(0, 5).map((c) => ({ id: c.id, name: c.name, score: +c.nameScore.toFixed(2) })),
       settings: s,
     };
@@ -425,17 +591,37 @@ $('clearLog').addEventListener('click', () => {
 
 // ---------- wiring ----------
 
-shootBtn.addEventListener('click', () => {
+shootBtn.addEventListener('click', async () => {
   if (!video.videoWidth) return;
+  shootBtn.disabled = true;
+  statusEl.textContent = 'Scatto…';
   navigator.vibrate?.(30);
-  recognize(grabCardFromVideo());
+  const { canvas, source } = await grabCardFromCamera();
+  recognize(canvas, source);
+});
+
+/** @type {HTMLSelectElement} */ ($('camera')).addEventListener('change', (e) =>
+  startCamera(/** @type {HTMLSelectElement} */ (e.target).value),
+);
+
+// Debug only, on explicit tap: lets the user send real crops to tune the prototype.
+$('saveCrop').addEventListener('click', () => {
+  if (!lastCard) return;
+  lastCard.toBlob((blob) => {
+    if (!blob) return;
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `deckflix-carta-${new Date().toISOString().replace(/[:.]/g, '-')}.jpg`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }, 'image/jpeg', 0.92);
 });
 
 /** @type {HTMLInputElement} */ ($('file')).addEventListener('change', async (e) => {
   const input = /** @type {HTMLInputElement} */ (e.target);
   const file = input.files?.[0];
   input.value = '';
-  if (file) recognize(await grabCardFromFile(file));
+  if (file) recognize(await grabCardFromFile(file), `file ${file.name}`);
 });
 
 for (const el of Object.values(controls)) el.addEventListener('input', renderSettings);
