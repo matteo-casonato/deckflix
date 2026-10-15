@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "dev:offline": "VITE_TCGDEX_FIXTURES=1 vite",
+    "dev:mock": "VITE_GOOGLE_MOCK=1 VITE_GOOGLE_CLIENT_ID=mock vite --port 5174",
     "dev:https": "vite --host",
     "build": "vite build",
     "preview": "vite preview",

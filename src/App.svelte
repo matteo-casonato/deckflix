@@ -1,24 +1,47 @@
 <script>
   // @ts-check
-  // App shell: router, navigation bar and offline banner.
-  // Splash, first run (Google sign-in) and restore arrive in Phase 2.
+  // App shell: first run (Google sign-in), restore and choice flows, router, navigation
+  // bar and the offline / renew-access banners.
+  import { onMount } from 'svelte';
   import { router } from './lib/router.svelte.js';
+  import { account } from './lib/stores/account.svelte.js';
+  import { backupNow, initSync } from './lib/sync/sync.js';
   import { FULL_SCREEN } from './lib/domain/routes.js';
   import Nav from './lib/ui/Nav.svelte';
   import Home from './screens/Home.svelte';
   import Placeholder from './screens/Placeholder.svelte';
   import Scan from './screens/Scan.svelte';
   import Card from './screens/Card.svelte';
+  import Profile from './screens/Profile.svelte';
+  import Access from './screens/Access.svelte';
+  import Restore from './screens/Restore.svelte';
+  import Choice from './screens/Choice.svelte';
 
-  let online = $state(navigator.onLine);
+  onMount(() => {
+    initSync();
+  });
+
   const route = $derived(router.route);
-  const showNav = $derived(!FULL_SCREEN.has(route.name));
+  const flow = $derived(
+    !account.ready ? 'loading' : !account.firstRunDone ? 'access' : account.choice ? 'choice' : account.signIn ? 'restore' : 'app',
+  );
+  const showNav = $derived(flow === 'app' && !FULL_SCREEN.has(route.name));
 </script>
 
-<svelte:window ononline={() => (online = true)} onoffline={() => (online = false)} />
-
-{#if !online}
-  <p class="offline" role="status">Sei offline: mostro i dati salvati</p>
+{#if flow === 'access'}
+  <Access />
+{:else if flow === 'restore'}
+  <Restore />
+{:else if flow === 'choice'}
+  <Choice />
+{:else if flow === 'app'}
+{#if !account.online}
+  <p class="banner" role="status">Sei offline: mostro i dati salvati</p>
+{:else if account.user && account.needsAuth}
+  <p class="banner" role="status">
+    Accesso a Google Drive da rinnovare
+    <button class="btn small" onclick={() => backupNow({ interactive: true })}>Continua</button>
+  </p>
 {/if}
 
 <main class:with-nav={showNav}>
@@ -39,12 +62,7 @@
       phase="Fase 6"
     />
   {:else if route.name === 'profile'}
-    <Placeholder
-      title="Profilo"
-      emptyTitle="Accedi con Google"
-      emptyText="Il backup automatico su Google Drive tiene al sicuro la collezione."
-      phase="Fase 2"
-    />
+    <Profile />
   {:else if route.name === 'scan'}
     <Scan />
   {:else if route.name === 'card'}
@@ -61,6 +79,7 @@
 {#if showNav}
   <Nav active={route.name} />
 {/if}
+{/if}
 
 <style>
   main {
@@ -74,7 +93,11 @@
     padding-bottom: calc(var(--nav-height) + var(--nav-gap) * 2 + var(--safe-bottom));
   }
 
-  .offline {
+  .banner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
     position: sticky;
     top: 0;
     z-index: 20;
@@ -84,5 +107,11 @@
     color: var(--text);
     font-size: 14px;
     text-align: center;
+  }
+
+  .banner .btn.small {
+    min-height: 40px;
+    padding: 0 14px;
+    font-size: 13px;
   }
 </style>

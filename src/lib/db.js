@@ -27,6 +27,8 @@ export class DeckflixDB extends Dexie {
       syncQueue: '++id',
       settings: 'key',
     });
+    // v2: index changedAt, to clear only the changes included in a backup.
+    this.version(2).stores({ syncQueue: '++id, changedAt' });
     /** @type {Dexie.Table<CollectionEntry, string>} */
     this.collection = this.table('collection');
     /** @type {Dexie.Table<WishlistEntry, string>} */

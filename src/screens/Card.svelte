@@ -6,6 +6,9 @@
   import Icon from '../lib/ui/Icon.svelte';
   import { TcgdexError, cardImage, getCard } from '../lib/api/tcgdex.js';
   import { PRICES_STALE_AFTER, freshnessLabel } from '../lib/domain/cache.js';
+  import { liveQuery } from 'dexie';
+  import { db } from '../lib/db.js';
+  import { addCopies, collectionKey } from '../lib/domain/collection.js';
 
   /** @type {{ lang: string, id: string }} */
   let { lang, id } = $props();
@@ -26,6 +29,22 @@
   });
 
   const euro = new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' });
+
+  // Temporary until Phase 3 (quantities per variant): copies of the normal print.
+  const key = $derived(collectionKey(id, lang, 'normal'));
+  const owned = $derived(liveQuery(() => db.collection.get(key)));
+
+  /**
+   * @param {any} card
+   * @param {number} delta
+   */
+  async function change(card, delta) {
+    await db.transaction('rw', db.collection, async () => {
+      const next = addCopies(await db.collection.get(key), { cardId: id, setId: card.set?.id ?? '', lang, variant: 'normal' }, delta, Date.now());
+      if (next) await db.collection.put(next);
+      else await db.collection.delete(key);
+    });
+  }
 
   /** @param {{ fetchedAt: number, source: string }} r */
   function sourceText(r) {
@@ -76,6 +95,15 @@
           {/if}
         </p>
         <p class="source" class:warn={Date.now() - r.fetchedAt > PRICES_STALE_AFTER}>{sourceText(r)}</p>
+        <div class="qty">
+          {#if $owned}
+            <button class="btn" onclick={() => change(card, -1)} aria-label="Togli una copia">−</button>
+            <span class="num">Ne hai {$owned.qty}</span>
+            <button class="btn primary" onclick={() => change(card, 1)} aria-label="Aggiungi una copia">+</button>
+          {:else}
+            <button class="btn primary" onclick={() => change(card, 1)}>Aggiungi alla collezione</button>
+          {/if}
+        </div>
       </div>
     </div>
   {:catch err}
@@ -173,6 +201,20 @@
 
   .source.warn {
     color: var(--danger);
+  }
+
+  .qty {
+    margin-top: 14px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .qty .btn[aria-label] {
+    width: 48px;
+    padding: 0;
+    font-size: 22px;
   }
 
   .error {

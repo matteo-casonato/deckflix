@@ -3,7 +3,10 @@
   // Floating navigation bar (docs/mockups/Home.html): Home · Collezione · [Scansiona] · Deck · Account.
   import { Cards02Icon, Home04Icon, PokeballIcon, ScanIcon, UserIcon } from '@hugeicons/core-free-icons';
   import Icon from './Icon.svelte';
+  import Avatar from './Avatar.svelte';
   import { hrefFor } from '../domain/routes.js';
+  import { account } from '../stores/account.svelte.js';
+  import { backupState } from '../domain/backup.js';
 
   /** @type {{ active: string }} */
   let { active } = $props();
@@ -12,9 +15,22 @@
     { name: 'home', label: 'Home', icon: Home04Icon },
     { name: 'collection', label: 'Collezione', icon: Cards02Icon },
     { name: 'deck', label: 'Deck', icon: PokeballIcon },
-    // Phase 2: Google account photo and first name, with the backup status dot.
-    { name: 'profile', label: 'Profilo', icon: UserIcon },
   ];
+
+  const status = $derived(
+    backupState({
+      signedIn: !!account.user,
+      online: account.online,
+      needsAuth: account.needsAuth,
+      pending: account.pending || account.saving,
+      conflict: !!account.choice,
+    }),
+  );
+
+  const STATE_TEXT = { saved: 'backup completato', pending: 'modifiche da salvare', idle: 'backup in pausa', none: '' };
+  const profileLabel = $derived(
+    account.user ? `Profilo di ${account.user.givenName || account.user.name}, ${STATE_TEXT[status]}` : 'Profilo',
+  );
 </script>
 
 {#snippet item(/** @type {typeof items[number]} */ it)}
@@ -36,7 +52,21 @@
     <Icon icon={ScanIcon} size={26} strokeWidth={1.6} />
   </a>
   {@render item(items[2])}
-  {@render item(items[3])}
+  <a
+    class="item"
+    class:active={active === 'profile'}
+    href={hrefFor('profile')}
+    aria-current={active === 'profile' ? 'page' : undefined}
+    aria-label={profileLabel}
+  >
+    {#if account.user}
+      <Avatar user={account.user} {status} ring="rgb(27 30 37)" />
+      <span class="name">{account.user.givenName || account.user.name}</span>
+    {:else}
+      <Icon icon={UserIcon} />
+      <span>Profilo</span>
+    {/if}
+  </a>
 </nav>
 
 <style>
@@ -75,6 +105,13 @@
     font-size: 12px;
     font-weight: 500;
     transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease);
+  }
+
+  .name {
+    max-width: 72px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .item.active {

@@ -11,6 +11,8 @@
   --on-accent: #14161B;
   --success: #5BD08A;
   --danger: #FF7A6B;
+  /* Backup dot: offline or sign-in to renew (docs/mockups/StatiBackup.html). */
+  --idle: #6F737B;
 
   --r-chip: 19px;
   --r-control: 22px;

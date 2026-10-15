@@ -65,7 +65,7 @@ db.version(1).stores({
 | `priceSnapshots` | `date` | `{ date, totalValue }` — uno al giorno per lo storico del valore |
 | `cardCache` | `[lang+cardId]` | risposta TCGdex + `fetchedAt` (scadenza 24 h per i prezzi) |
 | `apiCache` | `path` | altre risposte TCGdex (edizioni, serie, ricerche) per percorso API + `fetchedAt` (scadenza 7 giorni, 24 h per le ricerche) |
-| `syncQueue` | auto | segnala che ci sono modifiche non ancora salvate su Drive (basta un flag + `changedAt`, non serve una coda per operazione) |
+| `syncQueue` | auto, indice `changedAt` (v2) | segnala che ci sono modifiche non ancora salvate su Drive (basta un flag + `changedAt`, non serve una coda per operazione); dopo un backup si cancellano solo le voci precedenti al suo inizio |
 | `settings` | `key` | preferenze, account (`email`, `name`, `picture`), `lastBackupAt`, `lastRemoteBackupAt` |
 
 Regole:
@@ -304,6 +304,8 @@ Progetto Vite + Svelte 5, Vitest, workflow GitHub Actions per il deploy, fixture
 **Fase 2 — Account Google e backup automatico**
 Schermata Accesso, login GIS, token per Drive, ripristino automatico, salvataggio automatico con debounce e in background, gestione dei conflitti, pallino di stato nella barra, schermata Profilo (parte account), modalità senza account.
 ✅ Su un browser pulito: accedo, aggiungo una carta di prova, chiudo l'app; su un secondo browser accedo con lo stesso account e ritrovo la carta senza fare altro. Il pallino passa da giallo a verde dopo il salvataggio e diventa grigio senza rete.
+
+**Esito (15/10/2026, in attesa del Client ID)**: implementata in `src/lib/sync/` (GIS, Drive `appDataFolder`, sincronizzazione) e `src/lib/domain/backup.js` (formato, scelte, stati; testati). Schermate Accesso, Ripristino, Scelta e Profilo; pallino sullo stato del backup nella barra. Verificato con Google e Drive simulati (`npm run dev:mock`): primo accesso con backup creato; carta di prova aggiunta → pallino giallo → verde dopo 10 s; "secondo browser" che ritrova la carta; conflitto con un salvataggio più recente di un altro telefono; accesso da rinnovare con "Continua"; uscita con e senza cancellazione dei dati. Da verificare con l'account vero: dopo il pulsante di Google il browser può bloccare la finestra del permesso per Drive, in quel caso serve un tocco su "Continua" (previsto). Il pulsante "Aggiungi alla collezione" nella schermata Carta è provvisorio, fino alla Fase 3.
 
 **Fase 3 — Collezione (inserimento manuale)**
 Cerca, dettaglio carta (prezzi, link Cardmarket, quantità), Collezione per edizione, Edizione, Desideri, Inserimento rapido per numero, stati vuoti e di errore, `navigator.storage.persist()`.
