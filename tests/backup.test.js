@@ -10,6 +10,7 @@ import {
   parseBackup,
   relativeTime,
   remoteIsNewer,
+  shouldKeepPrevious,
   summarize,
 } from '../src/lib/domain/backup.js';
 
@@ -130,5 +131,15 @@ describe('countsLabel', () => {
     const base = { entries: 0, exportedAt: null };
     expect(countsLabel({ ...base, cards: 1, decks: 1, wishlist: 1 })).toBe('1 carta · 1 deck · 1 desiderio');
     expect(countsLabel({ ...base, cards: 248, decks: 3, wishlist: 12 })).toBe('248 carte · 3 deck · 12 desideri');
+  });
+});
+
+describe('shouldKeepPrevious', () => {
+  const now = new Date(2026, 9, 15, 9, 0).getTime();
+  it('keeps the Drive copy only on the first backup of a new day', () => {
+    expect(shouldKeepPrevious(new Date(2026, 9, 14, 23, 50).toISOString(), now)).toBe(true);
+    expect(shouldKeepPrevious(new Date(2026, 9, 15, 8, 0).toISOString(), now)).toBe(false);
+    expect(shouldKeepPrevious('not a date', now)).toBe(false);
+    expect(shouldKeepPrevious(new Date(2026, 9, 16, 8, 0).toISOString(), now)).toBe(false);
   });
 });

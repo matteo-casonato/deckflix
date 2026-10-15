@@ -3,7 +3,8 @@
   // App shell: first run (Google sign-in), restore and choice flows, router, navigation
   // bar and the offline / renew-access banners.
   import { onMount } from 'svelte';
-  import { router } from './lib/router.svelte.js';
+  import { guardExit, router } from './lib/router.svelte.js';
+  import { showToast } from './lib/stores/toast.svelte.js';
   import { account } from './lib/stores/account.svelte.js';
   import { backupNow, initSync } from './lib/sync/sync.js';
   import { FULL_SCREEN, NAV_SECTION } from './lib/domain/routes.js';
@@ -26,6 +27,7 @@
   import Scan from './screens/Scan.svelte';
   import Card from './screens/Card.svelte';
   import Profile from './screens/Profile.svelte';
+  import Csv from './screens/Csv.svelte';
   import Access from './screens/Access.svelte';
   import Restore from './screens/Restore.svelte';
   import Choice from './screens/Choice.svelte';
@@ -34,6 +36,7 @@
     loadSettings().then(() => recordTodaySnapshot()).catch(() => {});
     initSync();
     initPwa();
+    guardExit(() => showToast('Premi ancora Indietro per uscire'));
   });
 
   const route = $derived(router.route);
@@ -78,6 +81,8 @@
     {#key route.params.id}<DeckBuilder id={route.params.id} query={route.query} />{/key}
   {:else if route.name === 'profile'}
     <Profile />
+  {:else if route.name === 'csv'}
+    <Csv query={route.query} />
   {:else if route.name === 'scan'}
     <Scan query={route.query} />
   {:else if route.name === 'card'}

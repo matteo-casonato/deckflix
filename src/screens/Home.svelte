@@ -8,6 +8,8 @@
   import { settings } from '../lib/stores/settings.svelte.js';
   import { cachedCards, prefetchCards } from '../lib/data/catalog.js';
   import { valuedCollection } from '../lib/data/value.js';
+  import { isConfigured } from '../lib/sync/sync.js';
+  import { REMINDER_SNOOZE_MS, showSignInReminder } from '../lib/domain/backup.js';
   import { cardImage } from '../lib/api/tcgdex.js';
   import { periodChange } from '../lib/domain/value.js';
   import { euro, setIdOf, variantBadge } from '../lib/domain/cards.js';
@@ -35,6 +37,22 @@
   const snapshots = liveQuery(() => db.priceSnapshots.toArray());
   const pct = $derived(periodChange($snapshots ?? [], 30, Date.now()).pct);
 
+  const local = liveQuery(async () => {
+    const [exp, snooze] = await db.settings.bulkGet(['lastExportAt', 'signInReminderUntil']);
+    return { lastExportAt: exp?.value ?? null, snoozedUntil: snooze?.value ?? null };
+  });
+  const reminder = $derived(
+    !!$local &&
+      showSignInReminder({
+        signedIn: !!account.user,
+        configured: isConfigured(),
+        copies: $recent?.length ?? 0,
+        ...$local,
+        now: Date.now(),
+      }),
+  );
+  const snooze = () => db.settings.put({ key: 'signInReminderUntil', value: Date.now() + REMINDER_SNOOZE_MS });
+
   const last = $derived($recent?.[0]);
   /** @param {number} t */
   function ago(t) {
@@ -58,6 +76,15 @@
     <a class="btn" href={hrefFor('quick')}>Inserimento rapido</a>
   </EmptyState>
 {:else if $recent}
+  {#if reminder}
+    <section class="remind card" aria-label="Backup">
+      <p><strong>Accedi con Google per non perdere la collezione</strong><br />Oggi è salvata solo su questo telefono.</p>
+      <div class="row">
+        <button class="btn" onclick={snooze}>Più tardi</button>
+        <button class="btn light" onclick={() => (account.firstRunDone = false)}>Accedi</button>
+      </div>
+    </section>
+  {/if}
   <section class="value card">
     <a class="head" href={hrefFor('collection', {}, { view: 'stats' })}>
       <span class="col">
@@ -131,6 +158,33 @@
   .hello {
     font-size: 13px;
     color: var(--muted);
+  }
+
+  .remind {
+    margin: 10px 16px 0;
+    padding: 14px 16px;
+    border-radius: var(--r-card);
+    background: var(--surface-2);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .remind p {
+    margin: 0;
+  }
+
+  .remind strong {
+    color: var(--text);
+    font-size: 14px;
+  }
+
+  .remind .row {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
   }
 
   .value {

@@ -2,10 +2,12 @@
 // Backup file format and the decisions around it (docs/SPEC.md § 7). Pure functions.
 
 export const BACKUP_FILE = 'deckflix-backup.json';
+/** Safety copy: the backup as it was at the end of the previous day it was saved. */
+export const BACKUP_PREV_FILE = 'deckflix-backup-prev.json';
 export const SCHEMA_VERSION = 1;
 
 /** Settings that describe this device or the sync itself: never sent to Drive. */
-export const LOCAL_ONLY_SETTINGS = new Set(['account', 'lastBackupAt', 'lastRemoteBackupAt', 'firstRunDone']);
+export const LOCAL_ONLY_SETTINGS = new Set(['account', 'lastBackupAt', 'lastRemoteBackupAt', 'firstRunDone', 'signInReminderUntil', 'lastExportAt']);
 
 /**
  * @typedef {{ collection: any[], wishlist: any[], decks: any[], priceSnapshots: any[], settings: { key: string, value: any }[] }} BackupTables
@@ -175,3 +177,27 @@ export function decodeIdToken(jwt) {
 export function countsLabel(s) {
   return `${s.cards} ${s.cards === 1 ? 'carta' : 'carte'} · ${s.decks} deck · ${s.wishlist} ${s.wishlist === 1 ? 'desiderio' : 'desideri'}`;
 }
+
+/**
+ * True when the Drive copy was last written on an earlier local day than `now`, so it should
+ * be kept as the previous-day copy before being overwritten.
+ * @param {string} remoteModifiedTime ISO date from Drive
+ * @param {number} now
+ */
+export function shouldKeepPrevious(remoteModifiedTime, now) {
+  const day = (/** @type {number} */ t) => new Date(t).toDateString();
+  const t = Date.parse(remoteModifiedTime);
+  return Number.isFinite(t) && day(t) !== day(now) && t < now;
+}
+
+/**
+ * SPEC § 3: without an account and without any export, Home invites to sign in; the invite
+ * can be postponed.
+ * @param {{ signedIn: boolean, configured: boolean, copies: number, lastExportAt?: number | null, snoozedUntil?: number | null, now: number }} s
+ */
+export function showSignInReminder({ signedIn, configured, copies, lastExportAt, snoozedUntil, now }) {
+  return !signedIn && configured && copies > 0 && !lastExportAt && !(snoozedUntil && snoozedUntil > now);
+}
+
+/** How long "Più tardi" hides the sign-in invite. */
+export const REMINDER_SNOOZE_MS = 7 * 86_400_000;

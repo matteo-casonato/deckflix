@@ -46,3 +46,26 @@ export function back(fallback) {
     navigate(fallback);
   }
 }
+
+/**
+ * Android back on the first Home screen asks before leaving (SPEC, UI guidelines): a guard
+ * entry sits above the first one; the first back shows `onAttempt` and a second back within
+ * a few seconds exits, otherwise the guard comes back.
+ * @param {() => void} onAttempt
+ */
+export function guardExit(onAttempt) {
+  if (router.route.name !== 'home' || history.state?.guard) return;
+  history.replaceState({ ...history.state, root: true }, '');
+  history.pushState({ guard: true }, '', location.hash);
+  /** @type {ReturnType<typeof setTimeout> | undefined} */
+  let timer;
+  window.addEventListener('popstate', (e) => {
+    if (!e.state?.root || matchRoute(location.hash).name !== 'home') return;
+    onAttempt();
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      if (history.state?.root) history.pushState({ guard: true }, '', location.hash);
+    }, 2500);
+  });
+  window.addEventListener('hashchange', () => clearTimeout(timer));
+}

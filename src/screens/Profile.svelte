@@ -1,7 +1,7 @@
 <script>
   // @ts-check
-  // Profile (docs/mockups/Profilo.html). Phase 2: account and backup; Data and App rows
-  // that belong to later phases are shown disabled with their phase.
+  // Profile (docs/mockups/Profilo.html): account and backup, data (CSV, deck lists,
+  // restore) and app preferences.
   import {
     ArrowRight01Icon,
     CloudDownloadIcon,
@@ -18,6 +18,7 @@
   import { account } from '../lib/stores/account.svelte.js';
   import { setSetting, settings } from '../lib/stores/settings.svelte.js';
   import { LANG_LABELS } from '../lib/domain/cards.js';
+  import { hrefFor } from '../lib/domain/routes.js';
   import { clearImageCache, imageCacheInfo } from '../lib/data/imageCache.js';
   import { backupState, relativeTime } from '../lib/domain/backup.js';
   import { backupNow, isConfigured, restoreFromDrive, signOut } from '../lib/sync/sync.js';
@@ -107,14 +108,16 @@
 
 <h2 class="section">Dati</h2>
 <section class="card list">
-  <div class="row disabled">
+  <a class="row" href={hrefFor('csv')}>
     <span class="ico"><Icon icon={Csv01Icon} /></span>
-    <span class="text"><strong>Esporta CSV</strong><span>Collezione, desideri o un deck · Fase 8</span></span>
-  </div>
-  <div class="row disabled">
+    <span class="text"><strong>Esporta CSV</strong><span>Collezione, desideri o un deck</span></span>
+    <span class="chev"><Icon icon={ArrowRight01Icon} size={20} /></span>
+  </a>
+  <a class="row" href={hrefFor('deck')}>
     <span class="ico"><Icon icon={FileImportIcon} /></span>
-    <span class="text"><strong>Liste deck</strong><span>Importa o esporta in formato testo · Fase 6</span></span>
-  </div>
+    <span class="text"><strong>Liste deck</strong><span>Importa una lista o condividi quella di un deck</span></span>
+    <span class="chev"><Icon icon={ArrowRight01Icon} size={20} /></span>
+  </a>
   <button class="row" disabled={!account.user} onclick={() => (confirm = 'restore')}>
     <span class="ico"><Icon icon={CloudDownloadIcon} /></span>
     <span class="text"><strong>Ripristina da Drive</strong><span>Sostituisce i dati di questo telefono</span></span>
@@ -131,9 +134,9 @@
       {#each Object.entries(LANG_LABELS) as [code, label] (code)}<option value={code}>{label}</option>{/each}
     </select>
   </label>
-  <div class="row disabled">
+  <div class="row static">
     <span class="ico"><Icon icon={Analytics01Icon} /></span>
-    <span class="text"><strong>Prezzo di riferimento</strong><span>Trend Cardmarket · Fase 7</span></span>
+    <span class="text"><strong>Prezzo di riferimento</strong><span>Trend Cardmarket, aggiornato ogni giorno</span></span>
   </div>
   <button class="row" onclick={() => (confirm = 'images')} disabled={!cache || cache.images === 0}>
     <span class="ico"><Icon icon={Image01Icon} /></span>
@@ -155,7 +158,7 @@
           ? 'Verifica in corso…'
           : settings.persisted
             ? 'Sì: il browser non li cancella quando manca spazio'
-            : 'No: se manca spazio il browser potrebbe cancellarli. Installare l’app (Fase 4) aiuta.'}
+            : 'No: se manca spazio il browser potrebbe cancellarli. Installare l’app aiuta.'}
       </span>
     </span>
   </div>
@@ -335,6 +338,8 @@
     background: transparent;
     border-radius: 28px;
     cursor: pointer;
+    color: inherit;
+    text-decoration: none;
   }
 
   .row.static {

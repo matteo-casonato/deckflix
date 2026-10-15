@@ -8,6 +8,8 @@ import { db } from '../db.js';
 import { account } from '../stores/account.svelte.js';
 import {
   BACKUP_FILE,
+  BACKUP_PREV_FILE,
+  shouldKeepPrevious,
   LOCAL_ONLY_SETTINGS,
   buildBackup,
   firstSignInAction,
@@ -184,6 +186,22 @@ function handleError(err) {
 }
 
 /**
+ * First backup of the day: the copy on Drive becomes deckflix-backup-prev.json, so a bad day
+ * (wrong restore, mass deletion) can still be undone from yesterday's data. Best effort:
+ * the main backup goes ahead even if this copy fails.
+ * @param {string} id
+ */
+async function keepPrevious(id) {
+  try {
+    const old = await drive.download(id);
+    const prev = await drive.findFile(BACKUP_PREV_FILE);
+    await drive.upload(BACKUP_PREV_FILE, old, prev?.id ?? null);
+  } catch (err) {
+    console.warn('Previous-day copy not saved', err);
+  }
+}
+
+/**
  * Saves everything to Drive now.
  * @param {{ interactive?: boolean, force?: boolean }} [o] interactive: called from a tap
  *   (may show Google's popup); force: overwrite even if Drive has a newer copy.
@@ -212,6 +230,7 @@ export async function backupNow({ interactive = false, force = false } = {}) {
       };
       return;
     }
+    if (file && shouldKeepPrevious(file.modifiedTime, Date.now())) await keepPrevious(file.id);
     const backup = buildBackup(await readTables(), { now: new Date(), device: deviceName() });
     const saved = await drive.upload(BACKUP_FILE, backup, file?.id ?? null);
     await setSetting('lastRemoteBackupAt', saved.modifiedTime);
