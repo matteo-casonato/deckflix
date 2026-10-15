@@ -5,7 +5,7 @@ import Dexie from 'dexie';
 /**
  * @typedef {{ key: string, cardId: string, setId: string, lang: string, variant: string, qty: number, condition?: string, purchasePrice?: number, addedAt: number, updatedAt: number }} CollectionEntry
  * @typedef {{ cardId: string, lang?: string, variant?: string, priority?: number, addedAt: number }} WishlistEntry
- * @typedef {{ id: string, name: string, format: 'standard', cards: { cardId: string, qty: number }[], createdAt: number, updatedAt: number }} Deck
+ * @typedef {{ id: string, name: string, format: 'standard', cards: { cardId: string, qty: number }[], cover?: string | null, createdAt: number, updatedAt: number }} Deck
  * @typedef {{ id: string, name: string, cards: { cardId: string, addedAt: number }[], createdAt: number, updatedAt: number }} Album
  * @typedef {{ date: string, totalValue: number }} PriceSnapshot
  * @typedef {{ lang: string, cardId: string, data: any, fetchedAt: number }} CachedCard

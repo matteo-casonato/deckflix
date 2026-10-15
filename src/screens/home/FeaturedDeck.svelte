@@ -6,7 +6,7 @@
   import { db } from '../../lib/db.js';
   import { cardImage } from '../../lib/api/tcgdex.js';
   import { deckRows, missingToWishlist, ownedMap } from '../../lib/data/decks.js';
-  import { deckSummary } from '../../lib/domain/deck.js';
+  import { coverCards, deckSummary } from '../../lib/domain/deck.js';
   import { euro } from '../../lib/domain/cards.js';
   import { hrefFor } from '../../lib/domain/routes.js';
   import { showToast } from '../../lib/stores/toast.svelte.js';
@@ -23,16 +23,10 @@
   });
   const summary = $derived(rows ? deckSummary(rows) : null);
 
-  // The fan: rule-box Pokémon first (the deck's stars), then the most played.
-  const fan = $derived(
-    (rows ?? [])
-      .filter((r) => r.section === 'Pokémon' && cardImage(r.card))
-      .sort((a, b) => Number(/\b(ex|V|VSTAR|VMAX)$/.test(b.card?.name ?? '')) - Number(/\b(ex|V|VSTAR|VMAX)$/.test(a.card?.name ?? '')) || b.qty - a.qty)
-      .slice(0, 3)
-      .map((r) => cardImage(r.card)),
-  );
-  // Middle card on top.
-  const order = $derived(fan.length === 3 ? [fan[1], fan[0], fan[2]] : fan);
+  // The fan: the cover card in the middle, on top (long press in the deck, or automatic).
+  const fanIds = $derived(rows && $deck ? coverCards(rows, $deck.cover, (r) => !!cardImage(r.card)) : []);
+  const img = (/** @type {string} */ cid) => /** @type {string} */ (cardImage(rows?.find((r) => r.cardId === cid)?.card));
+  const order = $derived(fanIds.length === 3 ? [img(fanIds[1]), img(fanIds[0]), img(fanIds[2])] : fanIds.map(img));
 
   async function toWishlist() {
     if (!rows) return;

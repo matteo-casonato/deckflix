@@ -372,6 +372,8 @@ Esporta CSV, invito ad accedere per chi usa l'app senza account, copia di sicure
 
 - **Elenco deck** compatto come le edizioni: tre Pokémon sovrapposti a ventaglio (prima quelli con regola), nome, possedute e mancanti, anello della percentuale; due tag: formato “Standard” verde o “Non standard” rosso se anche una sola carta non è legale in Standard (`legal.standard` di TCGdex), e stato “In costruzione · n/60” (grigio), “Valido” (verde: 60 carte, massimo 4 copie per nome tranne le Energie base, almeno un Pokémon Base) o “Non valido” (rosso). Logica in `deckCheck` (`src/lib/domain/deck.js`, testata).
 
+- **Carta di copertina del deck**: nel dettaglio del deck (lista o griglia) una pressione prolungata su una carta la sceglie come copertina (★, vibrazione, “Annulla”); ripremendola torna automatica. Automatica: il Pokémon con regola (ex, V…) tra i quattro con più copie, altrimenti quello con più copie (`coverCards`). Salvata nel deck (`cover`, nel backup); usata in primo piano nel ventaglio dell'elenco deck e nel deck in evidenza della Home.
+
 ## 9. Fuori ambito
 
 Prezzi per lingua e per condizione, riconoscimento con IA a pagamento, notifiche push e backup a app chiusa (servirebbe un server), profili multipli sullo stesso telefono, backup su servizi diversi da Google Drive, pubblicazione sugli store, app nativa con Capacitor (piano B se la scansione web non basta).

@@ -5,7 +5,7 @@
   // the wishlist, delete.
   import { liveQuery } from 'dexie';
   import { db } from '../lib/db.js';
-  import { deckRows, deleteDeck, exportDecklist, missingToWishlist, ownedMap } from '../lib/data/decks.js';
+  import { deckRows, deleteDeck, exportDecklist, missingToWishlist, ownedMap, updateDeck } from '../lib/data/decks.js';
   import { deckSummary } from '../lib/domain/deck.js';
   import { euro } from '../lib/domain/cards.js';
   import { hrefFor } from '../lib/domain/routes.js';
@@ -13,7 +13,7 @@
   import { showToast } from '../lib/stores/toast.svelte.js';
   import { cardImage } from '../lib/api/tcgdex.js';
   import { setDetails } from '../lib/data/catalog.js';
-  import { printedCode } from '../lib/domain/deck.js';
+  import { coverCards, printedCode } from '../lib/domain/deck.js';
   import { replace } from '../lib/router.svelte.js';
   import BackHeader from '../lib/ui/BackHeader.svelte';
   import Segmented from '../lib/ui/Segmented.svelte';
@@ -52,6 +52,22 @@
     ['Energy', 'Energie'],
   ]);
   const STATE = { owned: '', other: 'Altra versione', missing: 'Manca' };
+  // Cover card: chosen with a long press (Android fires contextmenu), else automatic.
+  const coverId = $derived(rows && $deck ? (coverCards(rows, $deck.cover, (r) => !!cardImage(r.card), 1)[0] ?? null) : null);
+  /**
+   * @param {Event} e
+   * @param {import('../lib/data/decks.js').DeckRow} r
+   */
+  async function chooseCover(e, r) {
+    e.preventDefault();
+    if (!$deck) return;
+    const before = $deck.cover ?? null;
+    const next = before === r.cardId ? null : r.cardId;
+    await updateDeck(id, { cover: next });
+    navigator.vibrate?.(20);
+    showToast(next ? `Copertina: ${r.card?.name ?? r.cardId}` : 'Copertina automatica', () => updateDeck(id, { cover: before }));
+  }
+
   /** @param {import('../lib/data/decks.js').DeckRow} r */
   const stateLabel = (r) => (r.state === 'missing' ? `Manca ${r.missing}` : STATE[r.state]);
   /** Right-hand label of a list row: "4", "Manca 2/4", "4 · altra versione". @param {import('../lib/data/decks.js').DeckRow} r */
@@ -136,6 +152,7 @@
         ]}
         onchange={(v) => replace(hrefFor('deckDetail', { id }, { view: v === 'grid' ? 'grid' : null }))}
       />
+      <p class="muted cover-hint">Tieni premuta una carta per sceglierla come copertina ★{$deck.cover ? '' : ' (ora è automatica)'}.</p>
     </div>
   {/if}
 
@@ -151,7 +168,9 @@
                 <a
                   class="tile"
                   class:missing={r.state === 'missing'}
+                  class:cover={r.cardId === coverId}
                   href={hrefFor('card', { lang: 'en', id: r.cardId })}
+                  oncontextmenu={(e) => chooseCover(e, r)}
                   aria-label={`${r.qty} ${r.card?.name ?? r.cardId}${r.state !== 'owned' ? `, ${stateLabel(r)}` : ''}`}
                 >
                   {#if cardImage(r.card)}
@@ -160,6 +179,7 @@
                     <span class="ph">{r.card?.name ?? r.cardId}</span>
                   {/if}
                   <span class="count num">{r.qty}</span>
+                  {#if r.cardId === coverId}<span class="star" title="Copertina">★</span>{/if}
                   {#if r.state !== 'owned'}<span class="tag {r.state}">{stateLabel(r)}</span>{/if}
                 </a>
               </li>
@@ -169,12 +189,12 @@
         <ul class="lines card">
           {#each group as r (r.cardId)}
             <li>
-              <a href={hrefFor('card', { lang: 'en', id: r.cardId })}>
+              <a href={hrefFor('card', { lang: 'en', id: r.cardId })} oncontextmenu={(e) => chooseCover(e, r)}>
                 <span class="thumb" class:missing={r.state === 'missing'}>
                   {#if cardImage(r.card)}<img src={cardImage(r.card)} alt="" loading="lazy" />{/if}
                 </span>
                 <span class="name">
-                  <strong>{r.card?.name ?? r.cardId}</strong>
+                  <strong>{r.card?.name ?? r.cardId}{#if r.cardId === coverId}<span class="star-inline" title="Copertina"> ★</span>{/if}</strong>
                   <span class="muted num">{r.card ? printedCode(r.card, sets.get(r.card.set?.id)) : ''}</span>
                 </span>
                 <span class="state {r.state}">{rowLabel(r)}</span>
@@ -209,6 +229,42 @@
 {/if}
 
 <style>
+  .cover-hint {
+    margin-top: 8px;
+    font-size: 12px;
+  }
+
+  .star {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 24px;
+    height: 24px;
+    border-radius: 12px;
+    background: var(--accent);
+    color: var(--on-accent);
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .tile.cover {
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
+  }
+
+  .star-inline {
+    color: var(--accent);
+  }
+
+  /* No text selection or callout on long press: it chooses the cover. */
+  .lines a,
+  .tile {
+    -webkit-touch-callout: none;
+    user-select: none;
+  }
+
   .pad {
     padding: 12px 16px 0;
   }

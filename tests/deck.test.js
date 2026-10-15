@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { listName, listNumber, parseDecklist, serializeDecklist, suggestDeckName } from '../src/lib/domain/decklist.js';
-import { deckBreakdown, deckCheck, deckSummary, printedCode, tournamentSheet, entryState, openingHand, sameCard, sectionOfCard } from '../src/lib/domain/deck.js';
+import { coverCards, deckBreakdown, deckCheck, deckSummary, printedCode, tournamentSheet, entryState, openingHand, sameCard, sectionOfCard } from '../src/lib/domain/deck.js';
 
 const LIST = `Pokémon: 16
 3 Miraidon ex SVI 81
@@ -196,5 +196,22 @@ describe('deckCheck', () => {
   it('flags cards out of Standard, ignoring cards not loaded yet', () => {
     const r = deckCheck([pk('a', 4, { legal: { standard: false } }), { cardId: 'x', qty: 1, section: 'Pokémon', card: null }, en(10)]);
     expect(r).toMatchObject({ standard: false, notStandard: ['a'] });
+  });
+});
+
+describe('coverCards', () => {
+  const r = (cardId, qty, section = 'Pokémon') => ({ cardId, qty, section, card: { name: cardId } });
+  const rows = [r('Dreepy', 4), r('Drakloak', 4), r('Dragapult ex', 3), r('Munkidori', 2), r('Fezandipiti ex', 1), r('Ultra Ball', 4, 'Trainer')];
+  const img = () => true;
+  it('picks the rule-box Pokémon among the four most played, then the others', () => {
+    expect(coverCards(rows, null, img)).toEqual(['Dragapult ex', 'Fezandipiti ex', 'Drakloak']);
+  });
+  it('uses the card chosen by the user when it has an image', () => {
+    expect(coverCards(rows, 'Munkidori', img)[0]).toBe('Munkidori');
+    expect(coverCards(rows, 'Munkidori', (x) => x.card.name !== 'Munkidori')[0]).toBe('Dragapult ex');
+  });
+  it('falls back to the most played Pokémon, or nothing', () => {
+    expect(coverCards([r('Pikachu', 2), r('Raichu', 3)], null, img)[0]).toBe('Raichu');
+    expect(coverCards([r('Ball', 4, 'Trainer')], null, img)).toEqual([]);
   });
 });

@@ -213,3 +213,25 @@ export function deckCheck(rows) {
   const status = total < DECK_SIZE ? 'building' : total === DECK_SIZE && !tooMany.length && hasBasic ? 'valid' : 'invalid';
   return { total, status, standard: notStandard.length === 0, notStandard, tooMany, hasBasic };
 }
+
+const RULE_BOX = /\b(ex|EX|V|VSTAR|VMAX|GX)$/;
+
+/**
+ * Cards shown as the deck's cover, the main one first: the card chosen by the user (long
+ * press, stored as `deck.cover`), otherwise the rule-box Pokémon (ex, V…) among the four
+ * most played Pokémon, otherwise the most played Pokémon. Then up to two more Pokémon.
+ * Only cards with an image (`hasImage`) can be shown.
+ * @param {{ cardId: string, qty: number, section: string, card: any }[]} rows
+ * @param {string | null | undefined} cover
+ * @param {(r: { card: any }) => boolean} hasImage
+ * @param {number} [count]
+ */
+export function coverCards(rows, cover, hasImage, count = 3) {
+  const pokemon = rows.filter((r) => r.section === 'Pokémon' && hasImage(r)).sort((a, b) => b.qty - a.qty || a.cardId.localeCompare(b.cardId));
+  const top4 = pokemon.slice(0, 4);
+  const chosen = rows.find((r) => r.cardId === cover && hasImage(r));
+  const main = chosen ?? top4.find((r) => RULE_BOX.test(r.card?.name ?? '')) ?? pokemon[0];
+  if (!main) return [];
+  const rest = pokemon.filter((r) => r !== main).sort((a, b) => Number(RULE_BOX.test(b.card?.name ?? '')) - Number(RULE_BOX.test(a.card?.name ?? '')) || b.qty - a.qty);
+  return [main, ...rest].slice(0, count).map((r) => r.cardId);
+}

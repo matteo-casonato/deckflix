@@ -7,7 +7,7 @@
   import { db } from '../lib/db.js';
   import { createDeck, deckRows, ownedMap } from '../lib/data/decks.js';
   import { pasteErrorText, readListFromClipboard, setPendingList } from '../lib/data/pasteList.js';
-  import { deckCheck, deckSummary } from '../lib/domain/deck.js';
+  import { coverCards, deckCheck, deckSummary } from '../lib/domain/deck.js';
   import { cardImage } from '../lib/api/tcgdex.js';
   import { hrefFor } from '../lib/domain/routes.js';
   import { navigate } from '../lib/router.svelte.js';
@@ -28,13 +28,11 @@
     Promise.all(
       list.map(async (d) => {
         const rows = await deckRows(d, own);
-        // Preview: rule-box Pokémon first (the deck's stars), then the most played.
-        const star = (/** @type {any} */ r) => Number(/\b(ex|V|VSTAR|VMAX|GX)$/.test(r.card?.name ?? ''));
-        const fan = rows
-          .filter((r) => r.section === 'Pokémon' && cardImage(r.card))
-          .sort((a, b) => star(b) - star(a) || b.qty - a.qty)
-          .slice(0, 3)
-          .map((r) => /** @type {string} */ (cardImage(r.card)));
+        // Preview: the cover (long press in the deck, or automatic) on top, two more behind.
+        const ids = coverCards(rows, d.cover, (r) => !!cardImage(r.card));
+        const fan = [...ids.slice(1).reverse(), ids[0]]
+          .filter(Boolean)
+          .map((cid) => /** @type {string} */ (cardImage(rows.find((r) => r.cardId === cid)?.card)));
         return /** @type {const} */ ([d.id, { summary: deckSummary(rows), check: deckCheck(rows), fan }]);
       }),
     ).then((pairs) => (infos = new Map(pairs)));
