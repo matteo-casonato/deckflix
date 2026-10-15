@@ -19,6 +19,8 @@ import { createDrive } from './drive.js';
 import { AuthError, getToken, isConfigured, requestToken, signOut as revoke } from './google-auth.js';
 
 export const DEBOUNCE_MS = 10_000;
+/** Retry delays when Drive is unreachable while the browser says "online" (Wi-Fi without internet). */
+const RETRY_MS = [30_000, 60_000, 120_000, 300_000];
 const DATA_TABLES = /** @type {const} */ (['collection', 'wishlist', 'decks', 'priceSnapshots']);
 
 const MOCK = import.meta.env.VITE_GOOGLE_MOCK === '1';
@@ -50,6 +52,26 @@ function setSetting(key, value) {
 let quiet = 0;
 /** @type {ReturnType<typeof setTimeout> | undefined} */
 let timer;
+/** @type {ReturnType<typeof setTimeout> | undefined} */
+let retryTimer;
+let retryCount = 0;
+
+/** No connection to Drive: grey dot, and try again later even if no `online` event comes. */
+function networkDown() {
+  account.online = false;
+  clearTimeout(retryTimer);
+  const delay = RETRY_MS[Math.min(retryCount, RETRY_MS.length - 1)];
+  retryCount++;
+  retryTimer = setTimeout(() => {
+    if (account.pending) backupNow();
+  }, delay);
+}
+
+function networkUp() {
+  account.online = true;
+  retryCount = 0;
+  clearTimeout(retryTimer);
+}
 
 function markDirty() {
   if (quiet > 0) return;
@@ -105,7 +127,7 @@ export async function initSync() {
   account.ready = true;
 
   window.addEventListener('online', () => {
-    account.online = true;
+    networkUp();
     if (account.pending) backupNow();
   });
   window.addEventListener('offline', () => {
@@ -154,7 +176,7 @@ function handleError(err) {
     return;
   }
   if (err && typeof err === 'object' && 'kind' in err && err.kind === 'offline') {
-    account.online = navigator.onLine;
+    networkDown();
     return;
   }
   account.error = err instanceof Error ? err.message : String(err);
@@ -198,6 +220,7 @@ export async function backupNow({ interactive = false, force = false } = {}) {
     await db.syncQueue.where('changedAt').belowOrEqual(startedAt).delete().catch(() => db.syncQueue.clear());
     account.pending = (await db.syncQueue.count()) > 0;
     account.needsAuth = false;
+    networkUp();
     if (account.pending) scheduleBackup();
   } catch (err) {
     handleError(err);

@@ -58,7 +58,8 @@ export const mockAccounts = {
  */
 export async function mockDriveFetch(url, init = {}) {
   await new Promise((r) => setTimeout(r, 150));
-  if (!navigator.onLine) throw new TypeError('Failed to fetch');
+  // 'deckflix-mock-no-internet' = Wi-Fi connected but no internet (navigator.onLine stays true).
+  if (!navigator.onLine || localStorage.getItem('deckflix-mock-no-internet') === '1') throw new TypeError('Failed to fetch');
   const drive = readDrive();
   const u = new URL(url);
   const json = (/** @type {any} */ body, status = 200) => new Response(JSON.stringify(body), { status });
