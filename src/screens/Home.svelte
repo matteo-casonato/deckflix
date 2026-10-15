@@ -1,41 +1,55 @@
 <script>
   // @ts-check
-  // Home (docs/mockups/Home.html): collection value with the 30-day change, last addition,
-  // recent additions.
+  // Home (docs/mockups/Home.html): value with its 30-day trend, shortcuts, featured deck,
+  // card of the day, price movers, wishes getting cheaper, recent additions, set in progress.
   import { liveQuery } from 'dexie';
+  import { FlashIcon, KeyboardIcon, ScanIcon, Search01Icon } from '@hugeicons/core-free-icons';
   import { db } from '../lib/db.js';
   import { account } from '../lib/stores/account.svelte.js';
   import { settings } from '../lib/stores/settings.svelte.js';
-  import { prefetchCards, liveCards } from '../lib/data/catalog.js';
-  import { valuedCollection } from '../lib/data/value.js';
+  import { liveCards, prefetchCards, setsMap } from '../lib/data/catalog.js';
   import { isConfigured } from '../lib/sync/sync.js';
   import { REMINDER_SNOOZE_MS, showSignInReminder } from '../lib/domain/backup.js';
   import { cardImage } from '../lib/api/tcgdex.js';
-  import { periodChange } from '../lib/domain/value.js';
-  import { euro, setIdOf, variantBadge } from '../lib/domain/cards.js';
-  import Icon from '../lib/ui/Icon.svelte';
-  import { ArrowRight01Icon } from '@hugeicons/core-free-icons';
+  import { collectionValue, dayKey, periodChange } from '../lib/domain/value.js';
+  import { ownedTiles } from '../lib/domain/albums.js';
+  import { cardOfTheDay, priceMovers, setInProgress } from '../lib/domain/home.js';
+  import { euro, setIdOf } from '../lib/domain/cards.js';
   import { hrefFor } from '../lib/domain/routes.js';
+  import Icon from '../lib/ui/Icon.svelte';
   import EmptyState from '../lib/ui/EmptyState.svelte';
-  import CardTile from '../lib/ui/CardTile.svelte';
+  import Sparkline from './home/Sparkline.svelte';
+  import CardStrip from './home/CardStrip.svelte';
+  import FeaturedDeck from './home/FeaturedDeck.svelte';
 
-  const recent = liveQuery(() => db.collection.orderBy('updatedAt').reverse().limit(9).toArray());
-  const ids = $derived([...new Set(($recent ?? []).map((e) => e.cardId))]);
+  const entries = liveQuery(() => db.collection.toArray());
+  const wishlist = liveQuery(() => db.wishlist.toArray());
+  const ownedIds = $derived([...new Set(($entries ?? []).map((e) => e.cardId))].sort());
+  const wishIds = $derived(($wishlist ?? []).map((w) => w.cardId).sort());
+  const ids = $derived([...new Set([...ownedIds, ...wishIds])]);
   const cards = $derived(liveCards(ids, settings.cardLang));
   $effect(() => {
     if (ids.length) prefetchCards(ids, settings.cardLang);
   });
 
-  // Value from the cached prices (no download here: App records the daily snapshot).
-  /** @type {number | null} */
-  let total = $state(null);
+  /** @type {Map<string, any>} */
+  let sets = $state(new Map());
   $effect(() => {
-    void $recent;
-    void settings.cardLang;
-    valuedCollection().then((d) => (total = d.value.total));
+    setsMap(settings.cardLang).then((m) => (sets = m));
   });
+
+  // Value from the cached prices (App records the daily snapshot).
+  const value = $derived($entries && $cards ? collectionValue($entries, $cards) : null);
   const snapshots = liveQuery(() => db.priceSnapshots.toArray());
-  const pct = $derived(periodChange($snapshots ?? [], 30, Date.now()).pct);
+  const trend = $derived(periodChange($snapshots ?? [], 30, Date.now()));
+
+  const tiles = $derived($entries && $cards ? ownedTiles($entries, $cards) : []);
+  const today = dayKey(Date.now());
+  const spotlight = $derived($cards ? cardOfTheDay(tiles, $cards, today) : null);
+  const movers = $derived($cards ? priceMovers(tiles, $cards) : { up: [], down: [] });
+  const wishDrops = $derived($cards ? priceMovers(wishIds.map((cardId) => ({ cardId })), $cards, { minPrice: 0.2 }).down : []);
+  const progress = $derived($entries ? setInProgress($entries, sets) : null);
+  const recent = $derived([...($entries ?? [])].sort((a, b) => b.updatedAt - a.updatedAt));
 
   const local = liveQuery(async () => {
     const [exp, snooze] = await db.settings.bulkGet(['lastExportAt', 'signInReminderUntil']);
@@ -46,36 +60,63 @@
       showSignInReminder({
         signedIn: !!account.user,
         configured: isConfigured(),
-        copies: $recent?.length ?? 0,
+        copies: $entries?.length ?? 0,
         ...$local,
         now: Date.now(),
       }),
   );
   const snooze = () => db.settings.put({ key: 'signInReminderUntil', value: Date.now() + REMINDER_SNOOZE_MS });
 
-  const last = $derived($recent?.[0]);
-  /** @param {number} t */
-  function ago(t) {
-    const min = Math.round((Date.now() - t) / 60_000);
-    if (min < 1) return 'adesso';
-    if (min < 60) return `${min} min fa`;
-    if (min < 60 * 24) return `${Math.round(min / 60)} h fa`;
-    const days = Math.round(min / 1440);
-    return days === 1 ? 'ieri' : `${days} giorni fa`;
-  }
+  /** @param {string} cardId */
+  const card = (cardId) => $cards?.get(cardId);
+  /** @param {string} cardId */
+  const href = (cardId) => hrefFor('card', { lang: settings.cardLang, id: cardId });
+  const pct = (/** @type {number} */ p) => `${p >= 0 ? '+' : '−'}${Math.abs(Math.round(p))}%`;
+
+  /** @param {{ cardId: string, pct: number, price: number }[]} list */
+  const moverItems = (list) =>
+    list.map((m) => ({
+      key: m.cardId,
+      href: href(m.cardId),
+      image: cardImage(card(m.cardId)),
+      title: card(m.cardId)?.name ?? m.cardId,
+      sub: euro(m.price),
+      tag: pct(m.pct),
+      tone: /** @type {'up' | 'down'} */ (m.pct > 0 ? 'up' : 'down'),
+    }));
+
+  const recentItems = $derived.by(() => {
+    const seen = new Set();
+    return recent
+      .filter((e) => !seen.has(e.cardId) && seen.add(e.cardId))
+      .slice(0, 12)
+      .map((e) => ({
+        key: e.cardId,
+        href: href(e.cardId),
+        image: cardImage(card(e.cardId)),
+        title: card(e.cardId)?.name ?? e.cardId,
+        sub: card(e.cardId)?.localId ?? e.cardId.slice(setIdOf(e.cardId).length + 1),
+        tag: null,
+        tone: null,
+      }));
+  });
+
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Buongiorno' : hour < 18 ? 'Buon pomeriggio' : 'Buonasera';
 </script>
 
 <header class="top">
   <h1 class="logo">Deck<span>flix</span></h1>
-  {#if account.user}<span class="hello">Ciao, {account.user.givenName || account.user.name}</span>{/if}
+  {#if account.user}<span class="hello">{greeting}, {account.user.givenName || account.user.name}</span>{/if}
 </header>
 
-{#if $recent && $recent.length === 0}
-  <EmptyState title="Nessuna carta ancora" text="Scansiona le tue carte o inseriscile per numero.">
-    <a class="btn light" href={hrefFor('scan')}>Scansiona</a>
+{#if $entries && $entries.length === 0}
+  <EmptyState title="Inizia la tua collezione" text="Inquadra una carta e l’app la riconosce, oppure scrivi il numero stampato in basso.">
+    <a class="btn primary" href={hrefFor('scan')}>Scansiona la prima carta</a>
     <a class="btn" href={hrefFor('quick')}>Inserimento rapido</a>
   </EmptyState>
-{:else if $recent}
+  <FeaturedDeck />
+{:else if $entries}
   {#if reminder}
     <section class="remind card" aria-label="Backup">
       <p><strong>Accedi con Google per non perdere la collezione</strong><br />Oggi è salvata solo su questo telefono.</p>
@@ -85,57 +126,79 @@
       </div>
     </section>
   {/if}
-  <section class="value card">
-    <a class="head" href={hrefFor('collection', {}, { view: 'stats' })}>
-      <span class="col">
-        <span class="muted">La tua collezione</span>
-        <strong class="num">{total == null ? '…' : euro(total)}</strong>
-      </span>
-      <span class="col end">
-        {#if pct != null}
-          <span class="pct num" class:up={pct > 0} class:down={pct < 0}>
-            {pct >= 0 ? '+' : '−'}{Math.abs(pct).toFixed(1).replace('.', ',')}% · 30 gg
-          </span>
+
+  <a class="value card" href={hrefFor('collection', {}, { view: 'stats' })}>
+    <span class="col">
+      <span class="muted">La tua collezione</span>
+      <strong class="num">{value ? euro(value.total) : '…'}</strong>
+      <span class="meta num">
+        {#if trend.pct != null}
+          <span class:up={trend.pct > 0} class:down={trend.pct < 0}>{trend.pct >= 0 ? '+' : '−'}{Math.abs(trend.pct).toFixed(1).replace('.', ',')}%</span> · 30 gg ·
         {/if}
-        <span class="muted">Statistiche ›</span>
+        {tiles.length} {tiles.length === 1 ? 'carta' : 'carte'} · Statistiche ›
+      </span>
+    </span>
+    <Sparkline points={trend.points} />
+  </a>
+
+  <nav class="shortcuts" aria-label="Azioni rapide">
+    <a href={hrefFor('scan')}><span class="ic"><Icon icon={ScanIcon} /></span>Scansiona</a>
+    <a href={hrefFor('scan', {}, { mode: 'burst' })}><span class="ic"><Icon icon={FlashIcon} /></span>Raffica</a>
+    <a href={hrefFor('quick')}><span class="ic"><Icon icon={KeyboardIcon} /></span>Per numero</a>
+    <a href={hrefFor('search')}><span class="ic"><Icon icon={Search01Icon} /></span>Cerca</a>
+  </nav>
+
+  <FeaturedDeck />
+
+  {#if spotlight}
+    {@const c = card(spotlight.cardId)}
+    <a class="spot card" href={href(spotlight.cardId)}>
+      <img src={cardImage(c, 'high')} alt="" loading="lazy" />
+      <span class="col">
+        <span class="tag">Carta del giorno</span>
+        <strong>{c?.name}</strong>
+        <span class="muted num">{sets.get(setIdOf(spotlight.cardId))?.name ?? ''} · {c?.localId}</span>
+        {#if c?.illustrator}<span class="muted small">Illustrata da {c.illustrator}</span>{/if}
+        {#if spotlight.unit > 0}<span class="price num">{euro(spotlight.unit)}</span>{/if}
+        {#if spotlight.qty > 1}<span class="muted small num">Ne hai {spotlight.qty}</span>{/if}
       </span>
     </a>
-    {#if last}
-      {@const card = $cards?.get(last.cardId)}
-      <a class="last card" href={hrefFor('card', { lang: settings.cardLang, id: last.cardId })}>
-        <span class="thumb">
-          {#if cardImage(card)}<img src={cardImage(card)} alt="" loading="lazy" />{/if}
-        </span>
-        <span class="col grow">
-          <span class="muted small">Ultima aggiunta · {ago(last.updatedAt)}</span>
-          <strong>{card?.name ?? last.cardId} · {card?.localId ?? ''}</strong>
-        </span>
-        <Icon icon={ArrowRight01Icon} size={18} />
-      </a>
-    {/if}
-  </section>
+  {/if}
+
+  {#if movers.up.length}
+    <div class="section-head"><h2>In salita</h2><span class="hint">7 giorni su 30 · Cardmarket</span></div>
+    <CardStrip label="Carte in salita" items={moverItems(movers.up)} />
+  {/if}
+  {#if movers.down.length}
+    <div class="section-head"><h2>In discesa</h2></div>
+    <CardStrip label="Carte in discesa" items={moverItems(movers.down)} />
+  {/if}
+  {#if wishDrops.length}
+    <div class="section-head">
+      <h2>Desideri in calo</h2>
+      <a href={hrefFor('collection', {}, { tab: 'wishlist', sort: 'down' })}>Tutti</a>
+    </div>
+    <CardStrip label="Desideri in calo" items={moverItems(wishDrops)} />
+  {/if}
 
   <div class="section-head">
     <h2>Aggiunte di recente</h2>
-    <a href={hrefFor('collection', {}, { view: 'recent' })}>Vedi tutte</a>
+    <a href={hrefFor('collection', {}, { view: 'recent' })}>Tutte</a>
   </div>
-  <div class="grid3">
-    {#each $recent as e (e.key)}
-      {@const card = $cards?.get(e.cardId)}
-      <CardTile
-        name={card?.name ?? e.cardId}
-        localId={card?.localId ?? e.cardId.slice(setIdOf(e.cardId).length + 1)}
-        image={card?.image ?? null}
-        qty={e.qty}
-        badge={variantBadge(e.variant)}
-        href={hrefFor('card', { lang: settings.cardLang, id: e.cardId })}
-      />
-    {/each}
-  </div>
-  <div class="actions">
-    <a class="btn" href={hrefFor('quick')}>Inserimento rapido</a>
-    <a class="btn" href={hrefFor('search')}>Cerca una carta</a>
-  </div>
+  <CardStrip label="Aggiunte di recente" items={recentItems} />
+
+  {#if progress}
+    {@const set = sets.get(progress.setId)}
+    <a class="progress card" href={hrefFor('set', { id: progress.setId }, { show: 'missing' })}>
+      <span class="col grow">
+        <span class="muted small">Edizione in corso</span>
+        <strong>{set?.name ?? progress.setId}</strong>
+        <span class="muted num">{progress.owned} di {progress.total} · ne mancano {progress.missing}</span>
+        <span class="bar" aria-hidden="true"><span style:width="{progress.percent}%"></span></span>
+      </span>
+      <span class="pctbig num">{progress.percent}%</span>
+    </a>
+  {/if}
 {/if}
 
 <style>
@@ -194,19 +257,11 @@
     background: var(--surface);
     border: 1px solid var(--line);
     display: flex;
-    flex-direction: column;
-    gap: 14px;
-  }
-
-  .value a {
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
     color: var(--text);
     text-decoration: none;
-  }
-
-  .head {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
   }
 
   .col {
@@ -216,18 +271,15 @@
     min-width: 0;
   }
 
-  .col.end {
-    align-items: flex-end;
-  }
-
   .grow {
     flex: 1;
   }
 
-  .head strong {
+  .value strong {
     font-family: var(--font-display);
     font-weight: 800;
-    font-size: 30px;
+    font-size: 32px;
+    line-height: 1.1;
   }
 
   .muted {
@@ -239,51 +291,104 @@
     font-size: 12px;
   }
 
-  .pct {
-    font-size: 13px;
-    font-weight: 700;
+  .meta {
+    font-size: 12px;
     color: var(--muted);
   }
 
-  .pct.up {
+  .meta .up {
     color: var(--success);
+    font-weight: 700;
   }
 
-  .pct.down {
+  .meta .down {
     color: var(--danger);
+    font-weight: 700;
   }
 
-  .last {
-    padding: 10px;
-    border-radius: 26px;
-    background: var(--bg);
+  .shortcuts {
+    margin: 14px 16px 0;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .shortcuts a {
+    min-height: 76px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+    text-decoration: none;
+  }
+
+  .ic {
+    width: 52px;
+    height: 52px;
+    border-radius: 20px;
+    background: var(--surface);
+    border: 1px solid var(--line);
     display: flex;
     align-items: center;
-    gap: 12px;
-    color: var(--muted);
+    justify-content: center;
   }
 
-  .last strong {
-    font-size: 15px;
+  .shortcuts a:first-child .ic {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--on-accent);
+  }
+
+  .spot {
+    margin: 14px 16px 0;
+    padding: 14px;
+    border-radius: var(--r-section);
+    background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 10%, var(--surface)), var(--surface) 55%);
+    border: 1px solid var(--line);
+    display: flex;
+    gap: 16px;
+    align-items: center;
     color: var(--text);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    text-decoration: none;
   }
 
-  .thumb {
-    width: 36px;
-    height: 50px;
-    flex-shrink: 0;
-    border-radius: 6px;
-    overflow: hidden;
-    background: var(--surface-2);
-  }
-
-  .thumb img {
-    width: 100%;
-    height: 100%;
+  .spot img {
+    width: 42%;
+    max-width: 170px;
+    aspect-ratio: 63 / 88;
+    border-radius: 12px;
     object-fit: cover;
+    box-shadow: 0 14px 28px rgb(0 0 0 / 0.45);
+    transform: rotate(-3deg);
+  }
+
+  .spot strong {
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 800;
+    line-height: 1.15;
+  }
+
+  .tag {
+    align-self: flex-start;
+    margin-bottom: 4px;
+    padding: 3px 10px;
+    border-radius: 10px;
+    background: var(--bg);
+    color: var(--accent);
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .price {
+    margin-top: 6px;
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 800;
   }
 
   .section-head {
@@ -291,6 +396,7 @@
     justify-content: space-between;
     align-items: center;
     padding: 22px 20px 10px;
+    gap: 12px;
   }
 
   .section-head h2 {
@@ -306,17 +412,46 @@
     font-size: 14px;
   }
 
-  .grid3 {
-    padding: 0 16px;
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12px 10px;
+  .hint {
+    font-size: 11px;
+    color: var(--muted);
   }
 
-  .actions {
-    padding: 16px;
+  .progress {
+    margin: 22px 16px 24px;
+    padding: 16px 18px;
+    border-radius: var(--r-card);
+    background: var(--surface);
     display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
+    align-items: center;
+    gap: 14px;
+    color: var(--text);
+    text-decoration: none;
+  }
+
+  .progress strong {
+    font-size: 16px;
+  }
+
+  .bar {
+    margin-top: 8px;
+    height: 8px;
+    border-radius: 4px;
+    background: var(--surface-2);
+    overflow: hidden;
+    display: block;
+  }
+
+  .bar span {
+    display: block;
+    height: 100%;
+    background: var(--accent);
+    border-radius: 4px;
+  }
+
+  .pctbig {
+    font-family: var(--font-display);
+    font-size: 26px;
+    font-weight: 800;
   }
 </style>
