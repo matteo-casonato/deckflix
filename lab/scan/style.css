@@ -144,6 +144,7 @@ h2 { font-size: 18px; margin-bottom: 12px; }
   font: inherit;
 }
 
+canvas.preview { margin: 12px auto; background: var(--surface-2); }
 canvas { max-width: 100%; display: block; background: #fff; border-radius: 8px; margin: 4px 0; }
 pre { white-space: pre-wrap; font-size: 13px; color: var(--muted); background: var(--bg); padding: 8px; border-radius: 8px; }
 

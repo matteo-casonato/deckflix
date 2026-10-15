@@ -12,6 +12,7 @@ const https = existsSync(resolve(certDir, 'cert.pem'))
 
 export default defineConfig({
   base: '/deckflix/',
+  define: { __BUILD_TIME__: JSON.stringify(new Date().toISOString()) },
   server: { https },
   build: {
     rollupOptions: {

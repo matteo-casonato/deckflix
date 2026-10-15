@@ -263,8 +263,12 @@ async function grabCardFromFile(file) {
 
 // ---------- preprocessing ----------
 
-/** Widest prepared crop: bigger only slows OCR down. */
-const MAX_CROP_WIDTH = 1800;
+/**
+ * Crops are resized so the collector number (about 1.8% of the card height) is ~48 px tall:
+ * Tesseract reads best there, and larger images only slow it down (seconds per pass on a phone).
+ */
+const NUMBER_HEIGHT_RATIO = 0.018;
+const TARGET_TEXT_PX = 48;
 
 /**
  * @typedef {{ contrast: number, scale: number, threshold: boolean, invert: boolean, adaptive?: boolean }} StripOptions
@@ -285,7 +289,7 @@ function prepareStrip(card, y0, y1, out, s, x0 = 0, x1 = 1) {
   const sw = Math.max(1, Math.round(card.width * (x1 - x0)));
   const sy = Math.round(card.height * y0);
   const sh = Math.max(1, Math.round(card.height * (y1 - y0)));
-  const k = Math.max(1, Math.min(s.scale, MAX_CROP_WIDTH / sw));
+  const k = Math.max(0.5, Math.min(s.scale, TARGET_TEXT_PX / (card.height * NUMBER_HEIGHT_RATIO)));
   out.width = Math.round(sw * k);
   out.height = Math.round(sh * k);
   const ctx = /** @type {CanvasRenderingContext2D} */ (out.getContext('2d', { willReadFrequently: true }));
@@ -376,6 +380,23 @@ let lastCard = null;
 
 const DIGITS = '0123456789/';
 
+/**
+ * Small preview of the cropped card with the OCR zones, to check the crop at a glance.
+ * @param {HTMLCanvasElement} card
+ * @param {ReturnType<typeof readSettings>} s
+ */
+function drawPreview(card, s) {
+  const out = /** @type {HTMLCanvasElement} */ ($('preview'));
+  out.height = 240;
+  out.width = Math.round((card.width / card.height) * out.height);
+  const ctx = /** @type {CanvasRenderingContext2D} */ (out.getContext('2d'));
+  ctx.drawImage(card, 0, 0, out.width, out.height);
+  ctx.fillStyle = 'rgb(255 203 69 / 0.35)';
+  ctx.fillRect(0, s.bottomStart * out.height, out.width * 0.45, out.height);
+  ctx.fillRect(out.width * 0.55, s.bottomStart * out.height, out.width * 0.45, out.height);
+  ctx.fillRect(0, 0, out.width, s.topEnd * out.height);
+}
+
 /** @param {HTMLCanvasElement} card @param {string} source */
 async function recognize(card, source) {
   const s = readSettings();
@@ -399,8 +420,8 @@ async function recognize(card, source) {
       { name: 'soglia locale invertita', opts: { ...s, threshold: false, adaptive: true, invert: !s.invert } },
     ];
     const corners = [
-      { name: 'sx', x0: 0, x1: 0.5 },
-      { name: 'dx', x0: 0.5, x1: 1 },
+      { name: 'sx', x0: 0, x1: 0.45 },
+      { name: 'dx', x0: 0.55, x1: 1 },
     ];
     const passes = looks.flatMap((look) => corners.map((c) => ({ ...look, ...c, name: `${look.name} ${c.name}` })));
     let digitsText = '';
@@ -439,7 +460,8 @@ async function recognize(card, source) {
     const tOcr = performance.now() - t0;
     $('topText').textContent = top || '(non letta)';
     $('bottomText').textContent = `${digitsText}${bottom ? `[testo] ${bottom}` : ''}`;
-    $('cropInfo').textContent = `Sorgente: ${source} · carta ritagliata ${card.width}×${card.height} px · numero alto circa ${Math.round(card.height * 0.018)} px`;
+    drawPreview(card, s);
+    $('cropInfo').textContent = `Sorgente: ${source} · carta ritagliata ${card.width}×${card.height} px · numero alto circa ${Math.round(card.height * NUMBER_HEIGHT_RATIO)} px`;
 
     const { lang, scores } = detectLanguage(`${top}\n${bottom}`);
     const setCode = parseSetCode(bottom);
@@ -645,6 +667,8 @@ document.addEventListener('visibilitychange', () => {
   else wakeLock?.release().catch(() => {});
 });
 
+// @ts-ignore -- replaced at build time by Vite `define`
+$('version').textContent = `Versione ${new Date(__BUILD_TIME__).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' })}`;
 loadSettings();
 renderSettings();
 renderLog();

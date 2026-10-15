@@ -12,6 +12,7 @@
     <div>
       <h1>Prova scansione</h1>
       <p class="muted" id="stats">0 prove</p>
+      <p class="muted small" id="version"></p>
     </div>
     <button class="btn icon" id="torch" aria-label="Accendi la torcia" hidden>⚡</button>
   </header>
@@ -41,6 +42,7 @@
       <div><span class="label">Lingua</span><strong id="rLang">—</strong></div>
       <div><span class="label">Tempo</span><strong id="rTime">—</strong></div>
     </div>
+    <canvas class="preview" id="preview" aria-label="Anteprima del ritaglio con le zone lette"></canvas>
     <ul class="candidates" id="candidates"></ul>
     <p class="muted small">Tocca la carta giusta se non è la prima. Poi segna l'esito:</p>
     <div class="row">
