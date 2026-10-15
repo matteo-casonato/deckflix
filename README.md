@@ -1,0 +1,28 @@
+# Deckflix
+
+App personale (PWA Android) per catalogare carte Pokémon e costruire deck. Specifica: [docs/SPEC.md](docs/SPEC.md).
+
+## Sviluppo
+
+```bash
+npm install
+npm run dev      # http://localhost:5173/deckflix/
+npm test
+npm run build
+```
+
+### Provare la fotocamera dal telefono (HTTPS locale)
+
+La fotocamera funziona solo su HTTPS (o `localhost`). Per provarla dal telefono sulla stessa rete Wi-Fi:
+
+```bash
+mkcert -install                     # una volta: crea la CA locale (chiede la password del Mac)
+mkdir -p .certs && mkcert -cert-file .certs/cert.pem -key-file .certs/key.pem localhost 127.0.0.1 $(ipconfig getifaddr en0)
+npm run dev:https                   # apri https://<ip-del-mac>:5173/deckflix/ dal telefono
+```
+
+Sul telefono Chrome mostrerà un avviso sul certificato (la CA di mkcert non è installata su Android): "Avanzate → Procedi". In alternativa usa la versione pubblicata.
+
+## Fase 0 — prova della scansione
+
+Pagina: `lab/scan/` (`/deckflix/lab/scan/`). Per ogni carta: inquadra, "Scatta e riconosci", scegli la carta giusta se non è la prima, segna **Corretta** o **Sbagliata** (con una nota su finitura e luce). In alto c'è l'accuratezza; "Copia registro (JSON)" esporta i risultati.

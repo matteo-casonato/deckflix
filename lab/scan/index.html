@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0F1115">
+  <title>Deckflix · Prova scansione</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <header class="top">
+    <div>
+      <h1>Prova scansione</h1>
+      <p class="muted" id="stats">0 prove</p>
+    </div>
+    <button class="btn icon" id="torch" aria-label="Accendi la torcia" hidden>⚡</button>
+  </header>
+
+  <section class="viewer" id="viewer">
+    <video id="video" playsinline muted></video>
+    <div class="guide" id="guide">
+      <div class="band top-band" id="topBand"></div>
+      <div class="band bottom-band" id="bottomBand"></div>
+    </div>
+    <p class="viewer-msg" id="viewerMsg">Avvio fotocamera…</p>
+  </section>
+
+  <div class="actions">
+    <button class="btn primary" id="shoot" disabled>Scatta e riconosci</button>
+    <label class="btn secondary">
+      Carica foto
+      <input type="file" accept="image/*" id="file" hidden>
+    </label>
+  </div>
+  <p class="muted small" id="status">Caricamento OCR…</p>
+
+  <section class="panel" id="result" hidden>
+    <div class="row">
+      <div><span class="label">Numero</span><strong id="rNumber">—</strong></div>
+      <div><span class="label">Lingua</span><strong id="rLang">—</strong></div>
+      <div><span class="label">Tempo</span><strong id="rTime">—</strong></div>
+    </div>
+    <ul class="candidates" id="candidates"></ul>
+    <p class="muted small">Tocca la carta giusta se non è la prima. Poi segna l'esito:</p>
+    <div class="row">
+      <button class="btn success" id="markOk">Corretta</button>
+      <button class="btn danger" id="markKo">Sbagliata</button>
+    </div>
+    <input class="field" id="note" placeholder="Nota (finitura, luce, errore…)">
+  </section>
+
+  <details class="panel">
+    <summary>Regolazioni</summary>
+    <label class="ctl">Fascia alta: <output id="topOut"></output>
+      <input type="range" id="topEnd" min="6" max="25" value="13"></label>
+    <label class="ctl">Fascia bassa da: <output id="bottomOut"></output>
+      <input type="range" id="bottomStart" min="75" max="95" value="87"></label>
+    <label class="ctl">Contrasto: <output id="contrastOut"></output>
+      <input type="range" id="contrast" min="1" max="3" step="0.1" value="1.6"></label>
+    <label class="ctl">Ingrandimento: <output id="scaleOut"></output>
+      <input type="range" id="scale" min="1" max="4" step="0.5" value="2"></label>
+    <label class="ctl check"><input type="checkbox" id="threshold"> Soglia bianco/nero (Otsu)</label>
+    <label class="ctl check"><input type="checkbox" id="invert"> Inverti (testo chiaro su scuro)</label>
+    <label class="ctl">Lingue OCR
+      <select id="ocrLangs" class="field">
+        <option value="eng">Inglese (veloce)</option>
+        <option value="eng+ita">Inglese + italiano</option>
+        <option value="eng+ita+deu+fra+spa">Tutte</option>
+      </select>
+    </label>
+  </details>
+
+  <details class="panel" id="debug">
+    <summary>Dettagli OCR</summary>
+    <p class="label">Fascia alta</p>
+    <canvas id="topCanvas"></canvas>
+    <pre id="topText"></pre>
+    <p class="label">Fascia bassa</p>
+    <canvas id="bottomCanvas"></canvas>
+    <pre id="bottomText"></pre>
+  </details>
+
+  <section class="panel">
+    <h2>Registro</h2>
+    <div class="row">
+      <button class="btn secondary" id="copyLog">Copia registro (JSON)</button>
+      <button class="btn secondary" id="clearLog">Svuota</button>
+    </div>
+    <ol class="log" id="log"></ol>
+  </section>
+
+  <script type="module" src="./main.js"></script>
+</body>
+</html>
