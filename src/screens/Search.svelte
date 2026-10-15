@@ -5,7 +5,8 @@
   import { liveQuery } from 'dexie';
   import { Add01Icon, FavouriteIcon, Search01Icon, Tick02Icon } from '@hugeicons/core-free-icons';
   import { db } from '../lib/db.js';
-  import { PAGE_SIZE, getRarities, getTypes, searchCards } from '../lib/api/tcgdex.js';
+  import { getRarities, getTypes } from '../lib/api/tcgdex.js';
+  import { filterByQuery, smartSearch } from '../lib/data/search.js';
   import { settings } from '../lib/stores/settings.svelte.js';
   import { cachedCards, prefetchCards, setsMap } from '../lib/data/catalog.js';
   import { addOneCopy, toggleWish } from '../lib/data/actions.js';
@@ -95,19 +96,20 @@
   let loading = $state(false);
   /** @type {null | 'offline' | 'error'} */
   let problem = $state(null);
+  /** What the search understood of the text (edition, number, English names), shown under the count. */
+  /** @type {import('../lib/data/search.js').SearchResult['understood'] | null} */
+  let understood = $state(null);
 
   const q = $derived((query.q ?? '').trim());
   const canSearch = $derived(q.length >= 2 || !!filters.setId || mine);
 
-  /** Only mine: filter the collection by name (from cached cards), set, type and rarity. */
+  /** Only mine: the same query over the collection (cached cards), plus set, type and rarity. */
   async function searchMine() {
     const ids = [...($owned?.keys() ?? [])];
-    await prefetchCards(ids, lang);
-    const cards = await cachedCards(ids, lang);
-    const needle = q.toLowerCase();
-    return ids
-      .map((id) => cards.get(id) ?? { id, localId: id.slice(setIdOf(id).length + 1), name: id })
-      .filter((c) => !needle || c.name.toLowerCase().includes(needle))
+    await Promise.all([prefetchCards(ids, lang), lang === 'en' ? null : prefetchCards(ids, 'en').catch(() => {})]);
+    const [cards, english] = await Promise.all([cachedCards(ids, lang), cachedCards(ids, 'en')]);
+    const list = ids.map((id) => cards.get(id) ?? english.get(id) ?? { id, localId: id.slice(setIdOf(id).length + 1), name: id });
+    return (await filterByQuery(list, english, q, sets))
       .filter((c) => !filters.setId || setIdOf(c.id) === filters.setId)
       .filter((c) => !filters.type || (c.types ?? []).includes(filters.type))
       .filter((c) => !filters.rarity || c.rarity === filters.rarity)
@@ -116,9 +118,10 @@
 
   /** Offline fallback: cards saved on the phone whose name matches. */
   async function searchCache() {
-    const needle = q.toLowerCase();
     const rows = await db.cardCache.where('[lang+cardId]').between([lang, ''], [lang, '￿']).toArray();
-    return rows.map((r) => r.data).filter((c) => c.name?.toLowerCase().includes(needle) && (!filters.setId || setIdOf(c.id) === filters.setId));
+    const en = await db.cardCache.where('[lang+cardId]').between(['en', ''], ['en', '￿']).toArray();
+    const english = new Map(en.map((r) => [r.cardId, r.data]));
+    return (await filterByQuery(rows.map((r) => r.data), english, q, sets)).filter((c) => !filters.setId || setIdOf(c.id) === filters.setId);
   }
 
   /** @param {number} p */
@@ -134,9 +137,10 @@
         results = await searchMine();
         more = false;
       } else {
-        const res = await searchCards(lang, { name: q, ...filters, standard, page: p });
-        results = p === 1 ? res.data : [...results, ...res.data];
-        more = res.data.length === PAGE_SIZE;
+        const res = await smartSearch(lang, q, { ...filters, standard }, sets.size ? sets : await setsMap(lang), p);
+        results = p === 1 ? res.results : [...results, ...res.results.filter((c) => !results.some((r) => r.id === c.id))];
+        more = res.more;
+        understood = res.understood;
         page = p;
       }
     } catch (err) {
@@ -176,7 +180,7 @@
     <Icon icon={Search01Icon} size={20} />
     <span class="visually-hidden">Cerca una carta</span>
     <!-- svelte-ignore a11y_autofocus -->
-    <input type="search" placeholder="Nome della carta" bind:value={text} oninput={onInput} autofocus enterkeyhint="search" />
+    <input type="search" placeholder="Nome, numero o sigla" bind:value={text} oninput={onInput} autofocus enterkeyhint="search" />
   </label>
 
   <Segmented
@@ -218,16 +222,33 @@
     <p class="count num">
       {results.length}{more ? '+' : ''} risultati · {ownedCount} {ownedCount === 1 ? 'posseduto' : 'posseduti'}
     </p>
+    {#if !mine && understood && (understood.sets.length || understood.number || understood.english)}
+      <p class="understood">
+        {[
+          understood.sets.length ? `Edizione: ${understood.sets.slice(0, 2).join(', ')}${understood.sets.length > 2 ? '…' : ''}` : '',
+          understood.number ? `N. ${understood.number.toUpperCase()}${understood.total ? `/${understood.total}` : ''}` : '',
+          understood.english ? `${understood.english} trovate col nome inglese` : '',
+        ]
+          .filter(Boolean)
+          .join(' · ')}
+      </p>
+    {/if}
   {/if}
 </div>
 
 {#if !canSearch}
-  <p class="hint">Scrivi almeno due lettere del nome, oppure scegli un’edizione.</p>
+  <p class="hint">
+    Scrivi il nome (anche inglese: “Iono”), eventualmente con numero e sigla: “Charizard 11/78”, “Charizard svi”, “svi 25”.
+  </p>
 {:else if loading && results.length === 0}
   <p class="hint" aria-busy="true">Cerco…</p>
 {:else if results.length === 0}
   <section class="empty card">
-    <p>Nessuna carta trovata.</p>
+    <p>
+      Nessuna carta trovata{!mine && understood?.sets.length ? ` in ${understood.sets.join(', ')}` : ''}{!mine && understood?.number
+        ? ` con il numero ${understood.number}${understood.total ? `/${understood.total}` : ''}`
+        : ''}.
+    </p>
     {#if mine}
       <button class="btn" onclick={() => update({ mine: null })}>Cerca in tutte le carte</button>
     {:else if filters.setId || filters.type || filters.rarity}
@@ -278,6 +299,12 @@
 {/if}
 
 <style>
+  .understood {
+    margin: -6px 0 0;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
   .pad {
     padding: 12px 16px 0;
     display: flex;

@@ -136,6 +136,25 @@ export function searchCards(lang, { name, setId, type, rarity, standard, page = 
   return getCachedPath(`/${lang}/cards?${p}`, CARD_TTL);
 }
 
+/** Page size of number searches: a number exists in many sets. */
+export const NUMBER_PAGE_SIZE = 250;
+
+/**
+ * Cards with this number in any set. TCGdex matches `eq:` only on numbers with letters
+ * ("TG05", case and zeros as printed); digits need the "contains" filter ("25" also finds
+ * "125"), so the caller keeps only exact matches.
+ * @param {string} lang
+ * @param {string} number
+ * @param {number} [page]
+ */
+export function cardsByNumber(lang, number, page = 1) {
+  const p = new URLSearchParams();
+  p.set('localId', /^\d+$/.test(number) ? number.replace(/^0+(?=\d)/, '') : `eq:${number}`);
+  p.set('pagination:page', String(page));
+  p.set('pagination:itemsPerPage', String(NUMBER_PAGE_SIZE));
+  return getCachedPath(`/${lang}/cards?${p}`, CARD_TTL);
+}
+
 /** @param {string} lang */
 export const getTypes = (lang) => getCachedPath(`/${lang}/types`);
 
