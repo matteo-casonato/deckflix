@@ -12,7 +12,7 @@
   import { toggleWish } from '../lib/data/actions.js';
   import { listVariants } from '../lib/domain/variants.js';
   import { CONDITIONS, DEFAULT_CONDITION, collectionKey } from '../lib/domain/collection.js';
-  import { LANG_LABELS, cardmarketUrl, euro, googleUrl, guessImage, pricesDate, setIdOf } from '../lib/domain/cards.js';
+  import { LANG_LABELS, cardmarketUrl, euro, guessImage, pricesDate, setIdOf } from '../lib/domain/cards.js';
   import { hrefFor } from '../lib/domain/routes.js';
   import { freshnessLabel } from '../lib/domain/cache.js';
   import BackHeader from '../lib/ui/BackHeader.svelte';
@@ -228,15 +228,9 @@
           È la media di tutte le lingue e condizioni. Il prezzo reale della tua copia lo trovi su Cardmarket.
         </p>
         <PriceTrend cardId={id} cardmarket={card.pricing?.cardmarket} />
-        <div class="links">
-          <a class="btn" href={cardmarketUrl(card, copyLang, cardmarketProduct(variants))} target="_blank" rel="noopener noreferrer">
-            <Icon icon={LinkSquare02Icon} size={18} /> Cardmarket
-          </a>
-          <a class="btn" href={googleUrl(card, card.set?.cardCount?.official)} target="_blank" rel="noopener noreferrer">
-            <Icon icon={LinkSquare02Icon} size={18} /> Cerca su Google
-          </a>
-        </div>
-        <p class="muted small">Per le carte vecchie Google con nome e numero (es. “{card.name} {card.localId}{card.set?.cardCount?.official ? `/${card.set.cardCount.official}` : ''}”) trova spesso prima le offerte.</p>
+        <a class="btn" href={cardmarketUrl(card, copyLang, cardmarketProduct(variants))} target="_blank" rel="noopener noreferrer">
+          <Icon icon={LinkSquare02Icon} size={18} /> Apri su Cardmarket
+        </a>
         <p class="source">
           {r.source === 'network'
             ? 'Dati scaricati ora da TCGdex'
@@ -289,11 +283,6 @@
     font-weight: 600;
   }
 
-  .links {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
-  }
 
 
   .round {

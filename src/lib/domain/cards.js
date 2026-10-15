@@ -140,17 +140,6 @@ export function cardmarketUrl(card, lang, productId = null) {
   return `https://www.cardmarket.com/it/Pokemon/Products${id ? '' : '/Search'}?${params}`;
 }
 
-/**
- * Web search for a card by name and printed number ("Deoxys 16/107"): for old cards it often
- * finds listings and prices more easily than Cardmarket's own search.
- * @param {{ name: string, localId: string }} card
- * @param {number | null | undefined} official cards in the set (the "/107")
- */
-export function googleUrl(card, official) {
-  const number = official ? `${card.localId}/${official}` : card.localId;
-  return `https://www.google.com/search?${new URLSearchParams({ q: `${card.name} ${number} pokemon` })}`;
-}
-
 /** TCG Pocket sets (A1, A2b, P-A…) are digital-only: TCGdex ids start with a capital. */
 /** @param {string} setId */
 export const isPocketSet = (setId) => /^[A-Z]/.test(setId);
