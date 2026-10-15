@@ -173,6 +173,9 @@ torchBtn.addEventListener('click', async () => {
   }
 });
 
+/** Video short side from which frames are sharp enough and no still photo is taken. */
+const STILL_BELOW = 1440;
+
 /**
  * Guide rectangle as fractions of the video frame.
  * The video uses object-fit: cover, so map guide coordinates back to video pixels.
@@ -195,7 +198,8 @@ function guideInVideo() {
 
 /**
  * Copies the card under the guide into a canvas. Uses a full-resolution still photo
- * (ImageCapture) when available, because video frames are often only 720p.
+ * (ImageCapture) only when the video stream is low resolution (often 720p): a still
+ * is slower and some phones return it in landscape while the stream is portrait.
  * The video is assumed to be a centred crop of the photo when aspect ratios differ.
  * @returns {Promise<{ canvas: HTMLCanvasElement, source: string }>}
  */
@@ -212,7 +216,8 @@ async function grabCardFromCamera() {
   let fw = sw;
   let fh = sh;
 
-  if (imageCapture && readSettings().still) {
+  const sharpEnough = Math.min(sw, sh) >= STILL_BELOW;
+  if (imageCapture && readSettings().still && !sharpEnough) {
     try {
       const bitmap = await createImageBitmap(await imageCapture.takePhoto());
       const pa = bitmap.width / bitmap.height;
