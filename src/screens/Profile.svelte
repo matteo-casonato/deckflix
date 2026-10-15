@@ -22,7 +22,7 @@
   import { setSetting, settings } from '../lib/stores/settings.svelte.js';
   import { LANG_LABELS } from '../lib/domain/cards.js';
   import { hrefFor } from '../lib/domain/routes.js';
-  import { USEFUL_LINKS, hostOf } from '../lib/domain/links.js';
+  import { ABOUT, USEFUL_LINKS, hostOf } from '../lib/domain/links.js';
   import { clearImageCache, imageCacheInfo } from '../lib/data/imageCache.js';
   import { backupState, relativeTime } from '../lib/domain/backup.js';
   import { backupNow, isConfigured, restoreFromDrive, signOut } from '../lib/sync/sync.js';
@@ -202,6 +202,33 @@
   <button class="signout subtle" onclick={() => (confirm = 'wipe')}>Esci e cancella i dati da questo telefono</button>
   <p class="foot">I dati restano su questo telefono finché non li cancelli.</p>
 {/if}
+
+<h2 class="section">Il progetto</h2>
+<section class="card about">
+  <p>
+    <strong>Deckflix è gratuita e lo resterà</strong>, finché resteranno gratuiti i servizi su cui si appoggia: TCGdex
+    per carte e prezzi, Google Drive per il backup, GitHub per la pubblicazione.
+  </p>
+  <p>
+    È nata per passione del gioco e del collezionismo. Niente pubblicità e nessun dato venduto: le tue carte restano
+    sul telefono e nel tuo Google Drive.
+  </p>
+  {#if ABOUT.contactEmail || ABOUT.donateUrl}
+    <p>Hai un’idea o hai trovato un errore? Scrivimi. E se l’app ti è utile, puoi offrirmi un caffè.</p>
+    <div class="about-actions">
+      {#if ABOUT.contactEmail}
+        <a class="btn" href={`mailto:${ABOUT.contactEmail}?subject=${encodeURIComponent('Deckflix: suggerimento')}`}>Scrivimi</a>
+      {/if}
+      {#if ABOUT.donateUrl}
+        <a class="btn primary" href={ABOUT.donateUrl} target="_blank" rel="noopener noreferrer">☕ Offrimi un caffè</a>
+      {/if}
+    </div>
+  {/if}
+  <p class="legal">
+    Deckflix è un progetto personale, non affiliato a The Pokémon Company, Nintendo, Creatures o Game Freak.
+    Pokémon e i nomi delle carte sono marchi dei rispettivi titolari; immagini e dati arrivano da TCGdex.
+  </p>
+</section>
 
 <ConfirmDialog
   open={confirm === 'images'}
@@ -464,6 +491,42 @@
     margin-top: 0;
     font-weight: 500;
     font-size: 14px;
+  }
+
+  .about {
+    margin: 0 16px;
+    padding: 18px 18px 16px;
+    border-radius: var(--r-section);
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--muted);
+  }
+
+  .about p {
+    margin: 0;
+  }
+
+  .about strong {
+    color: var(--text);
+  }
+
+  .about-actions {
+    margin-top: 4px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .about .legal {
+    margin-top: 4px;
+    padding-top: 12px;
+    border-top: 1px solid var(--line);
+    font-size: 11px;
+    line-height: 1.45;
   }
 
   .foot {

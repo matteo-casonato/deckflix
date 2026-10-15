@@ -12,3 +12,14 @@ export const USEFUL_LINKS = [
 
 /** "limitlesstcg.com" from the URL, shown under the name. @param {string} url */
 export const hostOf = (url) => new URL(url).hostname.replace(/^www\./, '');
+
+/**
+ * "Il progetto" in the Profile. Each button appears only when its value is set.
+ * PayPal: a PayPal.me link (https://paypal.me/<name>) needs no integration and costs nothing.
+ */
+export const ABOUT = {
+  /** Address for suggestions (opens the mail app). */
+  contactEmail: '',
+  /** "Offrimi un caffè": PayPal.me or another donation page. */
+  donateUrl: '',
+};
