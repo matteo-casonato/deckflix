@@ -2,7 +2,7 @@
 // Hash routes of the app and a pure matcher, so routing can be unit tested.
 
 /**
- * @typedef {'home' | 'collection' | 'search' | 'quick' | 'scan' | 'deck' | 'deckImport' | 'deckDetail' | 'deckEdit' | 'profile' | 'csv' | 'play' | 'deckPrint' | 'album' | 'set' | 'card' | 'notFound'} RouteName
+ * @typedef {'home' | 'collection' | 'search' | 'quick' | 'scan' | 'deck' | 'deckImport' | 'deckDetail' | 'deckEdit' | 'profile' | 'csv' | 'links' | 'play' | 'deckPrint' | 'album' | 'set' | 'card' | 'notFound'} RouteName
  * @typedef {{ name: RouteName, params: Record<string, string>, query: Record<string, string> }} Route
  */
 
@@ -20,6 +20,7 @@ export const ROUTES = /** @type {const} */ ([
   ['deckPrint', '/deck/:id/print'],
   ['profile', '/profile'],
   ['csv', '/profile/csv'],
+  ['links', '/profile/links'],
   ['play', '/profile/play'],
   ['set', '/set/:id'],
   ['album', '/album/:id'],
@@ -46,6 +47,7 @@ export const NAV_SECTION = /** @type {Record<RouteName, string>} */ ({
   deckPrint: 'deck',
   profile: 'profile',
   csv: 'profile',
+  links: 'profile',
   play: 'deck',
   notFound: '',
 });

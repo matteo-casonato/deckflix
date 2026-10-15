@@ -28,6 +28,7 @@
   import Card from './screens/Card.svelte';
   import Profile from './screens/Profile.svelte';
   import Csv from './screens/Csv.svelte';
+  import Links from './screens/Links.svelte';
   import DeckPrint from './screens/DeckPrint.svelte';
   import Album from './screens/Album.svelte';
   import Access from './screens/Access.svelte';
@@ -89,6 +90,8 @@
     <Decks />
   {:else if route.name === 'deckPrint'}
     {#key route.params.id}<DeckPrint id={route.params.id} />{/key}
+  {:else if route.name === 'links'}
+    <Links />
   {:else if route.name === 'csv'}
     <Csv query={route.query} />
   {:else if route.name === 'scan'}

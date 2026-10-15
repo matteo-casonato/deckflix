@@ -18,12 +18,11 @@
   import Icon from '../lib/ui/Icon.svelte';
   import Avatar from '../lib/ui/Avatar.svelte';
   import ConfirmDialog from '../lib/ui/ConfirmDialog.svelte';
-  import Sheet from '../lib/ui/Sheet.svelte';
   import { account } from '../lib/stores/account.svelte.js';
   import { setSetting, settings } from '../lib/stores/settings.svelte.js';
   import { LANG_LABELS } from '../lib/domain/cards.js';
   import { hrefFor } from '../lib/domain/routes.js';
-  import { ABOUT, USEFUL_LINKS, hostOf } from '../lib/domain/links.js';
+  import { ABOUT, USEFUL_LINKS } from '../lib/domain/links.js';
   import { clearImageCache, imageCacheInfo } from '../lib/data/imageCache.js';
   import { backupState, relativeTime } from '../lib/domain/backup.js';
   import { backupNow, isConfigured, restoreFromDrive, signOut } from '../lib/sync/sync.js';
@@ -75,7 +74,6 @@
   /** Interactive when Google needs a tap to renew access. */
   const saveNow = () => backupNow({ interactive: account.needsAuth });
 
-  let showLinks = $state(false);
 </script>
 
 <header class="top"><h1>Profilo</h1></header>
@@ -146,11 +144,11 @@
 
 <h2 class="section">App</h2>
 <section class="card list">
-  <button class="row" onclick={() => (showLinks = true)}>
+  <a class="row" href={hrefFor('links')}>
     <span class="ico"><Icon icon={LinkSquare02Icon} /></span>
     <span class="text"><strong>Link utili</strong><span>{USEFUL_LINKS.map((l) => l.name).join(', ')}</span></span>
     <span class="chev"><Icon icon={ArrowRight01Icon} size={20} /></span>
-  </button>
+  </a>
   <label class="row">
     <span class="ico"><Icon icon={LanguageSkillIcon} /></span>
     <span class="text"><strong>Lingua delle carte</strong><span>Nomi, ricerca e immagini</span></span>
@@ -225,21 +223,6 @@
     Pokémon e i nomi delle carte sono marchi dei rispettivi titolari; immagini e dati arrivano da TCGdex.
   </p>
 </section>
-
-<Sheet open={showLinks} title="Link utili" onclose={() => (showLinks = false)}>
-  <ul class="links">
-    {#each USEFUL_LINKS as l (l.url)}
-      <li>
-        <a class="row" href={l.url} target="_blank" rel="noopener noreferrer">
-          <span class="ico fav" aria-hidden="true">{l.name[0]}</span>
-          <span class="text"><strong>{l.name}</strong><span>{l.text} · {hostOf(l.url)}</span></span>
-          <span class="chev" aria-hidden="true"><Icon icon={LinkSquare02Icon} size={18} /></span>
-          <span class="visually-hidden">(si apre in una nuova scheda)</span>
-        </a>
-      </li>
-    {/each}
-  </ul>
-</Sheet>
 
 <ConfirmDialog
   open={confirm === 'images'}
@@ -470,12 +453,6 @@
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-  }
-
-  .links {
-    list-style: none;
-    margin: 0;
-    padding: 0;
   }
 
   .fav {
