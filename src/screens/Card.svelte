@@ -12,7 +12,7 @@
   import { toggleWish } from '../lib/data/actions.js';
   import { listVariants } from '../lib/domain/variants.js';
   import { collectionKey } from '../lib/domain/collection.js';
-  import { LANG_LABELS, cardmarketUrl, euro, pricesDate, setIdOf } from '../lib/domain/cards.js';
+  import { LANG_LABELS, cardmarketUrl, euro, googleUrl, pricesDate, setIdOf } from '../lib/domain/cards.js';
   import { hrefFor } from '../lib/domain/routes.js';
   import { freshnessLabel } from '../lib/domain/cache.js';
   import BackHeader from '../lib/ui/BackHeader.svelte';
@@ -30,11 +30,15 @@
   let request = $state(null);
 
   async function load() {
-    const res = await getCard(lang, id);
+    // Old cards often exist on TCGdex only in English (e.g. EX Deoxys has no Italian data).
+    const res = await getCard(lang, id).catch((err) => {
+      if (lang !== 'en' && err instanceof TcgdexError && err.kind === 'not-found') return getCard('en', id).then((r) => ({ ...r, englishOnly: true }));
+      throw err;
+    });
     let image = cardImage(res.data, 'high');
     // SPEC § 2: when the localised card has no image, use the English one.
     if (!image && lang !== 'en') image = await getCard('en', id).then((en) => cardImage(en.data, 'high')).catch(() => null);
-    return { card: res.data, image, fetchedAt: res.fetchedAt, source: res.source };
+    return { card: res.data, image, fetchedAt: res.fetchedAt, source: res.source, englishOnly: 'englishOnly' in res };
   }
 
   $effect(() => {
@@ -86,6 +90,15 @@
   async function moveToWishes(card) {
     const removed = await moveToWishlist(id, { lang: copyLang });
     showToast(`${card.name} spostata nei desideri`, () => undoMoveToWishlist(id, removed));
+  }
+
+  /**
+   * Cardmarket product of the print you own in this language, when it is a single one.
+   * @param {import('../lib/domain/variants.js').VariantOption[]} variants
+   */
+  function cardmarketProduct(variants) {
+    const mine = variants.filter((v) => qtyOf(v.key) > 0);
+    return mine.length === 1 ? (mine[0].productId ?? null) : null;
   }
 
   /** @param {unknown} err */
@@ -196,9 +209,15 @@
         <p class="muted small">
           È la media di tutte le lingue e condizioni. Il prezzo reale della tua copia lo trovi su Cardmarket.
         </p>
-        <a class="btn" href={cardmarketUrl(card.name, copyLang)} target="_blank" rel="noopener noreferrer">
-          <Icon icon={LinkSquare02Icon} size={18} /> Apri su Cardmarket
-        </a>
+        <div class="links">
+          <a class="btn" href={cardmarketUrl(card, copyLang, cardmarketProduct(variants))} target="_blank" rel="noopener noreferrer">
+            <Icon icon={LinkSquare02Icon} size={18} /> Cardmarket
+          </a>
+          <a class="btn" href={googleUrl(card, card.set?.cardCount?.official)} target="_blank" rel="noopener noreferrer">
+            <Icon icon={LinkSquare02Icon} size={18} /> Cerca su Google
+          </a>
+        </div>
+        <p class="muted small">Per le carte vecchie Google con nome e numero (es. “{card.name} {card.localId}{card.set?.cardCount?.official ? `/${card.set.cardCount.official}` : ''}”) trova spesso prima le offerte.</p>
         <p class="source">
           {r.source === 'network'
             ? 'Dati scaricati ora da TCGdex'
@@ -237,6 +256,19 @@
 {/if}
 
 <style>
+  .links {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .english {
+    margin: 0;
+    font-size: 13px;
+    color: var(--muted);
+    text-align: center;
+  }
+
   .round {
     width: 48px;
     height: 48px;

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { listName, listNumber, parseDecklist, serializeDecklist, suggestDeckName } from '../src/lib/domain/decklist.js';
-import { deckBreakdown, deckSummary, entryState, openingHand, sameCard, sectionOfCard } from '../src/lib/domain/deck.js';
+import { deckBreakdown, deckSummary, printedCode, tournamentSheet, entryState, openingHand, sameCard, sectionOfCard } from '../src/lib/domain/deck.js';
 
 const LIST = `Pokémon: 16
 3 Miraidon ex SVI 81
@@ -152,5 +152,32 @@ describe('openingHand', () => {
   });
   it('needs at least a hand of cards', () => {
     expect(openingHand([P('a', 3, 'Basic')])).toBe(null);
+  });
+});
+
+describe('printedCode', () => {
+  it('writes set code, padded number over the set size and regulation mark', () => {
+    const set = { abbreviation: { official: 'BRS' }, cardCount: { official: 172 } };
+    expect(printedCode({ localId: '048', regulationMark: 'F', set: {} }, set)).toBe('BRS 048/172 F');
+    expect(printedCode({ localId: 'TG05', set: {} }, set)).toBe('BRS TG05');
+    expect(printedCode({ localId: '16', set: { cardCount: { official: 107 } } })).toBe('16/107');
+  });
+});
+
+describe('tournamentSheet', () => {
+  it('lists Pokémon per print and merges Trainers and Energy by name', () => {
+    const sets = new Map([['sv06', { abbreviation: { official: 'TWM' } }]]);
+    const rows = [
+      { cardId: 'sv06-128', qty: 4, section: 'Pokémon', card: { name: 'Dreepy', localId: '128', regulationMark: 'H', set: { id: 'sv06' } } },
+      { cardId: 'me01-131', qty: 2, section: 'Trainer', card: { name: 'Ultra Ball', set: { id: 'me01' } } },
+      { cardId: 'sv01-196', qty: 1, section: 'Trainer', card: { name: 'Ultra Ball', set: { id: 'sv01' } } },
+      { cardId: 'mee-010', qty: 3, section: 'Energy', card: { name: 'Basic Fire Energy', set: { id: 'mee' } } },
+    ];
+    expect(tournamentSheet(rows, sets)).toEqual({
+      pokemon: [{ qty: 4, name: 'Dreepy', set: 'TWM', number: '128', reg: 'H' }],
+      trainer: [{ qty: 3, name: 'Ultra Ball' }],
+      energy: [{ qty: 3, name: 'Basic Fire Energy' }],
+      totals: { pokemon: 4, trainer: 3, energy: 3, all: 10 },
+    });
   });
 });

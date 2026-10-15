@@ -10,12 +10,15 @@ export const settings = $state({
   recentSets: [],
   /** Set binder: images of missing cards in grey (false = numbers only, saves data). */
   missingImages: true,
+  /** Play! Pokémon players (the user, children…): name, Player ID, birth year. */
+  /** @type {import('../domain/players.js').Player[]} */
+  players: [],
   /** navigator.storage.persist() result: true = the browser won't evict IndexedDB. */
   /** @type {boolean | null} */
   persisted: null,
 });
 
-const SYNCED = /** @type {const} */ (['cardLang', 'recentSets', 'missingImages']);
+const SYNCED = /** @type {const} */ (['cardLang', 'recentSets', 'missingImages', 'players']);
 
 export async function loadSettings() {
   const rows = await db.settings.bulkGet([...SYNCED]);

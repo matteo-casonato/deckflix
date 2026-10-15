@@ -28,6 +28,8 @@
   import Card from './screens/Card.svelte';
   import Profile from './screens/Profile.svelte';
   import Csv from './screens/Csv.svelte';
+  import Play from './screens/Play.svelte';
+  import DeckPrint from './screens/DeckPrint.svelte';
   import Album from './screens/Album.svelte';
   import Access from './screens/Access.svelte';
   import Restore from './screens/Restore.svelte';
@@ -77,13 +79,17 @@
   {:else if route.name === 'deckImport'}
     <DeckImport />
   {:else if route.name === 'deckDetail'}
-    {#key route.params.id}<DeckDetail id={route.params.id} />{/key}
+    {#key route.params.id}<DeckDetail id={route.params.id} query={route.query} />{/key}
   {:else if route.name === 'deckEdit'}
     {#key route.params.id}<DeckBuilder id={route.params.id} query={route.query} />{/key}
   {:else if route.name === 'profile'}
     <Profile />
   {:else if route.name === 'album'}
     {#key route.params.id}<Album id={route.params.id} />{/key}
+  {:else if route.name === 'play'}
+    <Play />
+  {:else if route.name === 'deckPrint'}
+    {#key route.params.id}<DeckPrint id={route.params.id} />{/key}
   {:else if route.name === 'csv'}
     <Csv query={route.query} />
   {:else if route.name === 'scan'}

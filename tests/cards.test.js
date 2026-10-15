@@ -106,6 +106,12 @@ describe('cardmarketUrl', () => {
       'https://www.cardmarket.com/it/Pokemon/Products/Search?searchString=Pikachu+ex&language=5',
     );
   });
+  it('opens the product page when TCGdex has its id, preferring the print of the copy', () => {
+    const card = { name: 'Pikachu', pricing: { cardmarket: { idProduct: 733620 } } };
+    expect(cardmarketUrl(card, 'it')).toBe('https://www.cardmarket.com/it/Pokemon/Products?idProduct=733620&language=5');
+    expect(cardmarketUrl(card, 'en', 748474)).toBe('https://www.cardmarket.com/it/Pokemon/Products?idProduct=748474&language=1');
+    expect(cardmarketUrl({ name: 'Old card' }, 'it')).toContain('/Search?searchString=Old+card');
+  });
 });
 
 describe('euro and variantBadge', async () => {

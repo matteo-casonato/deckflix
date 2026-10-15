@@ -2,7 +2,7 @@
 // Smart card search over all of TCGdex: name in the card language or in English ("Iono" finds
 // Kissara), number ("025", "11/78") and set code or id ("svi", "sv03.5").
 import { NUMBER_PAGE_SIZE, PAGE_SIZE, cardsByNumber, findSetsByCode, getCard, getSet, searchCards } from '../api/tcgdex.js';
-import { setIdOf } from '../domain/cards.js';
+import { isPocketSet, setIdOf } from '../domain/cards.js';
 import { normalizeNumber, parseSearchQuery, withSets } from '../domain/searchQuery.js';
 
 /** Pages fetched when results are filtered locally by number or set size. */
@@ -90,6 +90,7 @@ export async function smartSearch(lang, text, filters, sets, page = 1) {
 
   /** @param {Brief} c */
   const keep = (c) =>
+    !isPocketSet(setIdOf(c.id)) &&
     (!number || normalizeNumber(String(c.localId)) === number) &&
     (!total || sets.get(setIdOf(c.id))?.cardCount?.official === total) &&
     (!setIds.length || setIds.includes(setIdOf(c.id)));
@@ -111,8 +112,9 @@ export async function smartSearch(lang, text, filters, sets, page = 1) {
     const lists = await Promise.all(
       ids.map((id) =>
         getSet(lang, id)
+          .then((r) => (r.data.cards?.length ? r : getSet('en', id)))
           .catch(() => getSet('en', id))
-          .then((r) => (r.data.cards ?? []).map((/** @type {any} */ c) => ({ ...c, id: c.id })))
+          .then((r) => /** @type {Brief[]} */ (r.data.cards ?? []))
           .catch(() => []),
       ),
     );
@@ -137,13 +139,16 @@ export async function smartSearch(lang, text, filters, sets, page = 1) {
   const translated = await Promise.all(
     extra.map((c) =>
       getCard(lang, c.id)
-        .then((r) => ({ id: r.data.id, localId: r.data.localId, name: r.data.name, image: r.data.image ?? c.image }))
-        .catch(() => c),
+        .then((r) => ({ id: r.data.id, localId: r.data.localId, name: r.data.name, image: r.data.image ?? c.image, localized: true }))
+        // Old cards often exist on TCGdex only in English (e.g. EX Deoxys in Italian).
+        .catch(() => ({ ...c, localized: false })),
     ),
   );
-  // Only cards whose name in the card language is different: the others are already among the
-  // local results (on this page or the next ones).
-  const english = translated.filter((c) => !c.name.toLowerCase().includes(needle));
+  // A localized card with the same name will show up among the local results, on a later page
+  // when they continue; cards only in English, or with a different local name, are added.
+  const english = translated
+    .filter((c) => !(c.localized && mine.more && c.name.toLowerCase().includes(needle)))
+    .map(({ localized, ...c }) => c);
   understood.english = english.length;
   const results = [...mine.list.filter(keep), ...english].sort((a, b) => rank(a) - rank(b));
   return { results, more: !local && mine.more, understood };
@@ -166,6 +171,7 @@ export async function filterByQuery(cards, english, text, sets) {
   const needle = name.trim().toLowerCase();
   return cards.filter(
     (c) =>
+      !isPocketSet(setIdOf(c.id)) &&
       (!needle || c.name.toLowerCase().includes(needle) || String(english.get(c.id)?.name ?? '').toLowerCase().includes(needle)) &&
       (!number || normalizeNumber(String(c.localId)) === number) &&
       (!q.total || sets.get(setIdOf(c.id))?.cardCount?.official === q.total) &&

@@ -93,3 +93,21 @@ button {
     scroll-behavior: auto !important;
   }
 }
+
+/* Printing (tournament deck list): only the page content, on white. */
+@media print {
+  body {
+    background: #fff;
+    color: #000;
+  }
+
+  .nav,
+  .toast,
+  .update {
+    display: none !important;
+  }
+
+  main {
+    padding: 0 !important;
+  }
+}

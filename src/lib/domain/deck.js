@@ -142,3 +142,50 @@ export function openingHand(rows) {
       .sort((x, y) => y.possible - x.possible),
   };
 }
+
+/**
+ * Code printed at the bottom of a card, as tournament lists want it: "BRS 048/172 F"
+ * (set abbreviation, number / cards in the set, regulation mark). Missing parts are left out.
+ * @param {any} card English TCGdex card
+ * @param {any} [set] its set details (for `abbreviation.official`)
+ */
+export function printedCode(card, set) {
+  const code = set?.abbreviation?.official ?? '';
+  const total = set?.cardCount?.official ?? card?.set?.cardCount?.official;
+  // TCGdex keeps the number as printed: "048" on modern cards, "16" on old ones.
+  const number = total && /^\d+$/.test(card.localId) ? `${card.localId}/${total}` : card.localId;
+  return [code, number, card.regulationMark ?? ''].filter(Boolean).join(' ');
+}
+
+/**
+ * Rows of a tournament deck list (the sheet printed from RK9 Labs for judges): Pokémon one
+ * row per print with set code, number and regulation mark; Trainers and Energy by name,
+ * copies of different prints added together. Names in English, as on Pokémon TCG Live.
+ * @param {{ qty: number, section: string, card: any, cardId: string }[]} rows
+ * @param {Map<string, any>} sets set details by id (for `abbreviation.official`)
+ */
+export function tournamentSheet(rows, sets) {
+  /** @param {string} section */
+  const byName = (section) => {
+    /** @type {Map<string, { qty: number, name: string }>} */
+    const m = new Map();
+    for (const r of rows.filter((x) => x.section === section)) {
+      const name = r.card?.name ?? r.cardId;
+      m.set(name, { name, qty: (m.get(name)?.qty ?? 0) + r.qty });
+    }
+    return [...m.values()];
+  };
+  const pokemon = rows
+    .filter((r) => r.section === 'Pokémon')
+    .map((r) => ({
+      qty: r.qty,
+      name: r.card?.name ?? r.cardId,
+      set: sets.get(r.card?.set?.id)?.abbreviation?.official ?? r.card?.set?.id ?? '',
+      number: r.card?.localId ?? r.cardId.split('-').pop() ?? '',
+      reg: r.card?.regulationMark ?? '',
+    }));
+  const trainer = byName('Trainer');
+  const energy = byName('Energy');
+  const sum = (/** @type {{ qty: number }[]} */ l) => l.reduce((n, x) => n + x.qty, 0);
+  return { pokemon, trainer, energy, totals: { pokemon: sum(pokemon), trainer: sum(trainer), energy: sum(energy), all: sum(pokemon) + sum(trainer) + sum(energy) } };
+}

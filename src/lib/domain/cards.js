@@ -119,17 +119,37 @@ export function pricesDate(updated, now) {
 const CARDMARKET_LANG = /** @type {Record<string, number>} */ ({ en: 1, fr: 2, de: 3, es: 4, it: 5, pt: 8 });
 
 /**
- * Cardmarket search for the card, filtered by the language of the copy when possible.
- * Prices on TCGdex aggregate all languages, so this is where the real price is.
- * @param {string} name
- * @param {string} lang
+ * Cardmarket page of the card, filtered by the language of the copy. Prices on TCGdex
+ * aggregate all languages, so this is where the real price is. With the product id that
+ * TCGdex gives per print (`idProduct`, checked 15/10/2026: Pikachu 151 → 733620) the link
+ * opens the card itself; without it, a search by name.
+ * @param {{ name: string, pricing?: any } | string} card full TCGdex card (or just a name)
+ * @param {string} lang language of the copy
+ * @param {number | null} [productId] product of a specific print (variant)
  */
-export function cardmarketUrl(name, lang) {
-  const params = new URLSearchParams({ searchString: name });
-  const id = CARDMARKET_LANG[lang];
-  if (id) params.set('language', String(id));
-  return `https://www.cardmarket.com/it/Pokemon/Products/Search?${params}`;
+export function cardmarketUrl(card, lang, productId = null) {
+  const name = typeof card === 'string' ? card : card.name;
+  const id = productId ?? (typeof card === 'string' ? null : card.pricing?.cardmarket?.idProduct ?? null);
+  const params = new URLSearchParams(id ? { idProduct: String(id) } : { searchString: name });
+  const langId = CARDMARKET_LANG[lang];
+  if (langId) params.set('language', String(langId));
+  return `https://www.cardmarket.com/it/Pokemon/Products${id ? '' : '/Search'}?${params}`;
 }
+
+/**
+ * Web search for a card by name and printed number ("Deoxys 16/107"): for old cards it often
+ * finds listings and prices more easily than Cardmarket's own search.
+ * @param {{ name: string, localId: string }} card
+ * @param {number | null | undefined} official cards in the set (the "/107")
+ */
+export function googleUrl(card, official) {
+  const number = official ? `${card.localId}/${official}` : card.localId;
+  return `https://www.google.com/search?${new URLSearchParams({ q: `${card.name} ${number} pokemon` })}`;
+}
+
+/** TCG Pocket sets (A1, A2b, P-A…) are digital-only: TCGdex ids start with a capital. */
+/** @param {string} setId */
+export const isPocketSet = (setId) => /^[A-Z]/.test(setId);
 
 /** Italian names of the card languages. */
 export const LANG_LABELS = /** @type {Record<string, string>} */ ({

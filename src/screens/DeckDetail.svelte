@@ -8,16 +8,23 @@
   import { deckRows, deleteDeck, exportDecklist, missingToWishlist, ownedMap } from '../lib/data/decks.js';
   import { deckSummary } from '../lib/domain/deck.js';
   import { euro } from '../lib/domain/cards.js';
-  import { listNumber } from '../lib/domain/decklist.js';
   import { hrefFor } from '../lib/domain/routes.js';
   import { navigate } from '../lib/router.svelte.js';
   import { showToast } from '../lib/stores/toast.svelte.js';
+  import { cardImage } from '../lib/api/tcgdex.js';
+  import { setDetails } from '../lib/data/catalog.js';
+  import { printedCode } from '../lib/domain/deck.js';
+  import { replace } from '../lib/router.svelte.js';
   import BackHeader from '../lib/ui/BackHeader.svelte';
+  import Segmented from '../lib/ui/Segmented.svelte';
   import ConfirmDialog from '../lib/ui/ConfirmDialog.svelte';
   import DeckStats from './deck/DeckStats.svelte';
 
-  /** @type {{ id: string }} */
-  let { id } = $props();
+  /** @type {{ id: string, query: Record<string, string> }} */
+  let { id, query } = $props();
+
+  // List with thumbnails, or a grid of cards like Limitless.
+  const view = $derived(query.view === 'grid' ? 'grid' : 'list');
 
   const deck = $derived(liveQuery(() => db.decks.get(id)));
   const owned = liveQuery(ownedMap);
@@ -31,12 +38,24 @@
   });
   const summary = $derived(rows ? deckSummary(rows) : null);
 
+  // Printed set codes (BRS, SVI) for "BRS 048/172 F" under each name.
+  /** @type {Map<string, any>} */
+  let sets = $state(new Map());
+  const setIds = $derived([...new Set((rows ?? []).map((r) => r.card?.set?.id).filter(Boolean))].sort().join(','));
+  $effect(() => {
+    if (setIds) setDetails(setIds.split(','), 'en').then((m) => (sets = m));
+  });
+
   const SECTIONS = /** @type {const} */ ([
     ['Pokémon', 'Pokémon'],
     ['Trainer', 'Allenatori'],
     ['Energy', 'Energie'],
   ]);
   const STATE = { owned: '', other: 'Altra versione', missing: 'Manca' };
+  /** @param {import('../lib/data/decks.js').DeckRow} r */
+  const stateLabel = (r) => (r.state === 'missing' ? `Manca ${r.missing}` : STATE[r.state]);
+  /** Right-hand label of a list row: "4", "Manca 2/4", "4 · altra versione". @param {import('../lib/data/decks.js').DeckRow} r */
+  const rowLabel = (r) => (r.state === 'missing' ? `Manca ${r.missing}/${r.qty}` : r.state === 'other' ? `${r.qty} · altra versione` : String(r.qty));
 
   let confirmDelete = $state(false);
 
@@ -99,33 +118,71 @@
     <div class="actions">
       <a class="btn light" href={hrefFor('deckEdit', { id })}>Modifica</a>
       <button class="btn" onclick={share} disabled={!$deck.cards.length}>Condividi lista</button>
+      <a class="btn" href={hrefFor('deckPrint', { id })} aria-disabled={!$deck.cards.length}>Foglio torneo</a>
     </div>
     {#if summary?.missing}
       <button class="btn subtle" onclick={toWishlist}>Mancanti ai desideri</button>
     {/if}
   </section>
 
+  {#if rows?.length}
+    <div class="pad">
+      <Segmented
+        label="Vista"
+        value={view}
+        options={[
+          { value: 'list', label: 'Lista' },
+          { value: 'grid', label: 'Griglia' },
+        ]}
+        onchange={(v) => replace(hrefFor('deckDetail', { id }, { view: v === 'grid' ? 'grid' : null }))}
+      />
+    </div>
+  {/if}
+
   {#if rows}
     {#each SECTIONS as [key, label] (key)}
       {@const group = rows.filter((r) => r.section === key)}
       {#if group.length}
         <h2 class="section">{label} · <span class="num">{group.reduce((n, r) => n + r.qty, 0)}</span></h2>
+        {#if view === 'grid'}
+          <ul class="cards">
+            {#each group as r (r.cardId)}
+              <li>
+                <a
+                  class="tile"
+                  class:missing={r.state === 'missing'}
+                  href={hrefFor('card', { lang: 'en', id: r.cardId })}
+                  aria-label={`${r.qty} ${r.card?.name ?? r.cardId}${r.state !== 'owned' ? `, ${stateLabel(r)}` : ''}`}
+                >
+                  {#if cardImage(r.card)}
+                    <img src={cardImage(r.card)} alt="" loading="lazy" />
+                  {:else}
+                    <span class="ph">{r.card?.name ?? r.cardId}</span>
+                  {/if}
+                  <span class="count num">{r.qty}</span>
+                  {#if r.state !== 'owned'}<span class="tag {r.state}">{stateLabel(r)}</span>{/if}
+                </a>
+              </li>
+            {/each}
+          </ul>
+        {:else}
         <ul class="lines card">
           {#each group as r (r.cardId)}
             <li>
               <a href={hrefFor('card', { lang: 'en', id: r.cardId })}>
-                <span class="qty num">{r.qty}</span>
+                <span class="thumb" class:missing={r.state === 'missing'}>
+                  {#if cardImage(r.card)}<img src={cardImage(r.card)} alt="" loading="lazy" />{/if}
+                </span>
                 <span class="name">
                   <strong>{r.card?.name ?? r.cardId}</strong>
-                  <span class="muted num">{r.card?.set?.name ?? ''} {r.card ? listNumber(r.card.localId) : ''}</span>
+                  <span class="muted num">{r.card ? printedCode(r.card, sets.get(r.card.set?.id)) : ''}</span>
                 </span>
-                {#if r.state !== 'owned'}
-                  <span class="state {r.state}">{STATE[r.state]}{r.state === 'missing' && r.have ? ` ${r.missing}` : ''}</span>
-                {/if}
+                <span class="state {r.state}">{rowLabel(r)}</span>
               </a>
             </li>
           {/each}
         </ul>
+        {/if}
       {/if}
     {/each}
     {#if !rows.length}
@@ -231,6 +288,10 @@
     gap: 10px;
   }
 
+  .actions > :last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+
   .subtle {
     background: transparent;
     border: 1px solid var(--line-2);
@@ -273,6 +334,99 @@
     font-size: 17px;
   }
 
+  .thumb {
+    width: 36px;
+    height: 50px;
+    flex-shrink: 0;
+    border-radius: 5px;
+    overflow: hidden;
+    background: var(--surface-2);
+  }
+
+  .thumb img,
+  .tile img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  /* Missing or partly missing: the card in grey, like the set binder. */
+  .thumb.missing img,
+  .tile.missing img {
+    filter: grayscale(1);
+    opacity: 0.4;
+  }
+
+  .cards {
+    list-style: none;
+    margin: 0;
+    padding: 0 16px;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .tile {
+    position: relative;
+    aspect-ratio: 63 / 88;
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--surface-2);
+    display: block;
+    color: var(--text);
+    text-decoration: none;
+  }
+
+  .ph {
+    position: absolute;
+    inset: 0;
+    padding: 6px;
+    font-size: 10px;
+    color: var(--muted);
+  }
+
+  .count {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    min-width: 24px;
+    height: 24px;
+    padding: 0 6px;
+    border-radius: 12px;
+    background: var(--bg);
+    border: 1px solid var(--line-2);
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .tag {
+    position: absolute;
+    left: 4px;
+    right: 4px;
+    bottom: 4px;
+    padding: 3px 4px;
+    border-radius: 8px;
+    font-size: 10px;
+    font-weight: 700;
+    text-align: center;
+    background: var(--bg);
+  }
+
+  .tag.missing {
+    color: var(--danger);
+    border: 1px solid color-mix(in srgb, var(--danger) 50%, transparent);
+  }
+
+  .tag.other {
+    color: var(--accent);
+    border: 1px solid color-mix(in srgb, var(--accent) 50%, transparent);
+  }
+
   .name {
     flex: 1;
     min-width: 0;
@@ -293,6 +447,16 @@
     font-weight: 700;
     display: flex;
     align-items: center;
+  }
+
+  .state.owned {
+    min-width: 32px;
+    justify-content: center;
+    background: var(--surface-2);
+    color: var(--text);
+    font-family: var(--font-display);
+    font-size: 15px;
+    font-weight: 800;
   }
 
   .state.other {

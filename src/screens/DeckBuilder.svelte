@@ -147,7 +147,7 @@
               <span class="ph">{r.card?.name ?? r.cardId}</span>
             {/if}
             <span class="qty num">×{r.qty}</span>
-            {#if r.state !== 'owned'}<span class="badge {r.state}">{r.state === 'other' ? 'Altra versione' : r.have ? `Mancano ${r.missing}` : 'Mancante'}</span>{/if}
+            {#if r.state !== 'owned'}<span class="badge {r.state}">{r.state === 'other' ? 'Altra versione' : `Manca ${r.missing}`}</span>{/if}
           </a>
           <span class="cname">{r.card?.name ?? ''}</span>
           <span class="steps">
@@ -314,7 +314,8 @@
   }
 
   .tile.missing img {
-    opacity: 0.45;
+    filter: grayscale(1);
+    opacity: 0.4;
   }
 
   .tile.other .art {

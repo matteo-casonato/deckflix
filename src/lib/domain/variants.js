@@ -66,6 +66,7 @@ const humanize = (s) => s.replace(/-/g, ' ').replace(/^./, (c) => c.toUpperCase(
  *   stamps: string[],
  *   foil: string | null,
  *   price: number | null,
+ *   productId?: number | null,
  * }} VariantOption
  */
 
@@ -112,6 +113,8 @@ export function listVariants(card) {
         stamps,
         foil,
         price: variantPrice(v),
+        // Cardmarket product of this print (stamped prints have their own).
+        productId: v.pricing?.cardmarket?.idProduct ?? null,
       };
     });
   }

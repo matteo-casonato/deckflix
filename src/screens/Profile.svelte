@@ -13,6 +13,7 @@
     LockIcon,
     GridViewIcon,
     LinkSquare02Icon,
+    QrCodeIcon,
   } from '@hugeicons/core-free-icons';
   import Icon from '../lib/ui/Icon.svelte';
   import Avatar from '../lib/ui/Avatar.svelte';
@@ -126,6 +127,18 @@
     <span class="text"><strong>Ripristina da Drive</strong><span>Sostituisce i dati di questo telefono</span></span>
     <span class="chev"><Icon icon={ArrowRight01Icon} size={20} /></span>
   </button>
+</section>
+
+<h2 class="section">Play!</h2>
+<section class="card list">
+  <a class="row" href={hrefFor('play')}>
+    <span class="ico"><Icon icon={QrCodeIcon} /></span>
+    <span class="text">
+      <strong>ID giocatori</strong>
+      <span>{settings.players.length ? settings.players.map((p) => p.name.split(' ')[0]).join(', ') : 'ID, divisione e codice QR per la lega'}</span>
+    </span>
+    <span class="chev"><Icon icon={ArrowRight01Icon} size={20} /></span>
+  </a>
 </section>
 
 <h2 class="section">Utility</h2>
