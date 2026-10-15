@@ -8,7 +8,7 @@
   import { changeDeckCard, deckRows, missingToWishlist, ownedMap, resolveDecklist, updateDeck } from '../lib/data/decks.js';
   import { pasteErrorText, readListFromClipboard } from '../lib/data/pasteList.js';
   import { parseDecklist, suggestDeckName } from '../lib/domain/decklist.js';
-  import { DECK_SIZE, MAX_COPIES, deckSummary } from '../lib/domain/deck.js';
+  import { DECK_SIZE, MAX_COPIES, deckSummary, isBasicEnergy } from '../lib/domain/deck.js';
   import { euro } from '../lib/domain/cards.js';
   import { hrefFor } from '../lib/domain/routes.js';
   import { replace } from '../lib/router.svelte.js';
@@ -62,7 +62,6 @@
 
   /** Basic Energy cards are exempt from the 4-copies rule. */
   /** @param {import('../lib/data/decks.js').DeckRow} r */
-  const isBasicEnergy = (r) => r.section === 'Energy' && /basic|base/i.test(`${r.card?.energyType ?? ''} ${r.card?.name ?? ''}`) && r.card?.energyType !== 'Special';
 
   async function toWishlist() {
     if (!rows) return;

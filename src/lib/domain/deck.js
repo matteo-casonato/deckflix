@@ -189,3 +189,27 @@ export function tournamentSheet(rows, sets) {
   const sum = (/** @type {{ qty: number }[]} */ l) => l.reduce((n, x) => n + x.qty, 0);
   return { pokemon, trainer, energy, totals: { pokemon: sum(pokemon), trainer: sum(trainer), energy: sum(energy), all: sum(pokemon) + sum(trainer) + sum(energy) } };
 }
+
+/** Basic Energy can be played in any number (English data: energyType "Normal"). @param {{ section: string, card: any }} r */
+export const isBasicEnergy = (r) =>
+  r.section === 'Energy' && r.card?.energyType !== 'Special' && (r.card?.energyType === 'Normal' || /\bbasic\b/i.test(r.card?.name ?? ''));
+
+/**
+ * Deck status for the list tags: "In costruzione" under 60 cards, "Valido" at exactly 60 with
+ * at most 4 copies of a name (basic Energy excluded) and at least one Basic Pokémon,
+ * otherwise "Non valido"; and whether every card is legal in Standard (TCGdex `legal`).
+ * Cards whose data is not loaded yet are not counted against Standard.
+ * @param {{ qty: number, section: string, card: any, cardId: string }[]} rows
+ */
+export function deckCheck(rows) {
+  const total = rows.reduce((n, r) => n + r.qty, 0);
+  /** @type {Map<string, number>} */
+  const byName = new Map();
+  for (const r of rows) if (!isBasicEnergy(r)) byName.set(r.card?.name ?? r.cardId, (byName.get(r.card?.name ?? r.cardId) ?? 0) + r.qty);
+  const tooMany = [...byName.entries()].filter(([, n]) => n > MAX_COPIES).map(([name]) => name);
+  const hasBasic = rows.some((r) => r.section === 'Pokémon' && r.card?.stage === 'Basic');
+  const notStandard = rows.filter((r) => r.card && r.card.legal?.standard === false).map((r) => r.card.name);
+  /** @type {'building' | 'valid' | 'invalid'} */
+  const status = total < DECK_SIZE ? 'building' : total === DECK_SIZE && !tooMany.length && hasBasic ? 'valid' : 'invalid';
+  return { total, status, standard: notStandard.length === 0, notStandard, tooMany, hasBasic };
+}

@@ -7,8 +7,8 @@
   import { db } from '../lib/db.js';
   import { createDeck, deckRows, ownedMap } from '../lib/data/decks.js';
   import { pasteErrorText, readListFromClipboard, setPendingList } from '../lib/data/pasteList.js';
-  import { deckSummary } from '../lib/domain/deck.js';
-  import { euro } from '../lib/domain/cards.js';
+  import { deckCheck, deckSummary } from '../lib/domain/deck.js';
+  import { cardImage } from '../lib/api/tcgdex.js';
   import { hrefFor } from '../lib/domain/routes.js';
   import { navigate } from '../lib/router.svelte.js';
   import Icon from '../lib/ui/Icon.svelte';
@@ -18,16 +18,29 @@
   const decks = liveQuery(() => db.decks.orderBy('updatedAt').reverse().toArray());
   const owned = liveQuery(ownedMap);
 
-  /** @type {Map<string, ReturnType<typeof deckSummary>>} */
-  let summaries = $state(new Map());
+  /** @typedef {{ summary: ReturnType<typeof deckSummary>, check: ReturnType<typeof deckCheck>, fan: string[] }} DeckInfo */
+  /** @type {Map<string, DeckInfo>} */
+  let infos = $state(new Map());
   $effect(() => {
     const list = $decks;
     const own = $owned;
     if (!list || !own) return;
-    Promise.all(list.map(async (d) => /** @type {const} */ ([d.id, deckSummary(await deckRows(d, own))]))).then(
-      (pairs) => (summaries = new Map(pairs)),
-    );
+    Promise.all(
+      list.map(async (d) => {
+        const rows = await deckRows(d, own);
+        // Preview: rule-box Pokémon first (the deck's stars), then the most played.
+        const star = (/** @type {any} */ r) => Number(/\b(ex|V|VSTAR|VMAX|GX)$/.test(r.card?.name ?? ''));
+        const fan = rows
+          .filter((r) => r.section === 'Pokémon' && cardImage(r.card))
+          .sort((a, b) => star(b) - star(a) || b.qty - a.qty)
+          .slice(0, 3)
+          .map((r) => /** @type {string} */ (cardImage(r.card)));
+        return /** @type {const} */ ([d.id, { summary: deckSummary(rows), check: deckCheck(rows), fan }]);
+      }),
+    ).then((pairs) => (infos = new Map(pairs)));
   });
+
+  const STATUS = { building: 'In costruzione', valid: 'Valido', invalid: 'Non valido' };
 
   async function pasteList() {
     const r = await readListFromClipboard();
@@ -41,8 +54,7 @@
     navigate(hrefFor('deckEdit', { id }));
   }
 
-  const date = (/** @type {number} */ t) => new Date(t).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' });
-  const R = 30;
+  const R = 20;
   const C = 2 * Math.PI * R;
 </script>
 
@@ -69,41 +81,40 @@
     <button class="btn" onclick={pasteList}>Incolla lista</button>
   </EmptyState>
 {:else if $decks}
-  {@const [hero, ...rest] = $decks}
-  {@const hs = summaries.get(hero.id)}
-  <a class="hero card" href={hrefFor('deckDetail', { id: hero.id })}>
-    <span class="tag">{hs?.complete ? 'Pronto a giocare' : 'In costruzione'} · Standard</span>
-    <span class="hero-row">
-      <span class="txt">
-        <strong>{hero.name}</strong>
-        {#if hs}
-          <span class="muted num">{hs.owned} di {hs.total} possedute{hs.missing ? ` · ${hs.missing} mancanti` : ''}</span>
-          {#if hs.otherVersion}<span class="muted num">{hs.otherVersion} con versione alternativa</span>{/if}
-        {:else}
-          <span class="muted">Calcolo…</span>
-        {/if}
-      </span>
-      <svg class="ring" viewBox="0 0 72 72" aria-label={`${hs?.percent ?? 0}% posseduto`}>
-        <circle cx="36" cy="36" r={R} class="track" />
-        <circle cx="36" cy="36" r={R} class="fill" stroke-dasharray={`${((hs?.percent ?? 0) / 100) * C} ${C}`} />
-        <text x="36" y="41" text-anchor="middle" class="num">{hs?.percent ?? 0}%</text>
-      </svg>
-    </span>
-  </a>
-
   <ul class="list">
-    {#each rest as d (d.id)}
-      {@const s = summaries.get(d.id)}
+    {#each $decks as d (d.id)}
+      {@const info = infos.get(d.id)}
+      {@const s = info?.summary}
       <li>
-        <a class="row card" href={hrefFor('deckDetail', { id: d.id })}>
+        <a class="deck card" href={hrefFor('deckDetail', { id: d.id })}>
+          <span class="fan" aria-hidden="true">
+            {#each info?.fan ?? [] as src, i (src)}
+              <img {src} alt="" loading="lazy" style:--i={i} />
+            {:else}
+              <span class="ph"></span>
+            {/each}
+          </span>
           <span class="txt">
             <strong>{d.name}</strong>
-            <span class="muted num">Standard · creato il {date(d.createdAt)}</span>
             <span class="muted num">
-              {s ? (s.complete ? 'Completo' : `${s.missing} mancanti${s.missingCost ? ` · ${euro(s.missingCost)}` : ''}`) : '…'}
+              {#if s}{s.owned} di {s.total} possedute{s.missing ? ` · ${s.missing} mancanti` : ''}{:else}Calcolo…{/if}
             </span>
+            {#if info}
+              <span class="tags">
+                <span class="tag" class:ok={info.check.standard} class:bad={!info.check.standard}>
+                  {info.check.standard ? 'Standard' : 'Non standard'}
+                </span>
+                <span class="tag" class:ok={info.check.status === 'valid'} class:bad={info.check.status === 'invalid'}>
+                  {STATUS[info.check.status]}{info.check.status === 'building' ? ` · ${info.check.total}/60` : ''}
+                </span>
+              </span>
+            {/if}
           </span>
-          <span class="pct num" class:done={s?.complete}>{s?.percent ?? 0}%</span>
+          <svg class="ring" viewBox="0 0 48 48" role="img" aria-label={`${s?.percent ?? 0}% posseduto`}>
+            <circle cx="24" cy="24" r={R} class="track" />
+            <circle cx="24" cy="24" r={R} class="fill" class:done={s?.complete} stroke-dasharray={`${((s?.percent ?? 0) / 100) * C} ${C}`} />
+            <text x="24" y="28" text-anchor="middle" class="num">{s?.percent ?? 0}%</text>
+          </svg>
         </a>
       </li>
     {/each}
@@ -184,36 +195,54 @@
     text-decoration: none;
   }
 
-  .hero {
-    margin: 14px 16px 0;
-    padding: 18px;
-    border-radius: var(--r-section);
-    background: var(--surface);
-    border: 1px solid var(--line);
+  .list {
+    list-style: none;
+    margin: 0;
+    padding: 0 16px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
+  }
+
+  .deck {
+    min-height: 96px;
+    padding: 12px 14px 12px 12px;
+    border-radius: var(--r-card);
+    background: var(--surface);
+    display: flex;
+    align-items: center;
+    gap: 14px;
     color: var(--text);
     text-decoration: none;
   }
 
-  .tag {
-    align-self: flex-start;
-    height: 28px;
-    padding: 0 12px;
-    border-radius: 14px;
-    background: var(--bg);
-    color: var(--muted);
-    font-size: 12px;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
+  /* Three cards overlapped and fanned out to the right. */
+  .fan {
+    position: relative;
+    width: 76px;
+    height: 72px;
+    flex-shrink: 0;
   }
 
-  .hero-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
+  .fan img,
+  .ph {
+    position: absolute;
+    top: 4px;
+    left: calc(var(--i) * 16px);
+    width: 46px;
+    aspect-ratio: 63 / 88;
+    border-radius: 5px;
+    object-fit: cover;
+    box-shadow: 0 4px 10px rgb(0 0 0 / 0.4);
+    transform: rotate(calc((var(--i) - 1) * 7deg));
+    transform-origin: 50% 100%;
+  }
+
+  .ph {
+    --i: 1;
+    background: var(--surface-2);
+    border: 1.5px dashed var(--line-2);
+    box-shadow: none;
   }
 
   .txt {
@@ -221,84 +250,85 @@
     min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 3px;
   }
 
-  .hero strong {
+  .txt strong {
     font-family: var(--font-display);
-    font-size: 24px;
+    font-size: 19px;
+    font-weight: 800;
+    line-height: 1.15;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .muted {
-    color: var(--muted);
+    margin: 0;
     font-size: 13px;
+    color: var(--muted);
+  }
+
+  .tags {
+    margin-top: 3px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .tag {
+    height: 22px;
+    padding: 0 9px;
+    border-radius: 11px;
+    background: var(--surface-2);
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+  }
+
+  .tag.ok {
+    background: color-mix(in srgb, var(--success) 16%, var(--surface));
+    color: var(--success);
+  }
+
+  .tag.bad {
+    background: color-mix(in srgb, var(--danger) 16%, var(--surface));
+    color: var(--danger);
   }
 
   .ring {
-    width: 72px;
-    height: 72px;
+    width: 48px;
+    height: 48px;
     flex-shrink: 0;
-    transform: rotate(-90deg);
   }
 
   .ring text {
-    transform: rotate(90deg);
-    transform-origin: 36px 36px;
     fill: var(--text);
-    font-size: 14px;
-    font-weight: 700;
-    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 800;
   }
 
   .track,
   .fill {
     fill: none;
-    stroke-width: 7;
+    stroke-width: 5;
   }
 
   .track {
-    stroke: var(--bg);
+    stroke: var(--surface-2);
   }
 
   .fill {
     stroke: var(--accent);
     stroke-linecap: round;
+    transform: rotate(-90deg);
+    transform-origin: 50% 50%;
   }
 
-  .list {
-    list-style: none;
-    margin: 0;
-    padding: 12px 16px 0;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .row {
-    padding: 14px 18px;
-    border-radius: var(--r-card);
-    background: var(--surface);
-    border: 1px solid var(--line);
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    color: var(--text);
-    text-decoration: none;
-  }
-
-  .row strong {
-    font-size: 16px;
-  }
-
-  .pct {
-    font-family: var(--font-display);
-    font-weight: 800;
-    font-size: 18px;
-    color: var(--muted);
-  }
-
-  .pct.done {
-    color: var(--success);
+  .fill.done {
+    stroke: var(--success);
   }
 
   .wide {

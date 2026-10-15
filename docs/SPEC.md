@@ -370,6 +370,8 @@ Esporta CSV, invito ad accedere per chi usa l'app senza account, copia di sicure
 
 - **Sezione Play!** al posto di “Deck” nella barra: in alto i giocatori (foto, nome, ID, anno, divisione, tasto QR, aggiunta), sotto i deck. La foto si sceglie dalla galleria o si scatta, ritagliata quadrata a 192 px JPEG sul telefono (pochi KB, salvata con i giocatori e nel backup); senza foto le iniziali. Con la foto il QR usa la correzione d'errore H e la mostra al centro (24% della larghezza; verificato con CoreImage che il codice si legge fino al 30% coperto). Niente logo Play! Pokémon: è un marchio Pokémon e il repository non contiene asset Pokémon. Il QR ha gli stessi dati di quello ufficiale, ma non è garantito che il software della lega lo accetti: da provare una volta tenendo pronta l'app ufficiale.
 
+- **Elenco deck** compatto come le edizioni: tre Pokémon sovrapposti a ventaglio (prima quelli con regola), nome, possedute e mancanti, anello della percentuale; due tag: formato “Standard” verde o “Non standard” rosso se anche una sola carta non è legale in Standard (`legal.standard` di TCGdex), e stato “In costruzione · n/60” (grigio), “Valido” (verde: 60 carte, massimo 4 copie per nome tranne le Energie base, almeno un Pokémon Base) o “Non valido” (rosso). Logica in `deckCheck` (`src/lib/domain/deck.js`, testata).
+
 ## 9. Fuori ambito
 
 Prezzi per lingua e per condizione, riconoscimento con IA a pagamento, notifiche push e backup a app chiusa (servirebbe un server), profili multipli sullo stesso telefono, backup su servizi diversi da Google Drive, pubblicazione sugli store, app nativa con Capacitor (piano B se la scansione web non basta).

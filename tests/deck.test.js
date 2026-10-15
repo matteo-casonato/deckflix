@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { listName, listNumber, parseDecklist, serializeDecklist, suggestDeckName } from '../src/lib/domain/decklist.js';
-import { deckBreakdown, deckSummary, printedCode, tournamentSheet, entryState, openingHand, sameCard, sectionOfCard } from '../src/lib/domain/deck.js';
+import { deckBreakdown, deckCheck, deckSummary, printedCode, tournamentSheet, entryState, openingHand, sameCard, sectionOfCard } from '../src/lib/domain/deck.js';
 
 const LIST = `Pokémon: 16
 3 Miraidon ex SVI 81
@@ -179,5 +179,22 @@ describe('tournamentSheet', () => {
       energy: [{ qty: 3, name: 'Basic Fire Energy' }],
       totals: { pokemon: 4, trainer: 3, energy: 3, all: 10 },
     });
+  });
+});
+
+describe('deckCheck', () => {
+  const pk = (cardId, qty, o = {}) => ({ cardId, qty, section: 'Pokémon', card: { name: cardId, stage: 'Basic', legal: { standard: true }, ...o } });
+  const en = (qty) => ({ cardId: 'e', qty, section: 'Energy', card: { name: 'Basic Fire Energy', energyType: 'Normal', legal: { standard: true } } });
+  it('is in progress under 60, valid at 60 with the rules respected', () => {
+    expect(deckCheck([pk('a', 4), en(20)])).toMatchObject({ status: 'building', standard: true });
+    expect(deckCheck([pk('a', 4), en(56)])).toMatchObject({ status: 'valid', total: 60 });
+  });
+  it('is not valid with more than 4 copies of a name or no Basic Pokémon', () => {
+    expect(deckCheck([pk('a', 3), { ...pk('a2', 2), card: { name: 'a', stage: 'Basic' } }, en(55)])).toMatchObject({ status: 'invalid', tooMany: ['a'] });
+    expect(deckCheck([pk('a', 4, { stage: 'Stage1' }), en(56)])).toMatchObject({ status: 'invalid', hasBasic: false });
+  });
+  it('flags cards out of Standard, ignoring cards not loaded yet', () => {
+    const r = deckCheck([pk('a', 4, { legal: { standard: false } }), { cardId: 'x', qty: 1, section: 'Pokémon', card: null }, en(10)]);
+    expect(r).toMatchObject({ standard: false, notStandard: ['a'] });
   });
 });
