@@ -74,8 +74,10 @@
 <style>
   .hero {
     position: relative;
+    isolation: isolate;
     margin: 14px 16px 0;
     padding: 20px;
+    min-height: 330px;
     border-radius: var(--r-section);
     background: radial-gradient(120% 80% at 50% 0%, color-mix(in srgb, var(--accent) 14%, var(--surface)) 0%, var(--surface) 60%);
     border: 1px solid var(--line);
@@ -109,13 +111,29 @@
     align-items: center;
   }
 
-  /* In the flow, above the title: a long deck name can't end up under the cards. */
+  /* The cards sit behind the text (z-index 0); a dark fade at the bottom keeps the name,
+     the details and the buttons readable on top of them (z-index 1). */
   .fan {
-    position: relative;
-    align-self: stretch;
-    height: 190px;
-    margin: 28px 0 10px;
+    position: absolute;
+    inset: 30px 0 0;
+    z-index: 0;
     display: block;
+  }
+
+  .fan::after {
+    content: '';
+    position: absolute;
+    inset: 40% 0 0;
+    z-index: 5;
+    background: linear-gradient(to bottom, transparent, var(--surface) 72%);
+    pointer-events: none;
+  }
+
+  .tag,
+  .title,
+  .sub,
+  .actions {
+    z-index: 1;
   }
 
   .fan img {
