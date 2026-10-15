@@ -5,10 +5,11 @@ import { settings } from '../stores/settings.svelte.js';
 import { cachedCards, prefetchCards, setsMap } from './catalog.js';
 import { copyPrice, setIdOf } from '../domain/cards.js';
 import { listVariants } from '../domain/variants.js';
+import { conditionLabel } from '../domain/collection.js';
 
 /**
  * @typedef {import('../domain/csv.js').CsvRow} CsvRow
- * @typedef {{ cardId: string, qty: number, lang?: string, variant?: string }} Line
+ * @typedef {{ cardId: string, qty: number, lang?: string, variant?: string, condition?: string }} Line
  */
 
 /**
@@ -48,6 +49,7 @@ export async function csvRows(source) {
         number: total ? `${localId}/${total}` : localId,
         lang: l.lang ?? '',
         variant: (card && listVariants(card).find((v) => v.key === variant)?.label) ?? (variant === 'normal' ? 'Normale' : variant),
+        condition: source === 'collection' ? conditionLabel(l.condition) : '',
         qty: l.qty,
         price: copyPrice(card, variant),
         sort: `${setIdOf(l.cardId)}|${String(localId).padStart(4, '0')}`,

@@ -31,3 +31,20 @@ export function addCopies(current, card, delta, now) {
     updatedAt: now,
   };
 }
+
+/** Card conditions as on Cardmarket, best first: [code, Italian label]. */
+export const CONDITIONS = /** @type {const} */ ([
+  ['MT', 'Mint'],
+  ['NM', 'Near Mint'],
+  ['EX', 'Excellent'],
+  ['GD', 'Good'],
+  ['LP', 'Light Played'],
+  ['PL', 'Played'],
+  ['PO', 'Poor'],
+]);
+
+/** Copies without a condition are Near Mint (the usual state of a card from a pack). */
+export const DEFAULT_CONDITION = 'NM';
+
+/** @param {string | undefined | null} code */
+export const conditionLabel = (code) => CONDITIONS.find(([c]) => c === (code || DEFAULT_CONDITION))?.[1] ?? 'Near Mint';

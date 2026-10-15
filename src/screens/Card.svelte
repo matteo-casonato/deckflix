@@ -8,10 +8,10 @@
   import { TcgdexError, cardImage, getCard } from '../lib/api/tcgdex.js';
   import { settings } from '../lib/stores/settings.svelte.js';
   import { showToast } from '../lib/stores/toast.svelte.js';
-  import { changeCopies, moveToWishlist, restoreEntry, undoMoveToWishlist } from '../lib/data/collection.js';
+  import { changeCopies, moveToWishlist, restoreEntry, setCondition, undoMoveToWishlist } from '../lib/data/collection.js';
   import { toggleWish } from '../lib/data/actions.js';
   import { listVariants } from '../lib/domain/variants.js';
-  import { collectionKey } from '../lib/domain/collection.js';
+  import { CONDITIONS, DEFAULT_CONDITION, collectionKey } from '../lib/domain/collection.js';
   import { LANG_LABELS, cardmarketUrl, euro, googleUrl, guessImage, pricesDate, setIdOf } from '../lib/domain/cards.js';
   import { hrefFor } from '../lib/domain/routes.js';
   import { freshnessLabel } from '../lib/domain/cache.js';
@@ -19,6 +19,7 @@
   import Icon from '../lib/ui/Icon.svelte';
   import ConfirmDialog from '../lib/ui/ConfirmDialog.svelte';
   import AlbumPicker from './AlbumPicker.svelte';
+  import PriceTrend from './card/PriceTrend.svelte';
 
   /** @type {{ lang: string, id: string }} */
   let { lang, id } = $props();
@@ -53,6 +54,8 @@
 
   /** @param {string} variant */
   const qtyOf = (variant) => ($entries ?? []).find((e) => e.lang === copyLang && e.variant === variant)?.qty ?? 0;
+  /** @param {string} variant */
+  const conditionOf = (variant) => ($entries ?? []).find((e) => e.lang === copyLang && e.variant === variant)?.condition || DEFAULT_CONDITION;
   const otherLangs = $derived(
     Object.entries(
       ($entries ?? [])
@@ -185,6 +188,16 @@
               <span class="vtxt">
                 <strong>{v.label}</strong>
                 <span class="muted num">{v.price != null ? euro(v.price) : 'Prezzo non disponibile'}</span>
+                {#if qty > 0}
+                  <select
+                    class="cond"
+                    aria-label={`Condizione delle copie ${v.label}`}
+                    value={conditionOf(v.key)}
+                    onchange={(e) => setCondition(collectionKey(id, copyLang, v.key), e.currentTarget.value)}
+                  >
+                    {#each CONDITIONS as [code, label] (code)}<option value={code}>{label}</option>{/each}
+                  </select>
+                {/if}
               </span>
               <span class="stepper">
                 {#if qty > 0}
@@ -214,6 +227,7 @@
         <p class="muted small">
           È la media di tutte le lingue e condizioni. Il prezzo reale della tua copia lo trovi su Cardmarket.
         </p>
+        <PriceTrend cardId={id} cardmarket={card.pricing?.cardmarket} />
         <div class="links">
           <a class="btn" href={cardmarketUrl(card, copyLang, cardmarketProduct(variants))} target="_blank" rel="noopener noreferrer">
             <Icon icon={LinkSquare02Icon} size={18} /> Cardmarket
@@ -261,6 +275,20 @@
 {/if}
 
 <style>
+  .cond {
+    align-self: flex-start;
+    margin-top: 4px;
+    min-height: 32px;
+    padding: 0 26px 0 10px;
+    border: 1px solid var(--line-2);
+    border-radius: 12px;
+    background: var(--bg);
+    color: var(--text);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
   .links {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));

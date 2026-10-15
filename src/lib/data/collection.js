@@ -89,3 +89,10 @@ export async function undoMoveToWishlist(cardId, removed) {
     await db.wishlist.delete(cardId);
   });
 }
+
+/**
+ * Condition of the copies of a card in one language and print (Cardmarket scale).
+ * @param {string} key collection key (card, language, print)
+ * @param {string} condition
+ */
+export const setCondition = (key, condition) => db.collection.update(key, { condition, updatedAt: Date.now() });

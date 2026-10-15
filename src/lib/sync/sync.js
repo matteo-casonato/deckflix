@@ -408,6 +408,7 @@ export async function signOut({ wipe }) {
   quiet++;
   try {
     if (wipe) {
+      await db.cardPrices.clear();
       await db.transaction('rw', [db.collection, db.wishlist, db.decks, db.albums, db.priceSnapshots, db.settings, db.syncQueue], async () => {
         for (const name of DATA_TABLES) await db.table(name).clear();
         await db.settings.clear();

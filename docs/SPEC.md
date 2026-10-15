@@ -389,6 +389,10 @@ Esporta CSV, invito ad accedere per chi usa l'app senza account, copia di sicure
 - **Scanner più comodo**: “Scrivi il numero” sempre visibile sotto la cornice (si evidenzia quando la lettura fallisce): si scrive quello che è stampato sulla carta (“SVI 25”, “25/165”, “16/107”, “TG25”, “swsh302”, anche col nome) e si sceglie tra i risultati, poi il solito pannello con variante e lingua. Lettura non riuscita: niente pannello in basso, il messaggio compare al centro della cornice e il tocco successivo riprova.
 - **Inserimento rapido ripensato**: un solo campo grande che accetta numero, sigla e totale senza scegliere prima l'edizione; edizione facoltativa (“fissa”) per inserire una pila di carte scrivendo solo i numeri; edizione e lingua affiancate, scelta tra più risultati in un elenco con miniature, “Non è questa” per cambiare.
 
+- **Dettaglio deck**: il pannello “Ti mancano · Condividi · Stampa” sta subito dopo l'elenco delle carte, prima di Composizione e Mano iniziale.
+- **Condizione delle copie** (scala Cardmarket: Mint, Near Mint, Excellent, Good, Light Played, Played, Poor), una per lingua e stampa, predefinita Near Mint; si cambia nella scheda carta sotto ogni stampa posseduta; colonna “condizione” nel CSV della collezione.
+- **Andamento del prezzo** nella scheda carta: le medie Cardmarket di TCGdex (30 giorni, 7 giorni, ieri, trend) come barre con la variazione settimanale, e sotto lo storico giorno per giorno registrato dall'app (store Dexie `cardPrices`, schema v4) per le carte possedute o desiderate, che si allunga col tempo. Lo storico resta sul telefono, non va nel backup.
+
 ## 9. Fuori ambito
 
 Prezzi per lingua e per condizione, riconoscimento con IA a pagamento, notifiche push e backup a app chiusa (servirebbe un server), profili multipli sullo stesso telefono, backup su servizi diversi da Google Drive, pubblicazione sugli store, app nativa con Capacitor (piano B se la scansione web non basta).

@@ -219,28 +219,25 @@
       {/if}
     {/each}
     {#if !rows.length}
-      <p class="pad muted">Il deck è vuoto: tocca Modifica per aggiungere carte.</p>
+      <p class="pad muted">Il deck è vuoto: tocca Pokémon, Allenatori o Energie qui sopra per aggiungere carte.</p>
     {:else}
+      <section class="more card" aria-label="Altre azioni">
+        {#if summary?.missing}
+          <button class="missing-row" onclick={() => (showMissing = true)}>
+            <span>
+              <strong>Ti mancano {summary.missing} {summary.missing === 1 ? 'carta' : 'carte'}</strong>
+              <span class="num">circa {euro(summary.missingCost)} su Cardmarket · vedi quali</span>
+            </span>
+            <Icon icon={ArrowRight01Icon} size={20} />
+          </button>
+        {/if}
+        <div class="actions">
+          <button class="btn" onclick={share}>Condividi</button>
+          <a class="btn" href={hrefFor('deckPrint', { id })}>Stampa</a>
+        </div>
+      </section>
       <DeckStats {rows} />
     {/if}
-  {/if}
-
-  {#if $deck.cards.length}
-    <section class="more card" aria-label="Altre azioni">
-      {#if summary?.missing}
-        <button class="missing-row" onclick={() => (showMissing = true)}>
-          <span>
-            <strong>Ti mancano {summary.missing} {summary.missing === 1 ? 'carta' : 'carte'}</strong>
-            <span class="num">circa {euro(summary.missingCost)} su Cardmarket · vedi quali</span>
-          </span>
-          <Icon icon={ArrowRight01Icon} size={20} />
-        </button>
-      {/if}
-      <div class="actions">
-        <button class="btn" onclick={share} disabled={!$deck.cards.length}>Condividi</button>
-        <a class="btn" href={hrefFor('deckPrint', { id })} aria-disabled={!$deck.cards.length}>Stampa</a>
-      </div>
-    </section>
   {/if}
 
   <div class="pad"><button class="btn danger-text" onclick={() => (confirmDelete = true)}>Elimina il deck</button></div>

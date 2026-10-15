@@ -3,7 +3,7 @@
 // file opens with the right columns and accents in Excel and Google Sheets set to Italian.
 
 /**
- * @typedef {{ name: string, set: string, number: string, lang: string, variant: string, qty: number, price: number | null }} CsvRow
+ * @typedef {{ name: string, set: string, number: string, lang: string, variant: string, condition: string, qty: number, price: number | null }} CsvRow
  * @typedef {keyof CsvRow} CsvColumn
  */
 
@@ -14,6 +14,7 @@ export const CSV_COLUMNS = /** @type {const} */ ([
   ['number', 'numero', 'Numero'],
   ['lang', 'lingua', 'Lingua'],
   ['variant', 'variante', 'Variante'],
+  ['condition', 'condizione', 'Condizione'],
   ['qty', 'quantita', 'Quantità'],
   ['price', 'prezzo_trend', 'Prezzo trend'],
 ]);

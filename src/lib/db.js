@@ -8,6 +8,7 @@ import Dexie from 'dexie';
  * @typedef {{ id: string, name: string, format: 'standard', cards: { cardId: string, qty: number }[], cover?: string | null, createdAt: number, updatedAt: number }} Deck
  * @typedef {{ id: string, name: string, cards: { cardId: string, addedAt: number }[], createdAt: number, updatedAt: number }} Album
  * @typedef {{ date: string, totalValue: number }} PriceSnapshot
+ * @typedef {{ cardId: string, date: string, price: number }} CardPrice
  * @typedef {{ lang: string, cardId: string, data: any, fetchedAt: number }} CachedCard
  * @typedef {{ path: string, data: any, fetchedAt: number }} CachedResponse
  * @typedef {{ id?: number, changedAt: number }} SyncFlag
@@ -32,6 +33,8 @@ export class DeckflixDB extends Dexie {
     this.version(2).stores({ syncQueue: '++id, changedAt' });
     // v3: manual albums ("Raccolte").
     this.version(3).stores({ albums: 'id, updatedAt' });
+    // v4: daily Cardmarket price of owned and wished cards (TCGdex has no history).
+    this.version(4).stores({ cardPrices: '[cardId+date], cardId, date' });
     /** @type {Dexie.Table<CollectionEntry, string>} */
     this.collection = this.table('collection');
     /** @type {Dexie.Table<WishlistEntry, string>} */
@@ -40,6 +43,8 @@ export class DeckflixDB extends Dexie {
     this.decks = this.table('decks');
     /** @type {Dexie.Table<Album, string>} */
     this.albums = this.table('albums');
+    /** @type {Dexie.Table<CardPrice, [string, string]>} */
+    this.cardPrices = this.table('cardPrices');
     /** @type {Dexie.Table<PriceSnapshot, string>} */
     this.priceSnapshots = this.table('priceSnapshots');
     /** @type {Dexie.Table<CachedCard, [string, string]>} */
