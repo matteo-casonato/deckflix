@@ -381,7 +381,7 @@ Esporta CSV, invito ad accedere per chi usa l'app senza account, copia di sicure
 
 - **Cards (hub)**: riquadro grande “Tutte le mie carte” (dentro: Tutte · Recenti · Statistiche), poi Edizioni a tutta larghezza (solo l’elenco delle edizioni) e sotto Raccolte e Desideri affiancati. I link `?view=recent|stats` della Home e della scansione aprono “Tutte le mie carte”.
 
-- **Dettaglio deck semplificato**: i contatori Pokémon / Allenatori / Energie (con matita) aprono il Deck List Creator sulla sezione; niente tasto Modifica. “Condividi” e “Stampa” (il foglio torneo, senza riga per la firma). Al posto di “Mancanti ai desideri” la riga “Ti mancano N carte · circa X € · vedi quali”, che apre “Cosa ti manca”: elenco delle mancanti (più care prima) con codice, quantità e prezzo, ognuna apre Cardmarket; in fondo “Salva le N mancanti nei Desideri” con la spiegazione di dove ritrovarle.
+- **Dettaglio deck semplificato**: i contatori Pokémon / Allenatori / Energie (con matita) aprono il Deck List Creator sulla sezione; niente tasto Modifica. “Condividi” e “Stampa” (il foglio torneo, senza riga per la firma) stanno con “Ti mancano…” in un pannello sotto l’elenco delle carte: sono funzioni secondarie. Al posto di “Mancanti ai desideri” la riga “Ti mancano N carte · circa X € · vedi quali”, che apre “Cosa ti manca”: elenco delle mancanti (più care prima) con codice, quantità e prezzo, ognuna apre Cardmarket; in fondo “Salva le N mancanti nei Desideri” con la spiegazione di dove ritrovarle.
 
 ## 9. Fuori ambito
 

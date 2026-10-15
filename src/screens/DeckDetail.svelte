@@ -151,19 +151,6 @@
     {:else}
       <p class="muted">Controllo la collezione…</p>
     {/if}
-    {#if summary?.missing}
-      <button class="missing-row" onclick={() => (showMissing = true)}>
-        <span>
-          <strong>Ti mancano {summary.missing} {summary.missing === 1 ? 'carta' : 'carte'}</strong>
-          <span class="num">circa {euro(summary.missingCost)} su Cardmarket · vedi quali</span>
-        </span>
-        <Icon icon={ArrowRight01Icon} size={20} />
-      </button>
-    {/if}
-    <div class="actions">
-      <button class="btn" onclick={share} disabled={!$deck.cards.length}>Condividi</button>
-      <a class="btn" href={hrefFor('deckPrint', { id })} aria-disabled={!$deck.cards.length}>Stampa</a>
-    </div>
   </section>
 
   {#if rows?.length}
@@ -238,6 +225,24 @@
     {/if}
   {/if}
 
+  {#if $deck.cards.length}
+    <section class="more card" aria-label="Altre azioni">
+      {#if summary?.missing}
+        <button class="missing-row" onclick={() => (showMissing = true)}>
+          <span>
+            <strong>Ti mancano {summary.missing} {summary.missing === 1 ? 'carta' : 'carte'}</strong>
+            <span class="num">circa {euro(summary.missingCost)} su Cardmarket · vedi quali</span>
+          </span>
+          <Icon icon={ArrowRight01Icon} size={20} />
+        </button>
+      {/if}
+      <div class="actions">
+        <button class="btn" onclick={share} disabled={!$deck.cards.length}>Condividi</button>
+        <a class="btn" href={hrefFor('deckPrint', { id })} aria-disabled={!$deck.cards.length}>Stampa</a>
+      </div>
+    </section>
+  {/if}
+
   <div class="pad"><button class="btn danger-text" onclick={() => (confirmDelete = true)}>Elimina il deck</button></div>
 
   <Sheet open={showMissing} title="Cosa ti manca" onclose={() => (showMissing = false)}>
@@ -280,6 +285,16 @@
 {/if}
 
 <style>
+  .more {
+    margin: 24px 16px 0;
+    padding: 14px;
+    border-radius: var(--r-section);
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
   /* .pad .cover-hint: more specific than .muted (margin: 0), declared later. */
   .pad .cover-hint {
     margin: 10px 4px 0;
