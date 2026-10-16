@@ -264,15 +264,19 @@
 <h2 class="section">Il progetto</h2>
 <section class="card about">
   <p>
-    <strong>Deckflix è gratuita e lo resterà</strong>, finché resteranno gratuiti i servizi su cui si appoggia: TCGdex
-    per carte e prezzi, Google Drive per il backup, GitHub per la pubblicazione.
+    <strong>👋 Ciao, sono Matteo.</strong> Deckflix è la web app che ho creato per tenere in ordine le carte Pokémon di mio
+    figlio Alessio e per trovare più facilmente tornei vicini, tutto in un posto solo.
   </p>
   <p>
-    È nata per passione del gioco e del collezionismo. Niente pubblicità e nessun dato venduto: le tue carte restano
-    sul telefono e nel tuo Google Drive.
+    È gratuita e lo resterà finché lo saranno i servizi su cui si appoggia (TCGdex, Google Drive, GitHub). Niente
+    pubblicità, nessun dato venduto: le tue carte restano sul telefono e nel tuo Google Drive.
   </p>
   {#if ABOUT.contactEmail || ABOUT.donateUrl}
-    <p>Hai un’idea o hai trovato un errore? Scrivimi. E se l’app ti è utile, puoi offrirmi un caffè.</p>
+    <p>
+      Non pretende di essere perfetta: è nata dalla passione per il gioco e cresce con i suggerimenti, a partire da quelli
+      di mio figlio. Se trovi un errore o hai un’idea, scrivimi. E se ti è utile e vuoi supportare il progetto, puoi sempre
+      offrirmi un caffè.
+    </p>
     <div class="about-actions">
       {#if ABOUT.donateUrl}
         <a class="btn primary" href={ABOUT.donateUrl} target="_blank" rel="noopener noreferrer">☕ Supporta il progetto</a>
