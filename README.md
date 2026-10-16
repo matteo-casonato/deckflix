@@ -1,6 +1,6 @@
 # Deckflix
 
-App personale (PWA Android) per catalogare carte Pokémon e costruire deck. Specifica: [docs/SPEC.md](docs/SPEC.md).
+PWA per catalogare carte Pokémon (scansione, valore, edizioni, desideri), costruire deck, gestire i giocatori Play! Pokémon e trovare i tornei vicini. Si installa dal link https://matteo-casonato.github.io/deckflix/ (QR in Profilo › Condividi Deckflix). Specifica e note su ogni funzione: [docs/SPEC.md](docs/SPEC.md).
 
 ## Sviluppo
 
@@ -12,11 +12,17 @@ npm run dev:mock     # http://localhost:5174/deckflix/ con Google e Drive simula
 npm test
 npm run build
 npm run fixtures     # riscarica le risposte TCGdex usate da test e modalità offline
+node scripts/set-symbols.mjs        # rigenera l'abbinamento edizioni → simboli e loghi (nuovi set)
+node scripts/fetch-tournaments.mjs  # scarica i tornei d'Italia in dist/tournaments (lo fa il deploy ogni mattina)
 ```
 
 Per l'accesso Google vero in sviluppo: copia `.env.example` in `.env.local` e inserisci il Client ID.
 
-Struttura: `src/` app Svelte 5 (schermate in `src/screens`, logica pura in `src/lib/domain`, client TCGdex in `src/lib/api`), `lab/scan/` prototipo di scansione della Fase 0, `docs/` specifica e mockup.
+Struttura: `src/` app Svelte 5 (schermate in `src/screens`, logica pura in `src/lib/domain`, client TCGdex in `src/lib/api`, componenti in `src/lib/ui`), `scripts/` script di manutenzione, `lab/scan/` prototipo di scansione della Fase 0, `docs/` specifica e mockup.
+
+### Pubblicazione
+
+GitHub Actions (`.github/workflows/deploy.yml`) pubblica su GitHub Pages a ogni push su `main` e ogni mattina alle 4:15 UTC, quando aggiorna anche i tornei (`dist/tournaments/IT.json`). Variabili del repository: `VITE_GOOGLE_CLIENT_ID` (accesso Google) e, facoltativa, `TOURNAMENT_COUNTRIES` (paesi dei tornei, predefinito `IT`). Per il backup Drive degli amici il progetto Google va pubblicato "In produzione" (lo scope `drive.appdata` non è sensibile).
 
 ### Provare la fotocamera dal telefono (HTTPS locale)
 

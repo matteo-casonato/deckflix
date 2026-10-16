@@ -13,6 +13,7 @@
     GridViewIcon,
     LinkSquare02Icon,
     QrCodeIcon,
+    LicenseIcon,
     Settings02Icon,
     Location01Icon,
   } from '@hugeicons/core-free-icons';
@@ -26,6 +27,7 @@
   import { LANG_LABELS } from '../lib/domain/cards.js';
   import { hrefFor } from '../lib/domain/routes.js';
   import { ABOUT, USEFUL_LINKS } from '../lib/domain/links.js';
+  import { CREDITS } from '../lib/domain/credits.js';
   import { backupState, relativeTime } from '../lib/domain/backup.js';
   import { backupNow, isConfigured, restoreFromDrive, signOut } from '../lib/sync/sync.js';
 
@@ -87,6 +89,7 @@
   /** Address of the app (the published site; the dev server in development). */
   const APP_URL = `${location.origin}${import.meta.env.BASE_URL}`;
   let shareSheet = $state(false);
+  let licenseSheet = $state(false);
   const canShare = typeof navigator.share === 'function';
   function shareLink() {
     navigator.share({ title: 'Deckflix', text: 'Le tue carte Pokémon: collezione, valore, deck e tornei.', url: APP_URL }).catch(() => {});
@@ -195,7 +198,37 @@
     <span class="text"><strong>Condividi Deckflix</strong><span>Il codice QR per installarla su un altro telefono</span></span>
     <span class="chev"><Icon icon={ArrowRight01Icon} size={20} /></span>
   </button>
+  <button class="row" onclick={() => (licenseSheet = true)}>
+    <span class="ico"><Icon icon={LicenseIcon} /></span>
+    <span class="text"><strong>Licenza e crediti</strong><span>© 2026 Matteo Casonato · fonti di dati e immagini</span></span>
+    <span class="chev"><Icon icon={ArrowRight01Icon} size={20} /></span>
+  </button>
 </section>
+
+<Sheet open={licenseSheet} title="Licenza e crediti" onclose={() => (licenseSheet = false)}>
+  <div class="license">
+    <p>
+      <strong>© 2026 Matteo Casonato. Tutti i diritti riservati.</strong> L’app si usa liberamente e gratis, e puoi condividerne
+      il link. Il codice, la grafica e i testi di Deckflix non si possono copiare, modificare, ripubblicare né usare a fini
+      commerciali senza il permesso dell’autore.
+    </p>
+    <p class="muted">
+      Pokémon, i nomi delle carte e le relative immagini sono di The Pokémon Company, Nintendo, Creatures e Game Freak.
+      Deckflix è un progetto non ufficiale, non affiliato né approvato da loro.
+    </p>
+    <h3>Crediti</h3>
+    <ul class="credits">
+      {#each CREDITS as c (c.name)}
+        <li>
+          <a href={c.url} target="_blank" rel="noopener noreferrer"><strong>{c.name}</strong></a>
+          <span>{c.what}</span>
+          <span class="muted">{c.terms}</span>
+        </li>
+      {/each}
+    </ul>
+    <a class="btn" href="https://github.com/matteo-casonato/deckflix/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">Testo completo della licenza</a>
+  </div>
+</Sheet>
 
 <Sheet open={shareSheet} title="Condividi Deckflix" onclose={() => (shareSheet = false)}>
   <div class="share">
@@ -240,7 +273,6 @@
     Deckflix è un progetto personale, non affiliato a The Pokémon Company, Nintendo, Creatures o Game Freak.
     Pokémon e i nomi delle carte sono marchi dei rispettivi titolari; immagini e dati arrivano da TCGdex.
   </p>
-  <p class="legal">© 2026 Matteo Casonato. Tutti i diritti riservati: l’app si usa liberamente, il codice non si può copiare né riutilizzare senza permesso.</p>
 </section>
 
 <ConfirmDialog
@@ -628,5 +660,46 @@
 
   .share .btn {
     width: 100%;
+  }
+
+  .license {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    font-size: 14px;
+    line-height: 1.45;
+  }
+
+  .license p {
+    margin: 0;
+  }
+
+  .license .muted {
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  .license h3 {
+    margin: 6px 0 0;
+    font-size: 16px;
+  }
+
+  .credits {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .credits li {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  .credits a {
+    color: var(--accent);
   }
 </style>

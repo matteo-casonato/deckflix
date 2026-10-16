@@ -1,24 +1,27 @@
 # Deckflix — istruzioni per Claude Code
 
-App personale (PWA Android) per scansionare, catalogare e valutare carte del GCC Pokémon e costruire deck. Uso esclusivamente personale, nessuna pubblicazione sugli store, costo zero.
+App (PWA Android) per scansionare, catalogare e valutare carte del GCC Pokémon, costruire deck e trovare i tornei vicini. Nata per uso personale, si condivide gratis con gli amici tramite il link della PWA (QR in Profilo): niente store, niente APK, costo zero. Ogni funzione deve andare bene per qualsiasi utente e città, senza configurazioni personali su GitHub. Licenza "tutti i diritti riservati" (vedi `LICENSE`).
 
 La specifica completa è in `docs/SPEC.md`. I mockup di riferimento sono in `docs/mockups/` (HTML statico: leggi il markup per colori, spaziature e struttura; non si aprono correttamente nel browser perché manca il runtime del canvas).
 
 ## Vincoli non negoziabili
 
 - **Nessun backend, nessun database remoto, nessun costo.** Tutti i dati vivono sul dispositivo (IndexedDB). L'unico servizio esterno per i dati dell'utente è il backup automatico su **Google Drive** (cartella privata `appDataFolder`) dopo l'accesso con Google; l'app deve funzionare anche senza account.
+- L'unica automazione lato server è il workflow di GitHub Actions: oltre al deploy, ogni mattina pubblica accanto all'app i tornei di tutta Italia (`scripts/fetch-tournaments.mjs` → `dist/tournaments/IT.json`, dati pubblici di pokedata.ovh). La ricostruzione giornaliera deve dare lo stesso service worker (`BUILD_TIME` dall'ultimo commit, precache ordinato).
 - **Un solo utente per installazione**: niente profili multipli, niente PIN.
 - Il risultato della build è un sito **statico** pubblicato su GitHub Pages.
-- **Nessuna immagine o asset Pokémon nel repository.** Immagini e dati delle carte arrivano a runtime dall'API TCGdex. L'unica eccezione è l'SVG del caricamento, che fornirà l'utente (`public/loader.svg`; finché manca, usa un cerchio segnaposto).
+- **Nessuna immagine o asset Pokémon nel repository**, salvo le eccezioni scelte dall'utente: icona dell'app (Ultra Ball, `public/icons/`), loghi Play! Pokémon, League Cup e League Challenge (`public/brands/`), simboli di rarità (`public/rarities/`, da pokesymbols.com e Bulbapedia) e icone dei tipi (`public/types/`, da Bulbapedia). Immagini e dati delle carte arrivano a runtime da TCGdex; simboli e loghi delle edizioni a runtime da pokesymbols.com (abbinamento in `src/lib/domain/setSymbols.js`, generato da `scripts/set-symbols.mjs`), i loghi dei set in uscita da The Hobby Bin (`src/lib/domain/upcomingSets.js`, da aggiornare a mano). Bandiere: Flagpack (MIT) copiate in `public/flags/` per le lingue, le altre da jsDelivr.
 - Testi dell'interfaccia in **italiano**; codice, nomi di variabili e commenti in **inglese**.
+- Tieni aggiornati `docs/SPEC.md` (una nota per ogni funzione), `README.md` e questo file quando cambiano funzioni, struttura o vincoli.
 - Non aggiungere dipendenze oltre a quelle elencate sotto senza chiedermelo.
+- Rispondi all'utente sempre in italiano.
 
 ## Stack
 
 | Ambito | Scelta |
 |---|---|
 | UI | **Svelte 5** (runes: `$state`, `$derived`, `$effect`, `$props`), senza SvelteKit |
-| Componenti interattivi | **Bits UI** (headless, senza stile) per dialog, bottom sheet, tabs, menu, select, switch, toggle group. Lo stile è sempre nostro, con i token CSS |
+| Componenti interattivi | **Bits UI** (headless, senza stile) per dialog e bottom sheet (`Sheet`, `ConfirmDialog`). Lo stile è sempre nostro, con i token CSS. Niente `<select>` native: le scelte usano `Picker` (pannello con icone o bandiere) e `SetPicker` per le edizioni |
 | Build e sviluppo | **Vite** |
 | PWA | **vite-plugin-pwa** (Workbox): manifest, Service Worker, cache |
 | Database locale | **Dexie.js** (IndexedDB) con `liveQuery` per l'aggiornamento automatico dell'interfaccia |
@@ -55,8 +58,11 @@ src/
     ui/                   Nav, Icon, CardTile, Chip, Segmented, Sheet, Toast, Avatar
   screens/                un componente per schermata (Home.svelte, Collection.svelte, ...)
 tests/                    test Vitest delle funzioni in lib/domain
-.github/workflows/deploy.yml
+scripts/                  fetch-tournaments.mjs (tornei per il deploy), set-symbols.mjs (simboli edizioni)
+public/                   icons/, fonts/, flags/, brands/, rarities/, types/
+.github/workflows/deploy.yml   deploy a ogni push e ogni mattina (tornei), più keepalive
 docs/                     SPEC.md, mockups/
+LICENSE                   tutti i diritti riservati, note per le parti di terzi
 ```
 
 ## Convenzioni
