@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ageDivision, playerQrText, seasonYear, validPlayerId } from '../src/lib/domain/players.js';
+import { ageDivision, playerQrText, pointsUrl, seasonYear, validPlayerId } from '../src/lib/domain/players.js';
 import { qrMatrix } from '../src/lib/domain/qr.js';
 
 const alessio = { id: 'x', name: 'Alessio Casonato', playerId: '4359311', birthYear: 2015 };
@@ -42,5 +42,13 @@ describe('validPlayerId and qrMatrix', () => {
     expect(m.every((row) => row.length === 41)).toBe(true);
     // Finder pattern corners are dark.
     expect([m[0][0], m[0][40], m[40][0]]).toEqual([true, true, true]);
+  });
+});
+
+describe('pointsUrl', () => {
+  it('links the leaderboard of the current season, region and division', () => {
+    expect(pointsUrl(alessio, new Date(2026, 9, 16).getTime())).toBe(
+      'https://pokedata.ovh/2027/?game=TCG&region=Europe&division=Juniors&search=Alessio+Casonato',
+    );
   });
 });

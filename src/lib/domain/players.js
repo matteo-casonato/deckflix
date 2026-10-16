@@ -57,3 +57,17 @@ export function ageDivision(birthYear, now) {
 
 /** Player IDs are numbers (usually 7 digits). @param {string} id */
 export const validPlayerId = (id) => /^\d{4,10}$/.test(id.trim());
+
+/**
+ * Championship Points leaderboard of a player on pokedata.ovh (it reads the official Play!
+ * Pokémon leaderboards and keeps their history). The site can't be read by the app (no
+ * CORS), so this is a link, already filtered by season, region, division and name.
+ * @param {Player} p
+ * @param {number} now
+ * @param {string} [region] e.g. "Europe"
+ */
+export function pointsUrl(p, now, region = 'Europe') {
+  const division = { Junior: 'Juniors', Senior: 'Seniors', Master: 'Masters' }[ageDivision(p.birthYear, now) ?? 'Master'];
+  const params = new URLSearchParams({ game: 'TCG', region, division, search: p.name.trim() });
+  return `https://pokedata.ovh/${seasonYear(now)}/?${params}`;
+}

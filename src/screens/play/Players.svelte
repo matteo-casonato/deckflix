@@ -6,7 +6,7 @@
   import { settings, setSetting } from '../../lib/stores/settings.svelte.js';
   import { showToast } from '../../lib/stores/toast.svelte.js';
   import { avatarFromFile } from '../../lib/data/avatar.js';
-  import { QR_VALID_DAYS, ageDivision, playerQrText, validPlayerId } from '../../lib/domain/players.js';
+  import { QR_VALID_DAYS, ageDivision, playerQrText, pointsUrl, validPlayerId } from '../../lib/domain/players.js';
   import ConfirmDialog from '../../lib/ui/ConfirmDialog.svelte';
   import Icon from '../../lib/ui/Icon.svelte';
   import QrCode from '../../lib/ui/QrCode.svelte';
@@ -170,6 +170,7 @@
           label={`Codice QR del giocatore ${showing.name}, ID ${showing.playerId}`}
         />
       </div>
+      <a class="btn points" href={pointsUrl(showing, Date.now())} target="_blank" rel="noopener noreferrer">Punti campionato e classifica</a>
       <p class="note">
         Stessi dati del codice dell’app Pokémon (ID, nome, anno di nascita), valido {QR_VALID_DAYS} giorni e rinnovato
         ogni volta che lo apri. Alza la luminosità per la lettura.
@@ -390,6 +391,11 @@
     padding: 14px;
     border-radius: 24px;
     background: #fff;
+  }
+
+  .points {
+    margin-top: 10px;
+    width: 100%;
   }
 
   .qr-view .note {

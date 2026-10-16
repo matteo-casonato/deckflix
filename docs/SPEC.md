@@ -410,6 +410,8 @@ Esporta CSV, invito ad accedere per chi usa l'app senza account, copia di sicure
 - **Ripristino da Drive**: una sola voce nel Profilo apre la scelta tra ultimo backup e backup del giorno prima, poi la conferma.
 - **Logo**: icona dell'app scelta dall'utente (Ultra Ball, opzione 1 di `docs/icon-ideas/`, cartella locale non pubblicata); le icone PWA (192, 512, maskable su piatto #0F1115, Apple 180, favicon 32/48) sono generate da quel file. Eccezione decisa dall'utente alla regola “nessun asset Pokémon nel repository”.
 
+- **Punti campionato**: nel codice per la lega di ogni giocatore, “Punti campionato e classifica” apre pokedata.ovh già filtrato (stagione, Europa, divisione, nome). Pokedata legge le classifiche ufficiali Play! Pokémon dal proprio server e ne conserva la storia; il sito non permette ad altre app di leggere i dati (niente CORS), quindi l'app non può mostrare i punti al suo interno senza un server.
+
 ## 9. Fuori ambito
 
 Prezzi per lingua e per condizione, riconoscimento con IA a pagamento, notifiche push e backup a app chiusa (servirebbe un server), profili multipli sullo stesso telefono, backup su servizi diversi da Google Drive, pubblicazione sugli store, app nativa con Capacitor (piano B se la scansione web non basta).
