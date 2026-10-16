@@ -7,7 +7,7 @@
   import { CONDITIONS, DEFAULT_CONDITION_FACTORS } from '../lib/domain/collection.js';
   import { clearImageCache, imageCacheInfo } from '../lib/data/imageCache.js';
   import { currentPosition, geocodeCity } from '../lib/data/geocode.js';
-  import { nearbyEventsCalendar, nearbyEventsUrl } from '../lib/domain/players.js';
+  import { nearbyEventsData, nearbyEventsUrl } from '../lib/domain/players.js';
   import { clearTournaments, importTournaments, liveTournaments } from '../lib/data/tournaments.js';
   import { showToast } from '../lib/stores/toast.svelte.js';
   import { hrefFor } from '../lib/domain/routes.js';
@@ -227,19 +227,22 @@
     <h2 class="label">Elenco dei tornei nell’app</h2>
     <section class="explain card">
       <p>
-        Pokedata non lascia leggere i tornei ad altre app, ma il loro calendario si può scaricare come file e importare qui:
-        i prossimi tornei compaiono in Play!. Per aggiornarli, ripeti i due passaggi ogni tanto.
+        Pokedata non lascia leggere i tornei ad altre app, ma l’elenco si può salvare come file e importare qui: in Play! vedi i
+        prossimi tornei con città, distanza e tipo (Challenge, Cup, Prerelease). Per aggiornarli, ripeti i due passaggi ogni tanto.
       </p>
       {#if settings.homePlace}
-        <a class="btn" href={nearbyEventsCalendar(settings.homePlace, settings.eventRadius).https} target="_blank" rel="noopener noreferrer" download="tornei.ics">
-          1 · Scarica il file dei tornei
+        <a class="btn" href={nearbyEventsData(settings.homePlace, settings.eventRadius, Date.now())} target="_blank" rel="noopener noreferrer">
+          1 · Apri l’elenco dei tornei
         </a>
+        <p class="small-note">
+          Si apre una pagina di testo: in Chrome tocca ⋮ in alto e poi ⬇ per scaricarla (oppure Condividi › Salva su file).
+        </p>
       {:else}
         <p class="warn">Prima salva la città qui sopra.</p>
       {/if}
       <label class="btn primary file">
         2 · Importa il file scaricato
-        <input class="visually-hidden" type="file" accept=".ics,text/calendar" onchange={pickIcs} />
+        <input class="visually-hidden" type="file" accept=".json,.ics,.txt,application/json,text/calendar,text/plain" onchange={pickIcs} />
       </label>
       {#if $saved}
         <p class="num">
@@ -247,7 +250,7 @@
           <button class="link" onclick={() => clearTournaments()}>Rimuovi</button>
         </p>
       {/if}
-      <p class="small-note">Se il telefono apre il calendario invece di salvare il file, tieni premuto il pulsante 1 e scegli “Scarica link”.</p>
+
     </section>
 
     <p class="note">

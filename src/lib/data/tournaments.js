@@ -1,9 +1,9 @@
 // @ts-check
-// Tournaments imported from the .ics file the user downloaded from pokedata.ovh. Kept on this
+// Tournaments imported from the file the user downloaded from pokedata.ovh (JSON or .ics). Kept on this
 // phone only (a local setting, not in the backup): the file is easy to download again.
 import { liveQuery } from 'dexie';
 import { db } from '../db.js';
-import { parseIcs } from '../domain/ics.js';
+import { parseEventsJson, parseIcs } from '../domain/ics.js';
 
 const KEY = 'tournaments';
 
@@ -16,8 +16,15 @@ const KEY = 'tournaments';
  * @param {File} file
  */
 export async function importTournaments(file) {
-  const events = parseIcs(await file.text());
-  if (!events.length) throw new Error('Il file non contiene tornei: è il calendario scaricato da pokedata?');
+  const text = (await file.text()).trim();
+  // The JSON (city, position, type) or the .ics calendar (shop and date only).
+  let events = [];
+  try {
+    events = text.startsWith('[') ? parseEventsJson(text) : parseIcs(text);
+  } catch {
+    events = [];
+  }
+  if (!events.length) throw new Error('Il file non contiene tornei: è quello scaricato da pokedata?');
   await db.settings.put({ key: KEY, value: /** @type {TournamentsFile} */ ({ importedAt: Date.now(), events }) });
   return events.length;
 }

@@ -73,8 +73,13 @@
 
   /** @type {string} */
   let name = $state('');
+  let nameLoaded = false;
   $effect(() => {
-    if ($deck && !name) name = $deck.name;
+    // Once: an empty field while typing must stay empty, not snap back to the saved name.
+    if ($deck && !nameLoaded) {
+      name = $deck.name;
+      nameLoaded = true;
+    }
   });
 
   /** Basic Energy cards are exempt from the 4-copies rule. */

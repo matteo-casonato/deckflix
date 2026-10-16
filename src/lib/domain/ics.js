@@ -1,11 +1,88 @@
 // @ts-check
-// Tournaments from an iCalendar (.ics) file: the calendar feed of pokedata.ovh, downloaded by
-// the user and imported (the app can't fetch it: their server only answers their own pages).
+// Tournaments from a file downloaded from pokedata.ovh and imported by the user (the app can't
+// fetch it: their server only answers their own pages): their JSON (shop, city, position,
+// type) or their iCalendar feed (.ics, shop and date only).
 
 /**
- * @typedef {{ id: string, start: string, title: string, place: string, code: string | null }} Tournament
- * start: local date and time "YYYY-MM-DDTHH:MM"; code: Play! Pokémon event id (26-08-008035).
+ * @typedef {'cup' | 'challenge' | 'prerelease' | 'league'} TournamentType
+ * @typedef {{ id: string, start: string, title: string, place: string, code: string | null,
+ *   city?: string, type?: TournamentType, lat?: number, lng?: number }} Tournament
+ * start: local date and time "YYYY-MM-DDTHH:MM"; place: the shop; code: Play! Pokémon event id
+ * (26-08-008035); city, type and position come with the JSON file, not with the .ics.
  */
+
+/** Italian names of the tournament types. */
+export const TOURNAMENT_TYPES = /** @type {const} */ ([
+  ['challenge', 'Challenge'],
+  ['cup', 'Cup'],
+  ['prerelease', 'Prerelease'],
+  ['league', 'Lega e amichevoli'],
+]);
+
+/**
+ * Type of a tournament from pokedata's type ("cups", "challenges", "prerelease", "friendly")
+ * or, for the .ics file that has no type, from its title.
+ * @param {string | undefined} raw
+ * @param {string} title
+ * @returns {TournamentType}
+ */
+export function tournamentType(raw, title) {
+  const t = `${raw ?? ''} ${title}`.toLowerCase();
+  if (/pre-?release|prerelease/.test(t)) return 'prerelease';
+  if (/challenge/.test(t)) return 'challenge';
+  if (/\bcups?\b|league cup/.test(t)) return 'cup';
+  return 'league';
+}
+
+/**
+ * Events of pokedata's JSON (the data behind their map: shop, city, position, type).
+ * @param {string} text
+ * @returns {Tournament[]}
+ */
+export function parseEventsJson(text) {
+  const rows = JSON.parse(text);
+  if (!Array.isArray(rows)) return [];
+  return rows
+    .filter((r) => r && typeof r.when === 'string' && (!r.game || r.game === 'tcg'))
+    .map((r) => ({
+      id: String(r.id ?? `${r.when}|${r.shopName}`),
+      start: r.when.replace(' ', 'T').slice(0, 16),
+      title: String(r.title ?? '').trim(),
+      place: String(r.shopName ?? '').trim(),
+      code: /^\d{2}-\d{2}-\d{6}$/.test(r.pokemon_url ?? '') ? r.pokemon_url : null,
+      city: r.city ? String(r.city) : undefined,
+      type: tournamentType(r.type, String(r.title ?? '')),
+      lat: typeof r.lat === 'number' ? r.lat : undefined,
+      lng: typeof r.lng === 'number' ? r.lng : undefined,
+    }))
+    .sort((a, b) => a.start.localeCompare(b.start) || a.place.localeCompare(b.place));
+}
+
+/**
+ * Straight-line distance in km (haversine), enough to tell San Donà from Padova.
+ * @param {{ lat: number, lng: number }} a
+ * @param {{ lat: number, lng: number }} b
+ */
+export function distanceKm(a, b) {
+  const rad = (/** @type {number} */ d) => (d * Math.PI) / 180;
+  const dLat = rad(b.lat - a.lat);
+  const dLng = rad(b.lng - a.lng);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return 6371 * 2 * Math.asin(Math.sqrt(h));
+}
+
+/**
+ * Tournaments in the next `days` days (from today, local date).
+ * @param {Tournament[]} list
+ * @param {number} now
+ * @param {number} days
+ */
+export function within(list, now, days) {
+  const end = new Date(now);
+  end.setDate(end.getDate() + days);
+  const last = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, '0')}-${String(end.getDate()).padStart(2, '0')}`;
+  return upcoming(list, now).filter((t) => t.start.slice(0, 10) <= last);
+}
 
 /** Undoes iCalendar text escaping. @param {string} v */
 const unescape = (v) => v.replace(/\\n/gi, '\n').replace(/\\([,;\\])/g, '$1').trim();
@@ -37,12 +114,14 @@ export function parseIcs(text) {
       const start = parseDate(ev.DTSTART ?? '');
       if (start) {
         const code = `${ev.DESCRIPTION ?? ''} ${ev.URL ?? ''}`.match(/\b\d{2}-\d{2}-\d{6}\b/)?.[0] ?? null;
+        const title = unescape(ev.SUMMARY ?? '');
         out.push({
           id: ev.UID || `${start}|${ev.LOCATION ?? ''}`,
           start,
-          title: unescape(ev.SUMMARY ?? ''),
+          title,
           place: unescape(ev.LOCATION ?? ''),
           code,
+          type: tournamentType(undefined, title),
         });
       }
       ev = null;

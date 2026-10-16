@@ -109,7 +109,7 @@
   let showMissing = $state(false);
   const missingRows = $derived((rows ?? []).filter((r) => r.missing > 0).sort((a, b) => (b.price ?? 0) * b.missing - (a.price ?? 0) * a.missing));
 
-  /** Section counters open the editor on that section. */
+  /** Section counters. */
   const SECTION_LINKS = /** @type {const} */ ([
     ['pokemon', 'Pokémon', null],
     ['trainer', 'Allenatori', 'Trainer'],
@@ -125,16 +125,20 @@
   <p class="pad muted">Questo deck non esiste più.</p>
 {:else}
   <section class="head card">
-    <h1>{$deck.name}</h1>
+    <div class="title-row">
+      <h1>{$deck.name}</h1>
+      <a class="edit" href={hrefFor('deckEdit', { id })} aria-label="Modifica il deck">
+        <Icon icon={PencilEdit02Icon} size={20} />
+      </a>
+    </div>
     {#if summary}
       <p class="muted num">{summary.total} carte · valore deck {euro(summary.value)}</p>
       <div class="split num">
-        {#each SECTION_LINKS as [key, label, tab] (key)}
-          <a href={hrefFor('deckEdit', { id }, { tab })} aria-label={`Modifica ${label}: ${summary[key]} carte`}>
-            <span class="pen" aria-hidden="true"><Icon icon={PencilEdit02Icon} size={16} /></span>
+        {#each SECTION_LINKS as [key, label] (key)}
+          <span class="count-box">
             <strong>{summary[key]}</strong>
             {label}
-          </a>
+          </span>
         {/each}
       </div>
       <div class="progress">
@@ -219,7 +223,7 @@
       {/if}
     {/each}
     {#if !rows.length}
-      <p class="pad muted">Il deck è vuoto: tocca Pokémon, Allenatori o Energie qui sopra per aggiungere carte.</p>
+      <p class="pad muted">Il deck è vuoto: tocca la matita accanto al nome per aggiungere carte.</p>
     {:else}
       <section class="more card" aria-label="Altre azioni">
         {#if summary?.missing}
@@ -282,6 +286,25 @@
 {/if}
 
 <style>
+  .title-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .edit {
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+    border-radius: var(--r-card);
+    background: var(--text);
+    color: var(--on-accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
   .more {
     margin: 24px 16px 0;
     padding: 14px;
@@ -369,7 +392,7 @@
     gap: 8px;
   }
 
-  .split a {
+  .split .count-box {
     position: relative;
     min-height: 64px;
     padding: 10px;
@@ -382,13 +405,6 @@
     flex-direction: column;
   }
 
-  .pen {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    color: var(--muted);
-    display: flex;
-  }
 
   .missing-row {
     width: 100%;

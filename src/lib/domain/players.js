@@ -115,3 +115,18 @@ export function nearbyEventsCalendar(place, radiusKm) {
 /** Official Play! Pokémon event locator (TCG, within `radiusKm`), as a fallback. @param {number} radiusKm */
 export const officialEventsUrl = (radiusKm) =>
   `https://events.pokemon.com/EventLocator/?locale=it-IT&range=${radiusKm}&iskm=true&filters=tcg`;
+
+/**
+ * The data behind pokedata's map (JSON: shop, city, position, type, code), from today on,
+ * opened in the browser and saved as a file to import (the app can't read it directly).
+ * @param {HomePlace} place
+ * @param {number} radiusKm
+ * @param {number} now
+ */
+export function nearbyEventsData(place, radiusKm, now) {
+  const d = new Date(now);
+  const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const { spatialMode, ...radius } = radiusParams(place, radiusKm);
+  void spatialMode;
+  return `https://pokedata.ovh/events2/events.php?${new URLSearchParams({ includePast: 'false', ...radius, startDate: today, vgTypes: '', goTypes: '' })}`;
+}

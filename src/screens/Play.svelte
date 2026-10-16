@@ -8,7 +8,7 @@
   import { cardImage, getCard } from '../lib/api/tcgdex.js';
   import { ageDivision } from '../lib/domain/players.js';
   import { liveTournaments } from '../lib/data/tournaments.js';
-  import { upcoming } from '../lib/domain/ics.js';
+  import { distanceKm, upcoming } from '../lib/domain/ics.js';
   import { hrefFor } from '../lib/domain/routes.js';
   import BackHeader from '../lib/ui/BackHeader.svelte';
   import CardStack from '../lib/ui/CardStack.svelte';
@@ -36,16 +36,26 @@
   });
 
   const tournaments = liveTournaments();
-  const next = $derived($tournaments ? upcoming($tournaments.events, Date.now())[0] : null);
-  const nextLabel = $derived.by(() => {
-    if (!next) return null;
-    const d = new Date(`${next.start.slice(0, 10)}T12:00`);
+  // Tournaments tile: the next three, Challenge/Cup/Prerelease first among those of the next
+  // two weeks (they need booking), then the others.
+  const nextThree = $derived.by(() => {
+    if (!$tournaments) return [];
+    const list = upcoming($tournaments.events, Date.now());
+    const big = list.filter((t) => t.type && t.type !== 'league').slice(0, 3);
+    return (big.length >= 3 ? big : [...big, ...list.filter((t) => !big.includes(t))].slice(0, 3)).sort((a, b) => a.start.localeCompare(b.start));
+  });
+  /** @param {string} start */
+  function dayText(start) {
+    const d = new Date(`${start.slice(0, 10)}T12:00`);
     const t = new Date();
     t.setHours(12, 0, 0, 0);
     const diff = Math.round((d.getTime() - t.getTime()) / 86_400_000);
     const day = diff === 0 ? 'Oggi' : diff === 1 ? 'Domani' : d.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' });
-    return `${day} ${next.start.slice(11, 16)} · ${next.title || next.place}`;
-  });
+    return `${day} ${start.slice(11, 16)}`;
+  }
+  /** @param {import('../lib/domain/ics.js').Tournament} t */
+  const km = (t) => (settings.homePlace && t.lat != null && t.lng != null ? Math.round(distanceKm(settings.homePlace, { lat: t.lat, lng: t.lng })) : null);
+  const TYPE_LABEL = /** @type {Record<string, string>} */ ({ challenge: 'Challenge', cup: 'Cup', prerelease: 'Prerelease', league: 'Lega' });
 
   const initials = (/** @type {string} */ name) =>
     name
@@ -70,7 +80,7 @@
       <CardStack images={deckCovers} width={70} />
     </a>
 
-    <a class="tile card" href={hrefFor('deck', {}, { tab: 'players' })}>
+    <a class="tile card row" href={hrefFor('deck', {}, { tab: 'players' })}>
       <span class="txt">
         <strong>Giocatori</strong>
         <span class="num">
@@ -88,12 +98,26 @@
       </span>
     </a>
 
-    <a class="tile card" href={hrefFor('deck', {}, { tab: 'events' })}>
+    <a class="tile card events" href={hrefFor('deck', {}, { tab: 'events' })}>
       <span class="txt">
         <strong>Tornei</strong>
-        <span class="num">{settings.homePlace ? `${settings.homePlace.name} · ${settings.eventRadius} km` : 'Imposta la tua città'}</span>
+        <span class="num">{settings.homePlace ? `${settings.homePlace.name} · entro ${settings.eventRadius} km` : 'Imposta la tua città'}</span>
       </span>
-      <span class="next" class:none={!nextLabel}>{nextLabel ?? (settings.homePlace ? 'Mappa e calendario dei tornei' : 'Trova i tornei della tua zona')}</span>
+      {#if nextThree.length}
+        <ul class="preview">
+          {#each nextThree as t (t.id)}
+            <li>
+              <span class="type {t.type}">{TYPE_LABEL[t.type ?? 'league']}</span>
+              <span class="pv-txt">
+                <strong>{t.title || t.place}</strong>
+                <span class="num">{dayText(t.start)}{t.city ? ` · ${t.city}` : ''}{km(t) != null ? ` · ${km(t)} km` : ''}</span>
+              </span>
+            </li>
+          {/each}
+        </ul>
+      {:else}
+        <span class="next none">{settings.homePlace ? 'Importa i tornei per vederli qui, oppure apri la mappa' : 'Trova i tornei della tua zona'}</span>
+      {/if}
     </a>
   </nav>
 {:else if section === 'decks'}
@@ -119,7 +143,8 @@
   .hub {
     padding: 14px 16px 24px;
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    display: flex;
+    flex-direction: column;
     gap: 12px;
   }
 
@@ -139,11 +164,80 @@
     text-decoration: none;
   }
 
-  .tile.big {
-    grid-column: 1 / -1;
-    min-height: 180px;
+  .tile.big,
+  .tile.row {
+    min-height: 0;
     flex-direction: row;
     align-items: center;
+  }
+
+  .tile.big {
+    min-height: 170px;
+  }
+
+  .tile.events {
+    min-height: 0;
+  }
+
+  .preview {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .preview li {
+    padding: 10px 12px;
+    border-radius: 16px;
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .pv-txt {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .pv-txt strong {
+    font-size: 14px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .pv-txt span {
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .type {
+    flex-shrink: 0;
+    padding: 2px 8px;
+    border-radius: 8px;
+    font-size: 10px;
+    font-weight: 800;
+    background: var(--surface-2);
+    color: var(--muted);
+  }
+
+  .type.challenge {
+    background: color-mix(in srgb, var(--accent) 18%, var(--surface));
+    color: var(--accent);
+  }
+
+  .type.cup {
+    background: color-mix(in srgb, var(--danger) 18%, var(--surface));
+    color: var(--danger);
+  }
+
+  .type.prerelease {
+    background: color-mix(in srgb, var(--success) 18%, var(--surface));
+    color: var(--success);
   }
 
   .txt {

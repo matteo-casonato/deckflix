@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { eventPageUrl, parseIcs, upcoming } from '../src/lib/domain/ics.js';
+import { distanceKm, eventPageUrl, parseEventsJson, parseIcs, tournamentType, upcoming, within } from '../src/lib/domain/ics.js';
 
 const ICS = [
   'BEGIN:VCALENDAR',
@@ -49,5 +49,31 @@ describe('parseIcs', () => {
 describe('eventPageUrl', () => {
   it('links the official event page', () => {
     expect(eventPageUrl('26-08-008035')).toBe('https://www.pokemon.com/us/play-pokemon/pokemon-events/26-08-008035/');
+  });
+});
+
+describe('pokedata JSON', () => {
+  const json = JSON.stringify([
+    { id: 'x', title: 'Collector House Portogruaro - Challenge Pokemon Ottobre', when: '2026-10-17 15:30:00', shopName: 'COLLECTOR HOUSE PORTOGRUARO', city: 'Portogruaro', lat: 45.7752, lng: 12.8369, pokemon_url: '26-10-012590', game: 'tcg', type: 'challenges' },
+    { id: 'y', title: '', when: '2026-10-16 19:00:00', shopName: 'LUDI&CO', city: 'San Dona di Piave', lat: 45.6298, lng: 12.5694, pokemon_url: '', game: 'tcg', type: 'friendly' },
+    { id: 'z', title: 'VG', when: '2026-10-16 10:00:00', shopName: 'X', game: 'vg', type: 'cups' },
+  ]);
+  it('reads shop, city, position, type and code; keeps only the card game', () => {
+    expect(parseEventsJson(json).map((t) => [t.start, t.city, t.type, t.code])).toEqual([
+      ['2026-10-16T19:00', 'San Dona di Piave', 'league', null],
+      ['2026-10-17T15:30', 'Portogruaro', 'challenge', '26-10-012590'],
+    ]);
+  });
+  it('guesses the type from the title for the .ics file', () => {
+    expect(tournamentType(undefined, 'TCG LEAGUE CHALLENGE - IL MONDO DI MIKY')).toBe('challenge');
+    expect(tournamentType(undefined, 'Pokémon League Cup Novembre')).toBe('cup');
+    expect(tournamentType(undefined, 'Pre-release Megaevoluzione')).toBe('prerelease');
+    expect(tournamentType(undefined, '')).toBe('league');
+  });
+  it('measures distances and keeps the next two weeks', () => {
+    expect(Math.round(distanceKm({ lat: 45.6297, lng: 12.5682 }, { lat: 45.4064, lng: 11.8768 }))).toBe(59); // San Donà–Padova
+    const list = parseEventsJson(json);
+    expect(within(list, new Date(2026, 9, 16, 8).getTime(), 0).map((t) => t.id)).toEqual(['y']);
+    expect(within(list, new Date(2026, 9, 16, 8).getTime(), 14)).toHaveLength(2);
   });
 });
