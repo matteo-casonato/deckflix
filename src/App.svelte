@@ -37,6 +37,7 @@
   import Restore from './screens/Restore.svelte';
   import Choice from './screens/Choice.svelte';
   import Setup from './screens/Setup.svelte';
+  import GroupPhoto from './screens/scan/GroupPhoto.svelte';
 
   const settingsLoaded = loadSettings();
 
@@ -129,6 +130,8 @@
     <Links />
   {:else if route.name === 'csv'}
     <Csv query={route.query} />
+  {:else if route.name === 'scanPhoto'}
+    <GroupPhoto />
   {:else if route.name === 'scan'}
     <Scan query={route.query} />
   {:else if route.name === 'card'}

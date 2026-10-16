@@ -2,7 +2,7 @@
 // Hash routes of the app and a pure matcher, so routing can be unit tested.
 
 /**
- * @typedef {'home' | 'collection' | 'search' | 'quick' | 'scan' | 'deck' | 'deckImport' | 'deckDetail' | 'deckEdit' | 'profile' | 'csv' | 'links' | 'settings' | 'play' | 'deckPrint' | 'album' | 'set' | 'card' | 'notFound'} RouteName
+ * @typedef {'home' | 'collection' | 'search' | 'quick' | 'scan' | 'scanPhoto' | 'deck' | 'deckImport' | 'deckDetail' | 'deckEdit' | 'profile' | 'csv' | 'links' | 'settings' | 'play' | 'deckPrint' | 'album' | 'set' | 'card' | 'notFound'} RouteName
  * @typedef {{ name: RouteName, params: Record<string, string>, query: Record<string, string> }} Route
  */
 
@@ -13,6 +13,7 @@ export const ROUTES = /** @type {const} */ ([
   ['search', '/search'],
   ['quick', '/quick'],
   ['scan', '/scan'],
+  ['scanPhoto', '/scan/photo'],
   ['deck', '/deck'],
   ['deckImport', '/deck/import'],
   ['deckDetail', '/deck/:id'],
@@ -29,7 +30,7 @@ export const ROUTES = /** @type {const} */ ([
 ]);
 
 /** Routes shown full screen, without the navigation bar. */
-export const FULL_SCREEN = new Set(['scan']);
+export const FULL_SCREEN = new Set(['scan', 'scanPhoto']);
 
 /** Navigation bar item highlighted for each route. */
 export const NAV_SECTION = /** @type {Record<RouteName, string>} */ ({
@@ -41,6 +42,7 @@ export const NAV_SECTION = /** @type {Record<RouteName, string>} */ ({
   album: 'collection',
   card: 'collection',
   scan: 'scan',
+  scanPhoto: 'scan',
   deck: 'deck',
   deckImport: 'deck',
   deckDetail: 'deck',

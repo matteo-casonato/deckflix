@@ -9,6 +9,7 @@
   import ConfirmDialog from '../lib/ui/ConfirmDialog.svelte';
   import ResultSheet from './scan/ResultSheet.svelte';
   import BurstReview from './scan/BurstReview.svelte';
+  import { saveItems } from './scan/saveItems.js';
   import NumberSheet from './scan/NumberSheet.svelte';
   import { settings } from '../lib/stores/settings.svelte.js';
   import { CameraError, closeCamera, createMotionMeter, grabCard, openCamera, setTorch, setZoom } from '../lib/scan/camera.js';
@@ -273,20 +274,10 @@
   });
 
   async function saveAll() {
-    const saved = [];
-    for (const it of items) {
-      const c = it.rec.candidates[it.chosen];
-      if (!c) continue;
-      const copy = { cardId: c.id, lang: it.lang, variant: it.variant };
-      saved.push({ key: collectionKey(copy.cardId, copy.lang, copy.variant), before: await changeCopies(copy, 1) });
-    }
-    const n = saved.length;
+    const list = items;
     items = [];
     reviewing = false;
-    showToast(`${n} ${n === 1 ? 'carta salvata' : 'carte salvate'} nella collezione`, async () => {
-      for (const s of saved.reverse()) await restoreEntry(s.key, s.before);
-    });
-    navigate(hrefFor('collection', {}, { tab: 'all', view: 'recent' }));
+    await saveItems(list);
   }
 
   function exit() {
@@ -309,6 +300,7 @@
         <button role="tab" aria-selected={mode === 'burst'} class:on={mode === 'burst'} onclick={() => setMode('burst')}>
           Raffica{items.length ? ` · ${items.length}` : ''}
         </button>
+        <button role="tab" aria-selected="false" onclick={() => replace(hrefFor('scanPhoto'))}>Foto</button>
       </div>
       {#if cam?.torch}
         <button

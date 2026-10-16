@@ -12,9 +12,10 @@
   /**
    * @typedef {{ id: number, rec: import('../../lib/scan/pipeline.js').Recognition, chosen: number, lang: string,
    *   variant: string, options: import('../../lib/domain/variants.js').VariantOption[] }} Item
-   * @type {{ items: Item[], onsave: () => void, onback: () => void, onremove: (id: number) => void }}
+   * @type {{ items: Item[], onsave: () => void, onback: () => void, onremove: (id: number) => void,
+   *   backLabel?: string, children?: import('svelte').Snippet }}
    */
-  let { items, onsave, onback, onremove } = $props();
+  let { items, onsave, onback, onremove, backLabel = 'Torna alla scansione', children } = $props();
 
   /** @param {Item} item @param {number} index */
   async function pick(item, index) {
@@ -29,12 +30,14 @@
 
 <div class="review">
   <header>
-    <button class="btn" onclick={onback}>Torna alla scansione</button>
+    <button class="btn" onclick={onback}>{backLabel}</button>
   </header>
   <h1>Rivedi {items.length} {items.length === 1 ? 'carta' : 'carte'}</h1>
   {#if uncertain}
     <p class="muted">{uncertain === 1 ? '1 carta da verificare' : `${uncertain} carte da verificare`}: controlla che siano quelle giuste.</p>
   {/if}
+
+  {#if children}{@render children()}{/if}
 
   <ul>
     {#each items as item (item.id)}
