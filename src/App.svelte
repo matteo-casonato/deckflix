@@ -17,7 +17,7 @@
   import Search from './screens/Search.svelte';
   import QuickAdd from './screens/QuickAdd.svelte';
   import SetScreen from './screens/Set.svelte';
-  import Decks from './screens/Decks.svelte';
+  import Play from './screens/Play.svelte';
   import DeckDetail from './screens/DeckDetail.svelte';
   import DeckBuilder from './screens/DeckBuilder.svelte';
   import DeckImport from './screens/DeckImport.svelte';
@@ -76,7 +76,7 @@
   {:else if route.name === 'quick'}
     <QuickAdd query={route.query} />
   {:else if route.name === 'deck'}
-    <Decks />
+    <Play query={route.query} />
   {:else if route.name === 'deckImport'}
     <DeckImport />
   {:else if route.name === 'deckDetail'}
@@ -88,7 +88,7 @@
   {:else if route.name === 'album'}
     {#key route.params.id}<Album id={route.params.id} />{/key}
   {:else if route.name === 'play'}
-    <Decks />
+    <Play query={{ tab: 'players' }} />
   {:else if route.name === 'deckPrint'}
     {#key route.params.id}<DeckPrint id={route.params.id} />{/key}
   {:else if route.name === 'settings'}

@@ -40,7 +40,7 @@
     <span class="tag">Deck</span>
     <strong class="title">Crea il tuo primo deck</strong>
     <span class="sub">Copia una lista su Limitless con “Copy to Clipboard” e incollala, oppure parti da zero.</span>
-    <a class="btn light" href={hrefFor('deck')}>Vai ai deck</a>
+    <a class="btn light" href={hrefFor('deck', {}, { tab: 'decks' })}>Vai ai deck</a>
   </section>
 {:else if $deck}
   <section class="hero card">

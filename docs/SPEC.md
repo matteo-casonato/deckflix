@@ -416,6 +416,8 @@ Esporta CSV, invito ad accedere per chi usa l'app senza account, copia di sicure
 
 - **Tornei nell'app dal file .ics**: il feed di pokedata non si può leggere dall'app (CORS), ma l'utente può scaricarlo (“Scarica il file dei tornei”) e importarlo (“Importa il file scaricato”) nella pagina Tornei vicino a te. Il file viene letto sul telefono (`src/lib/domain/ics.js`, testato: righe ripiegate, ore a 4 cifre, codici evento), salvato solo in locale (preferenza `tournaments`, fuori dal backup) e mostrato in Play! come elenco dei prossimi tornei per giorno (Oggi, Domani, date), con link alla pagina ufficiale dell'evento quando c'è il codice; dopo 7 giorni suggerisce di aggiornarlo. Verificato con il feed reale di Treviso (407 eventi, 168 in arrivo).
 
+- **Play! a pannelli come Cards**: pagina principale con tre riquadri, Deck (le copertine degli ultimi due deck), Giocatori (foto o iniziali e divisione) e Tornei (città, raggio e il prossimo torneo importato); ogni riquadro apre la sua sezione (`#/deck?tab=decks|players|events`) con la freccia per tornare. I collegamenti da deck, importazione, stampa, Home e Profilo portano alla sezione giusta.
+
 ## 9. Fuori ambito
 
 Prezzi per lingua e per condizione, riconoscimento con IA a pagamento, notifiche push e backup a app chiusa (servirebbe un server), profili multipli sullo stesso telefono, backup su servizi diversi da Google Drive, pubblicazione sugli store, app nativa con Capacitor (piano B se la scansione web non basta).

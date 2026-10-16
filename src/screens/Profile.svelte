@@ -125,7 +125,7 @@
     <span class="text"><strong>Esporta CSV</strong><span>Collezione, desideri o un deck</span></span>
     <span class="chev"><Icon icon={ArrowRight01Icon} size={20} /></span>
   </a>
-  <a class="row" href={hrefFor('deck')}>
+  <a class="row" href={hrefFor('deck', {}, { tab: 'decks' })}>
     <span class="ico"><Icon icon={FileImportIcon} /></span>
     <span class="text"><strong>Liste deck</strong><span>Importa una lista o condividi quella di un deck</span></span>
     <span class="chev"><Icon icon={ArrowRight01Icon} size={20} /></span>
@@ -139,11 +139,11 @@
 
 <h2 class="section">Play!</h2>
 <section class="card list">
-  <a class="row" href={hrefFor('deck')}>
+  <a class="row" href={hrefFor('deck', {}, { tab: 'players' })}>
     <span class="ico"><Icon icon={QrCodeIcon} /></span>
     <span class="text">
       <strong>ID giocatori</strong>
-      <span>{settings.players.length ? `${settings.players.map((p) => p.name.split(' ')[0]).join(', ')} · ora nella sezione Play!` : 'Nella sezione Play! della barra in basso'}</span>
+      <span>{settings.players.length ? `${settings.players.map((p) => p.name.split(' ')[0]).join(', ')} · in Play! › Giocatori` : 'In Play! › Giocatori'}</span>
     </span>
     <span class="chev"><Icon icon={ArrowRight01Icon} size={20} /></span>
   </a>

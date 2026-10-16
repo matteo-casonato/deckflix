@@ -117,7 +117,7 @@
   ]);
 </script>
 
-<BackHeader title="Deck" fallback={hrefFor('deck')} />
+<BackHeader title="Deck" fallback={hrefFor('deck', {}, { tab: 'decks' })} />
 
 {#if $deck === undefined}
   <p class="pad muted">Carico…</p>
@@ -275,7 +275,7 @@
     danger
     onconfirm={async () => {
       await deleteDeck(id);
-      navigate(hrefFor('deck'));
+      navigate(hrefFor('deck', {}, { tab: 'decks' }));
     }}
     onclose={() => (confirmDelete = false)}
   />

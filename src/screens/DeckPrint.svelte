@@ -73,7 +73,7 @@
         </select>
       </label>
     {:else}
-      <p class="muted">Aggiungi il tuo ID giocatore in <a href={hrefFor('deck')}>Play!</a> per compilare il foglio da solo.</p>
+      <p class="muted">Aggiungi il tuo ID giocatore in <a href={hrefFor('deck', {}, { tab: 'players' })}>Play! › Giocatori</a> per compilare il foglio da solo.</p>
     {/if}
     <div class="actions">
       <button class="btn primary" disabled={!sheet} onclick={() => window.print()}>Stampa o salva PDF</button>

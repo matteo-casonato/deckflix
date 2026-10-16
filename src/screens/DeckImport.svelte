@@ -54,7 +54,7 @@
   }
 </script>
 
-<BackHeader title="Importa lista" big fallback={hrefFor('deck')} />
+<BackHeader title="Importa lista" big fallback={hrefFor('deck', {}, { tab: 'decks' })} />
 
 <div class="pad">
   <p class="muted">Su Limitless apri un mazzo e tocca “Copy to Clipboard”, poi qui “Incolla”. Va bene anche una lista esportata da Pokémon TCG Live: quantità, nome inglese, sigla e numero.</p>
