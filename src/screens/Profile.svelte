@@ -13,6 +13,8 @@
     GridViewIcon,
     LinkSquare02Icon,
     QrCodeIcon,
+    LockIcon,
+    LegalDocument01Icon,
     ScanIcon,
     UserAccountIcon,
     LicenseIcon,
@@ -220,6 +222,16 @@
     <span class="text"><strong>Condividi Deckflix</strong><span>Il codice QR per installarla su un altro telefono</span></span>
     <span class="chev"><Icon icon={ArrowRight01Icon} size={20} /></span>
   </button>
+  <a class="row" href={hrefFor('settings', { key: 'privacy' })}>
+    <span class="ico"><Icon icon={LockIcon} /></span>
+    <span class="text"><strong>Privacy</strong><span>Quali dati usa l’app e come cancellarli</span></span>
+    <span class="chev"><Icon icon={ArrowRight01Icon} size={20} /></span>
+  </a>
+  <a class="row" href={hrefFor('settings', { key: 'termini' })}>
+    <span class="ico"><Icon icon={LegalDocument01Icon} /></span>
+    <span class="text"><strong>Termini di servizio</strong><span>Uso dell’app, prezzi indicativi, garanzie</span></span>
+    <span class="chev"><Icon icon={ArrowRight01Icon} size={20} /></span>
+  </a>
   <button class="row" onclick={() => (licenseSheet = true)}>
     <span class="ico"><Icon icon={LicenseIcon} /></span>
     <span class="text"><strong>Licenza e crediti</strong><span>© 2026 Matteo e Alessio Casonato · fonti</span></span>
@@ -250,8 +262,8 @@
     </ul>
     <a class="btn" href="https://github.com/matteo-casonato/deckflix/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">Testo completo della licenza</a>
     <div class="legal-links">
-      <a href={`${import.meta.env.BASE_URL}privacy.html`} target="_blank" rel="noopener">Informativa sulla privacy</a>
-      <a href={`${import.meta.env.BASE_URL}termini.html`} target="_blank" rel="noopener">Termini di servizio</a>
+      <a href={hrefFor('settings', { key: 'privacy' })} onclick={() => (licenseSheet = false)}>Informativa sulla privacy</a>
+      <a href={hrefFor('settings', { key: 'termini' })} onclick={() => (licenseSheet = false)}>Termini di servizio</a>
     </div>
   </div>
 </Sheet>

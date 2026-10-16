@@ -12,6 +12,7 @@
   import { clearTournaments, liveTournaments } from '../lib/data/tournaments.js';
   import TournamentImport from './play/TournamentImport.svelte';
   import OcrTip from '../lib/ui/OcrTip.svelte';
+  import LegalText from './LegalText.svelte';
   import { hasGoogleOcr } from '../lib/scan/ocr.js';
   import { hrefFor } from '../lib/domain/routes.js';
   import BackHeader from '../lib/ui/BackHeader.svelte';
@@ -27,6 +28,8 @@
     immagini: 'Immagini e spazio',
     tornei: 'Tornei vicino a te',
     scansione: 'Scansione',
+    privacy: 'Privacy',
+    termini: 'Termini di servizio',
   });
 
   // ---------- home city ----------
@@ -182,6 +185,10 @@
             : 'No: se manca spazio il browser potrebbe cancellare i dati. Installare l’app (Aggiungi a schermata Home) aiuta; il backup su Google Drive li mette comunque al sicuro.'}
       </p>
     </section>
+  {:else if key === 'privacy'}
+    <LegalText file="privacy.html" />
+  {:else if key === 'termini'}
+    <LegalText file="termini.html" />
   {:else if key === 'scansione'}
     {#if hasGoogleOcr}
       <section class="explain card">
