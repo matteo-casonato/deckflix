@@ -360,7 +360,7 @@
     width: 42%;
     max-width: 170px;
     aspect-ratio: 63 / 88;
-    border-radius: 12px;
+    border-radius: var(--r-cardimg);
     object-fit: cover;
     box-shadow: 0 14px 28px rgb(0 0 0 / 0.45);
     transform: rotate(-3deg);

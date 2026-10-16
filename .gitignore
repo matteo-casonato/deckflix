@@ -4,3 +4,6 @@ dist/
 .certs/
 .DS_Store
 lab/samples/
+
+# Icon sketches (originals stay local; the app uses the generated public/icons)
+docs/icon-ideas/

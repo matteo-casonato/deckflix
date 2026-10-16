@@ -237,7 +237,7 @@
     left: 50%;
     height: 124px;
     aspect-ratio: 63 / 88;
-    border-radius: 9px;
+    border-radius: var(--r-cardimg);
     box-shadow: 0 10px 22px rgb(0 0 0 / 0.45);
     transform: translateX(calc(-50% + (var(--i) - (var(--n) - 1) / 2) * 46%)) rotate(calc((var(--i) - (var(--n) - 1) / 2) * 9deg));
     transform-origin: 50% 100%;

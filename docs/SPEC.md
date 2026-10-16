@@ -406,6 +406,10 @@ Esporta CSV, invito ad accedere per chi usa l'app senza account, copia di sicure
 
 - **Bits UI** (2.19.4, come da stack): pannelli (`Sheet`, su Dialog) e conferme distruttive (`ConfirmDialog`, su AlertDialog) usano Bits UI al posto del `<dialog>` nativo; il tasto indietro di Android li chiude grazie a una voce nella cronologia (`backToClose.svelte.js`).
 
+- **Angoli delle anteprime**: tutte le immagini di carte usano il raggio di una carta stampata (`--r-cardimg: 4.8% / 3.4%`, circa 3 mm su 63 × 88 mm) invece dei 5–10 px fissi; nessuno squircle sulle immagini (verificato in Chrome 152: `superellipse(1)` sulle miniature, `superellipse(2)` solo sui riquadri).
+- **Ripristino da Drive**: una sola voce nel Profilo apre la scelta tra ultimo backup e backup del giorno prima, poi la conferma.
+- **Logo**: icona dell'app scelta dall'utente (Ultra Ball, opzione 1 di `docs/icon-ideas/`, cartella locale non pubblicata); le icone PWA (192, 512, maskable su piatto #0F1115, Apple 180, favicon 32/48) sono generate da quel file. Eccezione decisa dall'utente alla regola “nessun asset Pokémon nel repository”.
+
 ## 9. Fuori ambito
 
 Prezzi per lingua e per condizione, riconoscimento con IA a pagamento, notifiche push e backup a app chiusa (servirebbe un server), profili multipli sullo stesso telefono, backup su servizi diversi da Google Drive, pubblicazione sugli store, app nativa con Capacitor (piano B se la scansione web non basta).

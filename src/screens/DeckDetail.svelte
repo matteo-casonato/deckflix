@@ -538,7 +538,7 @@
     width: 36px;
     height: 50px;
     flex-shrink: 0;
-    border-radius: 5px;
+    border-radius: var(--r-cardimg);
     overflow: hidden;
     background: var(--surface-2);
   }
@@ -570,7 +570,7 @@
   .tile {
     position: relative;
     aspect-ratio: 63 / 88;
-    border-radius: 8px;
+    border-radius: var(--r-cardimg);
     overflow: hidden;
     background: var(--surface-2);
     display: block;

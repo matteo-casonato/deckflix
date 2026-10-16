@@ -150,7 +150,7 @@
     width: 38px;
     height: 53px;
     flex-shrink: 0;
-    border-radius: 5px;
+    border-radius: var(--r-cardimg);
     overflow: hidden;
     background: var(--surface-2);
   }

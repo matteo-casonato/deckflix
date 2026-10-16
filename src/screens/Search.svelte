@@ -394,7 +394,7 @@
   .thumb {
     width: 44px;
     aspect-ratio: 63 / 88;
-    border-radius: 8px;
+    border-radius: var(--r-cardimg);
     background: var(--surface-2);
     object-fit: cover;
     flex-shrink: 0;

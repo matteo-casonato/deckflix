@@ -17,6 +17,7 @@
   import Icon from '../lib/ui/Icon.svelte';
   import Avatar from '../lib/ui/Avatar.svelte';
   import ConfirmDialog from '../lib/ui/ConfirmDialog.svelte';
+  import Sheet from '../lib/ui/Sheet.svelte';
   import { account } from '../lib/stores/account.svelte.js';
   import { settings } from '../lib/stores/settings.svelte.js';
   import { LANG_LABELS } from '../lib/domain/cards.js';
@@ -77,6 +78,8 @@
       ['immagini', Image01Icon, 'Immagini e spazio', 'Cache delle immagini, dati protetti'],
     ]),
   );
+
+  let restoreSheet = $state(false);
 </script>
 
 <header class="top"><h1>Profilo</h1></header>
@@ -126,14 +129,9 @@
     <span class="text"><strong>Liste deck</strong><span>Importa una lista o condividi quella di un deck</span></span>
     <span class="chev"><Icon icon={ArrowRight01Icon} size={20} /></span>
   </a>
-  <button class="row" disabled={!account.user} onclick={() => (confirm = 'restore')}>
+  <button class="row" disabled={!account.user} onclick={() => (restoreSheet = true)}>
     <span class="ico"><Icon icon={CloudDownloadIcon} /></span>
-    <span class="text"><strong>Ripristina da Drive</strong><span>Sostituisce i dati di questo telefono</span></span>
-    <span class="chev"><Icon icon={ArrowRight01Icon} size={20} /></span>
-  </button>
-  <button class="row" disabled={!account.user} onclick={() => (confirm = 'restorePrev')}>
-    <span class="ico"><Icon icon={CloudDownloadIcon} /></span>
-    <span class="text"><strong>Ripristina il backup del giorno prima</strong><span>Per annullare una giornata sbagliata</span></span>
+    <span class="text"><strong>Ripristina da Drive</strong><span>Ultimo backup o quello del giorno prima</span></span>
     <span class="chev"><Icon icon={ArrowRight01Icon} size={20} /></span>
   </button>
 </section>
@@ -212,6 +210,20 @@
   onconfirm={() => restoreFromDrive()}
   onclose={() => (confirm = null)}
 />
+<Sheet open={restoreSheet} title="Ripristina da Drive" onclose={() => (restoreSheet = false)}>
+  <p class="sheet-note">I dati di questo telefono vengono sostituiti con la copia che scegli. Prima ti chiedo conferma.</p>
+  <div class="choices">
+    <button class="choice" onclick={() => ((restoreSheet = false), (confirm = 'restore'))}>
+      <strong>Ultimo backup</strong>
+      <span>La copia salvata più di recente, anche da un altro telefono.{account.lastBackupAt ? ` Da questo telefono: ${relativeTime(account.lastBackupAt, Date.now())}.` : ''}</span>
+    </button>
+    <button class="choice" onclick={() => ((restoreSheet = false), (confirm = 'restorePrev'))}>
+      <strong>Backup del giorno prima</strong>
+      <span>La copia che Drive conserva dal giorno precedente: serve ad annullare una giornata sbagliata, come un ripristino o una cancellazione per errore.</span>
+    </button>
+  </div>
+</Sheet>
+
 <ConfirmDialog
   open={confirm === 'restorePrev'}
   title="Ripristinare il giorno prima?"
@@ -240,6 +252,39 @@
 />
 
 <style>
+  .sheet-note {
+    margin: 0;
+    padding: 0 4px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .choices {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .choice {
+    width: 100%;
+    padding: 14px 16px;
+    border: 1px solid var(--line-2);
+    border-radius: var(--r-card);
+    background: var(--surface-2);
+    color: var(--text);
+    font: inherit;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    cursor: pointer;
+  }
+
+  .choice span {
+    font-size: 13px;
+    color: var(--muted);
+  }
+
   .top {
     padding: 10px 16px 4px;
   }

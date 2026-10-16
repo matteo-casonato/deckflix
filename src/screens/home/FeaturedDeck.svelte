@@ -142,7 +142,7 @@
     top: 14px;
     width: 104px;
     aspect-ratio: 63 / 88;
-    border-radius: 10px;
+    border-radius: var(--r-cardimg);
     object-fit: cover;
     box-shadow: 0 12px 24px rgb(0 0 0 / 0.45);
     transform: translateX(calc(-50% + var(--i) * 57px)) rotate(calc(var(--i) * 12deg));

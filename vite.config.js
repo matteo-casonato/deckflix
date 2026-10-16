@@ -22,7 +22,7 @@ export default defineConfig({
       // The app asks before updating: "Nuova versione disponibile · Aggiorna".
       registerType: 'prompt',
       injectRegister: false,
-      includeAssets: ['icons/apple-touch-icon.png', 'fonts/*.woff2'],
+      includeAssets: ['icons/apple-touch-icon.png', 'icons/favicon-*.png', 'fonts/*.woff2'],
       manifest: {
         id: '/deckflix/',
         name: 'Deckflix',
@@ -45,7 +45,7 @@ export default defineConfig({
       workbox: {
         // App shell only: the Phase 0 scan lab (and its OCR) stays out of the precache.
         globPatterns: ['**/*.{js,css,html,woff2,png,svg}'],
-        globIgnores: ['lab/**', 'assets/scanLab-*', 'icons/*.svg'],
+        globIgnores: ['lab/**', 'assets/scanLab-*'],
         navigateFallback: 'index.html',
         navigateFallbackDenylist: [/\/lab\//],
         cleanupOutdatedCaches: true,

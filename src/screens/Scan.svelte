@@ -558,7 +558,7 @@
     margin-inline: auto;
     padding: 0;
     border: 1px solid var(--line);
-    border-radius: 40px;
+    border-radius: var(--r-cardimg);
     overflow: hidden;
     background: #08090b;
     color: var(--text);
@@ -585,7 +585,7 @@
     aspect-ratio: 63 / 88;
     transform: translate(-50%, -50%);
     border: 2px solid var(--accent);
-    border-radius: 18px;
+    border-radius: var(--r-cardimg);
     box-shadow: 0 0 0 100vmax rgb(8 9 11 / 0.45);
     pointer-events: none;
   }
@@ -716,7 +716,7 @@
   .t {
     width: 100%;
     aspect-ratio: 63 / 88;
-    border-radius: 8px;
+    border-radius: var(--r-cardimg);
     background: var(--surface-2);
     object-fit: cover;
   }

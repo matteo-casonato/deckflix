@@ -61,7 +61,7 @@
   .art {
     position: relative;
     aspect-ratio: 63 / 88;
-    border-radius: 10px;
+    border-radius: var(--r-cardimg);
     background: var(--surface-2);
     overflow: hidden;
     display: block;

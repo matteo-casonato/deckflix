@@ -18,6 +18,8 @@
   --r-control: 22px;
   --r-card: 31px;
   --r-section: 36px;
+  /* Card pictures: corners like a printed card (about 3 mm on 63 × 88 mm). */
+  --r-cardimg: 4.8% / 3.4%;
 
   --font-display: 'Bricolage Grotesque', system-ui, sans-serif;
   --font-body: 'DM Sans', system-ui, sans-serif;

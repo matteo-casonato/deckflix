@@ -35,7 +35,7 @@
     bottom: 4px;
     width: var(--w);
     aspect-ratio: 63 / 88;
-    border-radius: 5px;
+    border-radius: var(--r-cardimg);
     object-fit: cover;
     box-shadow: 0 3px 8px rgb(0 0 0 / 0.45);
     transform-origin: 15% 100%;

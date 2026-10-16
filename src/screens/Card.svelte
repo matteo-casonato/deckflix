@@ -338,7 +338,9 @@
   }
 
   .cond.add {
-    margin-top: 8px;
+    width: 100%;
+    min-height: 44px;
+    margin-top: 10px;
     color: var(--accent);
   }
 
@@ -393,7 +395,7 @@
   .art {
     width: min(300px, 76vw);
     aspect-ratio: 63 / 88;
-    border-radius: 14px;
+    border-radius: var(--r-cardimg);
     background: var(--surface-2);
     object-fit: cover;
   }
