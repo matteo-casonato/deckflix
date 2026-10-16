@@ -3,7 +3,7 @@
 // phone only (a local setting, not in the backup): the file is easy to download again.
 import { liveQuery } from 'dexie';
 import { db } from '../db.js';
-import { parseEventsJson, parseIcs } from '../domain/ics.js';
+import { parseEventsJson, parseIcs, tournamentType } from '../domain/ics.js';
 
 const KEY = 'tournaments';
 
@@ -12,7 +12,7 @@ const KEY = 'tournaments';
  */
 
 /**
- * Reads an .ics file and replaces the saved tournaments. Returns how many were read.
+ * Reads the JSON or .ics file and replaces the saved tournaments. Returns how many were read.
  * @param {File} file
  */
 export async function importTournaments(file) {
@@ -31,6 +31,12 @@ export async function importTournaments(file) {
 
 export const clearTournaments = () => db.settings.delete(KEY);
 
-/** Live saved tournaments, or null. */
+/** Live saved tournaments, or null. The type is worked out again on reading, so files imported
+ * by older versions (no type, or the old Challenge-before-Cup rule) show the right one. */
 export const liveTournaments = () =>
-  liveQuery(async () => /** @type {TournamentsFile | null} */ ((await db.settings.get(KEY))?.value ?? null));
+  liveQuery(async () => {
+    /** @type {TournamentsFile | undefined} */
+    const file = (await db.settings.get(KEY))?.value;
+    if (!file) return null;
+    return { ...file, events: file.events.map((t) => ({ ...t, type: tournamentType(t.type, t.title) })) };
+  });

@@ -21,16 +21,17 @@ export const TOURNAMENT_TYPES = /** @type {const} */ ([
 
 /**
  * Type of a tournament from pokedata's type ("cups", "challenges", "prerelease", "friendly")
- * or, for the .ics file that has no type, from its title.
+ * and its title; the .ics file has the title only. A title naming both Cup and Challenge is a
+ * Cup; no type and no keyword means a league day.
  * @param {string | undefined} raw
  * @param {string} title
  * @returns {TournamentType}
  */
 export function tournamentType(raw, title) {
   const t = `${raw ?? ''} ${title}`.toLowerCase();
-  if (/pre-?release|prerelease/.test(t)) return 'prerelease';
-  if (/challenge/.test(t)) return 'challenge';
-  if (/\bcups?\b|league cup/.test(t)) return 'cup';
+  if (/pre-?release/.test(t)) return 'prerelease';
+  if (/\bcups?\b/.test(t)) return 'cup';
+  if (/\bchallenges?\b/.test(t)) return 'challenge';
   return 'league';
 }
 

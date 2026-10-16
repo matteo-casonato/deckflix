@@ -8,6 +8,8 @@
   import { liveTournaments } from '../../lib/data/tournaments.js';
   import { TOURNAMENT_TYPES, distanceKm, eventPageUrl, upcoming, within } from '../../lib/domain/ics.js';
   import { hrefFor } from '../../lib/domain/routes.js';
+  import TournamentMark from './TournamentMark.svelte';
+  import UpdateTournaments from './UpdateTournaments.svelte';
 
   /** @typedef {import('../../lib/domain/ics.js').Tournament & { km: number | null }} Row */
 
@@ -15,6 +17,7 @@
   let typeFilter = $state('all');
   let view = $state('date');
   let later = $state(false);
+  let updating = $state(false);
 
   const DAYS = 14;
   const now = Date.now();
@@ -46,8 +49,11 @@
     return list;
   });
 
-  const staleDays = $derived($tournaments ? Math.floor((now - $tournaments.importedAt) / 86_400_000) : 0);
-  const TYPE_LABEL = /** @type {Record<string, string>} */ ({ challenge: 'Challenge', cup: 'Cup', prerelease: 'Prerelease', league: 'Lega' });
+  const staleDays = $derived($tournaments ? Math.max(0, Math.floor((Date.now() - $tournaments.importedAt) / 86_400_000)) : 0);
+
+  /** Line under the title: the shop (when the title is something else), city, distance. @param {Row} t */
+  const subline = (t) =>
+    [t.title ? t.place : '', t.city ?? '', t.km != null ? `${Math.round(t.km)} km` : ''].filter(Boolean).join(' · ');
 
   /** @param {string} day "YYYY-MM-DD" */
   function dayLabel(day) {
@@ -70,12 +76,24 @@
   {@const cal = nearbyEventsCalendar(settings.homePlace, settings.eventRadius)}
   {#if $tournaments}
     <div class="tools">
+      <div class="update">
+        <span class="muted">
+          Aggiornati {staleDays === 0 ? 'oggi' : staleDays === 1 ? 'ieri' : `${staleDays} giorni fa`}
+        </span>
+        <button class="btn small" class:primary={staleDays > 7} onclick={() => (updating = true)}>Aggiorna i tornei</button>
+      </div>
+      {#if !hasCities}
+        <p class="warn">
+          Mancano città e distanza: hai importato il calendario (.ics). Tocca <strong>Aggiorna i tornei</strong> e importa
+          l’elenco.
+        </p>
+      {/if}
       <div class="chips" role="group" aria-label="Tipo di torneo">
         <button class="chip" aria-pressed={typeFilter === 'all'} onclick={() => (typeFilter = 'all')}>Tutti</button>
         {#each TOURNAMENT_TYPES as [key, label] (key)}
-          {#if counts[key]}
-            <button class="chip" aria-pressed={typeFilter === key} onclick={() => (typeFilter = key)}>{label} <span class="num">{counts[key]}</span></button>
-          {/if}
+          <button class="chip" aria-pressed={typeFilter === key} disabled={!counts[key] && typeFilter !== key} onclick={() => (typeFilter = key)}>
+            {label} <span class="num">{counts[key]}</span>
+          </button>
         {/each}
       </div>
       {#if hasCities}
@@ -96,18 +114,14 @@
             {#each list as t (t.id)}
               <li>
                 <a href={t.code ? eventPageUrl(t.code) : nearbyEventsUrl(settings.homePlace, settings.eventRadius)} target="_blank" rel="noopener noreferrer">
+                  <TournamentMark type={t.type} />
+                  <span class="ttxt">
+                    <strong>{t.title || t.place}</strong>
+                    {#if subline(t)}<span class="muted">{subline(t)}</span>{/if}
+                  </span>
                   <span class="when num">
                     {#if view === 'city'}<span class="d">{shortDay(t.start)}</span>{/if}
                     <span class="h">{t.start.slice(11, 16)}</span>
-                  </span>
-                  <span class="ttxt">
-                    <span class="top">
-                      <span class="type {t.type}">{TYPE_LABEL[t.type ?? 'league']}</span>
-                      <strong>{t.title || t.place}</strong>
-                    </span>
-                    <span class="muted">
-                      {t.title ? `${t.place} · ` : ''}{view === 'date' && t.city ? t.city : ''}{t.km != null ? `${view === 'date' && t.city ? ' · ' : ''}${Math.round(t.km)} km` : ''}
-                    </span>
                   </span>
                 </a>
               </li>
@@ -121,15 +135,11 @@
     {#if !later && all.length > within(all, now, DAYS).length}
       <button class="link-btn" onclick={() => (later = true)}>Mostra anche dopo le 2 settimane</button>
     {/if}
-    <p class="muted note">
-      Importati {staleDays === 0 ? 'oggi' : staleDays === 1 ? 'ieri' : `${staleDays} giorni fa`}{staleDays > 7 ? ': aggiornali' : ''} ·
-      <a href={hrefFor('settings', { key: 'tornei' })}>aggiorna</a>{!hasCities ? ' · scarica l’elenco dalle impostazioni per vedere città e distanza' : ''}.
-    </p>
   {:else}
     <section class="intro card">
       <strong>Vedi i tornei qui nell’app</strong>
       <span class="muted">Salva l’elenco dei tornei della tua zona e importalo: due passaggi dalla pagina Tornei vicino a te.</span>
-      <a class="btn" href={hrefFor('settings', { key: 'tornei' })}>Importa i tornei</a>
+      <button class="btn primary" onclick={() => (updating = true)}>Importa i tornei</button>
     </section>
   {/if}
 
@@ -149,6 +159,8 @@
     <a class="btn" href={hrefFor('settings', { key: 'tornei' })}>Imposta la città</a>
   </section>
 {/if}
+
+<UpdateTournaments open={updating} onclose={() => (updating = false)} />
 
 <style>
   .tools {
@@ -199,10 +211,11 @@
   }
 
   .when {
-    width: 52px;
+    margin-left: auto;
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
+    align-items: flex-end;
     font-weight: 800;
     color: var(--accent);
   }
@@ -220,43 +233,40 @@
     gap: 3px;
   }
 
-  .top {
-    min-width: 0;
+  .ttxt strong {
+    font-size: 14px;
+    line-height: 1.25;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .update {
     display: flex;
     align-items: center;
-    gap: 6px;
+    justify-content: space-between;
+    gap: 12px;
   }
 
-  .top strong {
+  .btn.small {
+    min-height: 44px;
+    padding: 0 16px;
     font-size: 14px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
 
-  .type {
-    flex-shrink: 0;
-    padding: 1px 7px;
-    border-radius: 8px;
-    font-size: 10px;
-    font-weight: 800;
-    background: var(--surface-2);
-    color: var(--muted);
+  .warn {
+    margin: 0;
+    padding: 10px 12px;
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+    font-size: 13px;
+    line-height: 1.4;
   }
 
-  .type.challenge {
-    background: color-mix(in srgb, var(--accent) 18%, var(--surface));
-    color: var(--accent);
-  }
-
-  .type.cup {
-    background: color-mix(in srgb, var(--danger) 18%, var(--surface));
-    color: var(--danger);
-  }
-
-  .type.prerelease {
-    background: color-mix(in srgb, var(--success) 18%, var(--surface));
-    color: var(--success);
+  .chip:disabled {
+    opacity: 0.45;
   }
 
   .muted {

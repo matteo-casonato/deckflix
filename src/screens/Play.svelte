@@ -15,6 +15,7 @@
   import Decks from './Decks.svelte';
   import Players from './play/Players.svelte';
   import Events from './play/Events.svelte';
+  import TournamentMark from './play/TournamentMark.svelte';
 
   /** @type {{ query: Record<string, string> }} */
   let { query } = $props();
@@ -55,7 +56,6 @@
   }
   /** @param {import('../lib/domain/ics.js').Tournament} t */
   const km = (t) => (settings.homePlace && t.lat != null && t.lng != null ? Math.round(distanceKm(settings.homePlace, { lat: t.lat, lng: t.lng })) : null);
-  const TYPE_LABEL = /** @type {Record<string, string>} */ ({ challenge: 'Challenge', cup: 'Cup', prerelease: 'Prerelease', league: 'Lega' });
 
   const initials = (/** @type {string} */ name) =>
     name
@@ -107,7 +107,7 @@
         <ul class="preview">
           {#each nextThree as t (t.id)}
             <li>
-              <span class="type {t.type}">{TYPE_LABEL[t.type ?? 'league']}</span>
+              <TournamentMark type={t.type} size={30} />
               <span class="pv-txt">
                 <strong>{t.title || t.place}</strong>
                 <span class="num">{dayText(t.start)}{t.city ? ` · ${t.city}` : ''}{km(t) != null ? ` · ${km(t)} km` : ''}</span>
@@ -215,30 +215,6 @@
     color: var(--muted);
   }
 
-  .type {
-    flex-shrink: 0;
-    padding: 2px 8px;
-    border-radius: 8px;
-    font-size: 10px;
-    font-weight: 800;
-    background: var(--surface-2);
-    color: var(--muted);
-  }
-
-  .type.challenge {
-    background: color-mix(in srgb, var(--accent) 18%, var(--surface));
-    color: var(--accent);
-  }
-
-  .type.cup {
-    background: color-mix(in srgb, var(--danger) 18%, var(--surface));
-    color: var(--danger);
-  }
-
-  .type.prerelease {
-    background: color-mix(in srgb, var(--success) 18%, var(--surface));
-    color: var(--success);
-  }
 
   .txt {
     min-width: 0;
