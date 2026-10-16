@@ -19,6 +19,7 @@
   import Segmented from '../lib/ui/Segmented.svelte';
   import Icon from '../lib/ui/Icon.svelte';
   import SetPicker from '../lib/ui/SetPicker.svelte';
+  import TypePicker from '../lib/ui/TypePicker.svelte';
 
   /** @type {{ query: Record<string, string> }} */
   let { query } = $props();
@@ -196,10 +197,7 @@
   <div class="chips" role="group" aria-label="Filtri">
     <button class="chip" aria-pressed={standard} onclick={() => update({ standard: standard ? (deckId ? '0' : null) : '1' })}>Solo Standard</button>
     <SetPicker {sets} value={filters.setId} placeholder="Edizione" noneLabel="Tutte le edizioni" active recent={settings.recentSets} onchange={(v) => update({ set: v || null })} />
-    <select class="chip" class:on={!!filters.type} aria-label="Tipo" value={filters.type} onchange={(e) => update({ type: e.currentTarget.value || null })}>
-      <option value="">Tipo</option>
-      {#each types as t (t)}<option value={t}>{t}</option>{/each}
-    </select>
+    <TypePicker {types} value={filters.type} onchange={(t) => update({ type: t || null })} />
     <select class="chip" class:on={!!filters.rarity} aria-label="Rarità" value={filters.rarity} onchange={(e) => update({ rarity: e.currentTarget.value || null })}>
       <option value="">Rarità</option>
       {#each rarities as r (r)}<option value={r}>{r}</option>{/each}

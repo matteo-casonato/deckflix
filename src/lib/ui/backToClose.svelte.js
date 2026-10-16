@@ -5,7 +5,8 @@
 // Entries carry their depth, so with a sheet over another one (photo cropper over the player
 // form) popping the top entry closes only the top sheet. When one overlay closes as another
 // opens (player form → delete confirmation) the new one takes over the entry: going back
-// there would pop the new overlay's entry instead and close it.
+// there would pop the new overlay's entry instead and close it. A choice made in the sheet that
+// changes the address (a filter: ?type=Fuoco) is carried over the back step, not undone by it.
 
 /** Depth of the entry an overlay just left, until someone takes it or it is popped. */
 let handoff = 0;
@@ -19,6 +20,8 @@ const current = () => Number(history.state?.overlay) || 0;
 export function backToClose(isOpen, close) {
   /** Depth of this overlay's history entry; 0 when it has none. */
   let depth = 0;
+  /** Address when the entry was pushed. */
+  let pushedUrl = '';
 
   $effect(() => {
     const open = isOpen();
@@ -26,9 +29,11 @@ export function backToClose(isOpen, close) {
       if (handoff && current() === handoff) {
         depth = handoff;
         handoff = 0;
+        pushedUrl = location.href;
       } else {
         depth = current() + 1;
         history.pushState({ ...history.state, overlay: depth }, '');
+        pushedUrl = location.href;
       }
     } else if (!open && depth) {
       const mine = depth;
@@ -38,7 +43,12 @@ export function backToClose(isOpen, close) {
       setTimeout(() => {
         if (handoff !== mine) return;
         handoff = 0;
-        if (current() === mine) history.back();
+        if (current() !== mine) return;
+        // The sheet changed the address (replace()): keep it on the entry we go back to. popstate
+        // comes before hashchange, so the router then reads the new address.
+        const changed = location.href !== pushedUrl ? location.href : null;
+        if (changed) addEventListener('popstate', () => history.replaceState(history.state, '', changed), { once: true });
+        history.back();
       });
     }
   });
