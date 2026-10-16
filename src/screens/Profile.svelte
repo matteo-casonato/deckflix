@@ -131,6 +131,11 @@
     <span class="text"><strong>Ripristina da Drive</strong><span>Sostituisce i dati di questo telefono</span></span>
     <span class="chev"><Icon icon={ArrowRight01Icon} size={20} /></span>
   </button>
+  <button class="row" disabled={!account.user} onclick={() => (confirm = 'restorePrev')}>
+    <span class="ico"><Icon icon={CloudDownloadIcon} /></span>
+    <span class="text"><strong>Ripristina il backup del giorno prima</strong><span>Per annullare una giornata sbagliata</span></span>
+    <span class="chev"><Icon icon={ArrowRight01Icon} size={20} /></span>
+  </button>
 </section>
 
 <h2 class="section">Play!</h2>
@@ -204,7 +209,16 @@
   text="I dati di questo telefono verranno sostituiti con l’ultimo backup salvato su Google Drive."
   confirmLabel="Ripristina"
   danger
-  onconfirm={restoreFromDrive}
+  onconfirm={() => restoreFromDrive()}
+  onclose={() => (confirm = null)}
+/>
+<ConfirmDialog
+  open={confirm === 'restorePrev'}
+  title="Ripristinare il giorno prima?"
+  text="I dati di questo telefono verranno sostituiti con la copia che Drive conserva dal giorno precedente (salvata al primo backup di ogni giorno). Le modifiche fatte dopo andranno perse."
+  confirmLabel="Ripristina"
+  danger
+  onconfirm={() => restoreFromDrive({ previous: true })}
   onclose={() => (confirm = null)}
 />
 <ConfirmDialog

@@ -399,6 +399,11 @@ Esporta CSV, invito ad accedere per chi usa l'app senza account, copia di sicure
 
 - **Edizione: costo delle mancanti** nel riepilogo (“Mancanti: circa € X”), somma della stampa più economica di ogni carta numerata che non hai (`cheapestPrice`); i dettagli delle mancanti si scaricano una volta e restano in cache, intanto il totale è “almeno € X · prezzi n/m”.
 
+- **Copie per condizione**: ogni gruppo di copie è carta + lingua + stampa + condizione (chiave `…|LP`; Near Mint mantiene la chiave a tre parti, quindi i dati esistenti restano validi; migrazione Dexie v5 per le copie che avevano già una condizione). Nella scheda carta una riga per condizione con contatore, stima e cambio condizione (sposta e unisce, con “Annulla”), più “Copia in un’altra condizione”.
+- **Ripristina il backup del giorno prima** nel Profilo (file `deckflix-backup-prev.json` su Drive).
+- **Desideri** nello stile a righe con anteprima (prezzo a destra, etichette “In calo” verde / “In aumento” rosso, lingua).
+- **Immagini senza squircle**: anteprime delle carte, foto e avatar hanno angoli arrotondati normali (`corner-shape: round`); lo squircle resta su riquadri, pulsanti, chip e barra.
+
 ## 9. Fuori ambito
 
 Prezzi per lingua e per condizione, riconoscimento con IA a pagamento, notifiche push e backup a app chiusa (servirebbe un server), profili multipli sullo stesso telefono, backup su servizi diversi da Google Drive, pubblicazione sugli store, app nativa con Capacitor (piano B se la scansione web non basta).

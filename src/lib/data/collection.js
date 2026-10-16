@@ -6,7 +6,7 @@ import { addCopies, collectionKey } from '../domain/collection.js';
 import { setIdOf } from '../domain/cards.js';
 
 /**
- * @typedef {{ cardId: string, lang: string, variant: string }} Copy
+ * @typedef {{ cardId: string, lang: string, variant: string, condition?: string | null }} Copy
  */
 
 /**
@@ -15,7 +15,7 @@ import { setIdOf } from '../domain/cards.js';
  * @param {number} delta
  */
 export async function changeCopies(copy, delta) {
-  const key = collectionKey(copy.cardId, copy.lang, copy.variant);
+  const key = collectionKey(copy.cardId, copy.lang, copy.variant, copy.condition);
   return db.transaction('rw', db.collection, async () => {
     const before = await db.collection.get(key);
     const next = addCopies(before, { ...copy, setId: setIdOf(copy.cardId) }, delta, Date.now());
@@ -90,9 +90,40 @@ export async function undoMoveToWishlist(cardId, removed) {
   });
 }
 
+
 /**
- * Condition of the copies of a card in one language and print (Cardmarket scale).
- * @param {string} key collection key (card, language, print)
+ * Moves a group of copies to another condition, merging with copies already in it.
+ * Returns the two entries before the change, for "Annulla".
+ * @param {import('../db.js').CollectionEntry} entry
  * @param {string} condition
  */
-export const setCondition = (key, condition) => db.collection.update(key, { condition, updatedAt: Date.now() });
+export async function moveCondition(entry, condition) {
+  const toKey = collectionKey(entry.cardId, entry.lang, entry.variant, condition);
+  if (toKey === entry.key) return null;
+  return db.transaction('rw', db.collection, async () => {
+    const target = await db.collection.get(toKey);
+    await db.collection.delete(entry.key);
+    const { condition: _old, ...rest } = entry;
+    await db.collection.put({
+      ...rest,
+      ...(target ?? {}),
+      key: toKey,
+      qty: (target?.qty ?? 0) + entry.qty,
+      ...(condition !== 'NM' ? { condition } : {}),
+      updatedAt: Date.now(),
+    });
+    return { from: entry, to: target ?? null, toKey };
+  });
+}
+
+/**
+ * Undo of moveCondition.
+ * @param {{ from: import('../db.js').CollectionEntry, to: import('../db.js').CollectionEntry | null, toKey: string }} m
+ */
+export async function undoMoveCondition(m) {
+  await db.transaction('rw', db.collection, async () => {
+    if (m.to) await db.collection.put(m.to);
+    else await db.collection.delete(m.toKey);
+    await db.collection.put(m.from);
+  });
+}

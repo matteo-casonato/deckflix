@@ -35,6 +35,18 @@ export class DeckflixDB extends Dexie {
     this.version(3).stores({ albums: 'id, updatedAt' });
     // v4: daily Cardmarket price of owned and wished cards (TCGdex has no history).
     this.version(4).stores({ cardPrices: '[cardId+date], cardId, date' });
+    // v5: copies are grouped by condition too; Near Mint keeps the old key. Entries that got a
+    // condition on the old key move to the key with the condition.
+    this.version(5)
+      .stores({})
+      .upgrade(async (tx) => {
+        const table = tx.table('collection');
+        const moved = (await table.toArray()).filter((e) => e.condition && e.condition !== 'NM' && e.key.split('|').length === 3);
+        for (const e of moved) {
+          await table.delete(e.key);
+          await table.put({ ...e, key: `${e.key}|${e.condition}` });
+        }
+      });
     /** @type {Dexie.Table<CollectionEntry, string>} */
     this.collection = this.table('collection');
     /** @type {Dexie.Table<WishlistEntry, string>} */

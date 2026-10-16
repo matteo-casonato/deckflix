@@ -7,6 +7,9 @@ describe('collectionKey', () => {
   it('separates languages and variants', () => {
     expect(collectionKey('sv03.5-025', 'it', 'normal')).toBe('sv03.5-025|it|normal');
     expect(collectionKey('sv03.5-025', 'it', 'reverse')).not.toBe(collectionKey('sv03.5-025', 'en', 'reverse'));
+    // Near Mint keeps the original key; other conditions get their own group.
+    expect(collectionKey('sv03.5-025', 'it', 'normal', 'NM')).toBe('sv03.5-025|it|normal');
+    expect(collectionKey('sv03.5-025', 'it', 'normal', 'LP')).toBe('sv03.5-025|it|normal|LP');
   });
 });
 

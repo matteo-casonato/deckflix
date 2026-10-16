@@ -8,7 +8,7 @@
   import { TcgdexError, cardImage, getCard } from '../lib/api/tcgdex.js';
   import { settings } from '../lib/stores/settings.svelte.js';
   import { showToast } from '../lib/stores/toast.svelte.js';
-  import { changeCopies, moveToWishlist, restoreEntry, setCondition, undoMoveToWishlist } from '../lib/data/collection.js';
+  import { changeCopies, moveCondition, moveToWishlist, restoreEntry, undoMoveCondition, undoMoveToWishlist } from '../lib/data/collection.js';
   import { toggleWish } from '../lib/data/actions.js';
   import { listVariants } from '../lib/domain/variants.js';
   import { CONDITIONS, DEFAULT_CONDITION, collectionKey, conditionFactor, conditionLabel } from '../lib/domain/collection.js';
@@ -52,10 +52,14 @@
   const entries = $derived(liveQuery(() => db.collection.where('cardId').equals(id).toArray()));
   const wished = $derived(liveQuery(() => db.wishlist.get(id).then(Boolean)));
 
+  const CONDITION_ORDER = CONDITIONS.map(([c]) => /** @type {string} */ (c));
+  /** Groups of copies of a print in this language, one per condition, best first. @param {string} variant */
+  const groupsOf = (variant) =>
+    ($entries ?? [])
+      .filter((e) => e.lang === copyLang && e.variant === variant)
+      .sort((a, b) => CONDITION_ORDER.indexOf(a.condition || DEFAULT_CONDITION) - CONDITION_ORDER.indexOf(b.condition || DEFAULT_CONDITION));
   /** @param {string} variant */
-  const qtyOf = (variant) => ($entries ?? []).find((e) => e.lang === copyLang && e.variant === variant)?.qty ?? 0;
-  /** @param {string} variant */
-  const conditionOf = (variant) => ($entries ?? []).find((e) => e.lang === copyLang && e.variant === variant)?.condition || DEFAULT_CONDITION;
+  const qtyOf = (variant) => groupsOf(variant).reduce((n, e) => n + e.qty, 0);
   const otherLangs = $derived(
     Object.entries(
       ($entries ?? [])
@@ -65,7 +69,7 @@
   );
   const totalCopies = $derived(($entries ?? []).reduce((s, e) => s + e.qty, 0));
 
-  /** @type {{ variant: string, label: string } | null} */
+  /** @type {{ variant: string, condition: string, label: string } | null} */
   let confirmRemove = $state(null);
   let confirmMove = $state(false);
   /** The (possibly guessed) image did not load: show the placeholder. */
@@ -74,24 +78,30 @@
   const inAlbums = $derived(liveQuery(async () => (await db.albums.toArray()).filter((a) => a.cards.some((c) => c.cardId === id)).length));
 
   /**
-   * @param {any} card
    * @param {string} variant
+   * @param {string} condition
    * @param {number} delta
    * @param {string} label
    */
-  async function change(card, variant, delta, label) {
-    if (delta < 0 && qtyOf(variant) === 1) {
-      confirmRemove = { variant, label };
+  async function change(variant, condition, delta, label) {
+    const group = groupsOf(variant).find((e) => (e.condition || DEFAULT_CONDITION) === condition);
+    if (delta < 0 && (group?.qty ?? 0) === 1 && qtyOf(variant) === 1) {
+      confirmRemove = { variant, condition, label };
       return;
     }
-    await changeCopies({ cardId: id, lang: copyLang, variant }, delta);
-    void card;
+    await changeCopies({ cardId: id, lang: copyLang, variant, condition }, delta);
   }
 
-  /** @param {string} variant */
-  async function removeLast(variant) {
-    const before = await changeCopies({ cardId: id, lang: copyLang, variant }, -1);
-    showToast('Copia rimossa dalla collezione', () => restoreEntry(collectionKey(id, copyLang, variant), before));
+  /** @param {string} variant @param {string} condition */
+  async function removeLast(variant, condition) {
+    const before = await changeCopies({ cardId: id, lang: copyLang, variant, condition }, -1);
+    showToast('Copia rimossa dalla collezione', () => restoreEntry(collectionKey(id, copyLang, variant, condition), before));
+  }
+
+  /** @param {import('../lib/db.js').CollectionEntry} entry @param {string} condition */
+  async function regrade(entry, condition) {
+    const m = await moveCondition(entry, condition);
+    if (m) showToast(`${entry.qty === 1 ? 'Copia' : `${entry.qty} copie`} in ${conditionLabel(condition)}`, () => undoMoveCondition(m));
   }
 
   /** @param {any} card */
@@ -109,11 +119,12 @@
     return mine.length === 1 ? (mine[0].productId ?? null) : null;
   }
 
-  /** Condition of the copies, when only one print is owned in this language (for Cardmarket). */
+  /** Condition of the copies, when they are all one print in one condition (for Cardmarket). */
   /** @param {import('../lib/domain/variants.js').VariantOption[]} variants */
   function cardmarketCondition(variants) {
     const mine = variants.filter((v) => qtyOf(v.key) > 0);
-    return mine.length === 1 ? conditionOf(mine[0].key) : null;
+    const groups = mine.length === 1 ? groupsOf(mine[0].key) : [];
+    return groups.length === 1 ? groups[0].condition || DEFAULT_CONDITION : null;
   }
 
   /** @param {unknown} err */
@@ -190,33 +201,52 @@
         {/if}
         <ul class="variants">
           {#each variants.length ? variants : [{ key: 'normal', label: 'Normale', price: null }] as v (v.key)}
-            {@const qty = qtyOf(v.key)}
+            {@const groups = groupsOf(v.key)}
             <li class="variant">
-              <span class="vtxt">
-                <strong>{v.label}</strong>
-                <span class="muted num">
-                  {v.price != null ? euro(v.price) : 'Prezzo non disponibile'}{v.price != null && qty > 0 && conditionOf(v.key) !== DEFAULT_CONDITION
-                    ? ` · stima ${conditionLabel(conditionOf(v.key))} ${euro(v.price * conditionFactor(conditionOf(v.key), settings.conditionFactors))}`
-                    : ''}
+              <div class="vhead">
+                <span class="vtxt">
+                  <strong>{v.label}</strong>
+                  <span class="muted num">{v.price != null ? euro(v.price) : 'Prezzo non disponibile'}</span>
                 </span>
-                {#if qty > 0}
-                  <select
-                    class="cond"
-                    aria-label={`Condizione delle copie ${v.label}`}
-                    value={conditionOf(v.key)}
-                    onchange={(e) => setCondition(collectionKey(id, copyLang, v.key), e.currentTarget.value)}
-                  >
-                    {#each CONDITIONS as [code, label] (code)}<option value={code}>{label}</option>{/each}
-                  </select>
+                {#if !groups.length}
+                  <button class="step plus" aria-label={`Aggiungi una copia ${v.label}`} onclick={() => change(v.key, DEFAULT_CONDITION, 1, v.label)}>+</button>
                 {/if}
-              </span>
-              <span class="stepper">
-                {#if qty > 0}
-                  <button class="step" aria-label={`Togli una copia ${v.label}`} onclick={() => change(card, v.key, -1, v.label)}>−</button>
-                  <span class="num qty" aria-live="polite">{qty}</span>
-                {/if}
-                <button class="step plus" aria-label={`Aggiungi una copia ${v.label}`} onclick={() => change(card, v.key, 1, v.label)}>+</button>
-              </span>
+              </div>
+              {#each groups as g (g.key)}
+                {@const cond = g.condition || DEFAULT_CONDITION}
+                <div class="cgroup">
+                  <span class="ctxt">
+                    <select class="cond" aria-label={`Condizione di ${g.qty === 1 ? 'questa copia' : 'queste copie'} ${v.label}`} value={cond} onchange={(e) => regrade(g, e.currentTarget.value)}>
+                      {#each CONDITIONS as [code, label] (code)}<option value={code}>{label}</option>{/each}
+                    </select>
+                    {#if v.price != null && cond !== DEFAULT_CONDITION}
+                      <span class="muted num small">stima {euro(v.price * conditionFactor(cond, settings.conditionFactors))}</span>
+                    {/if}
+                  </span>
+                  <span class="stepper">
+                    <button class="step" aria-label={`Togli una copia ${v.label} ${conditionLabel(cond)}`} onclick={() => change(v.key, cond, -1, `${v.label} ${conditionLabel(cond)}`)}>−</button>
+                    <span class="num qty" aria-live="polite">{g.qty}</span>
+                    <button class="step plus" aria-label={`Aggiungi una copia ${v.label} ${conditionLabel(cond)}`} onclick={() => change(v.key, cond, 1, v.label)}>+</button>
+                  </span>
+                </div>
+              {/each}
+              {#if groups.length && groups.length < CONDITIONS.length}
+                <select
+                  class="cond add"
+                  aria-label={`Aggiungi una copia ${v.label} in un’altra condizione`}
+                  value=""
+                  onchange={(e) => {
+                    const c = e.currentTarget.value;
+                    e.currentTarget.value = '';
+                    if (c) change(v.key, c, 1, v.label);
+                  }}
+                >
+                  <option value="">＋ Copia in un’altra condizione</option>
+                  {#each CONDITIONS.filter(([c]) => !groups.some((g) => (g.condition || DEFAULT_CONDITION) === c)) as [code, label] (code)}
+                    <option value={code}>{label}</option>
+                  {/each}
+                </select>
+              {/if}
             </li>
           {/each}
         </ul>
@@ -262,7 +292,7 @@
       text={`Togli l’ultima copia ${confirmRemove?.label ?? ''} in ${LANG_LABELS[copyLang] ?? copyLang} dalla collezione.`}
       confirmLabel="Rimuovi"
       danger
-      onconfirm={() => confirmRemove && removeLast(confirmRemove.variant)}
+      onconfirm={() => confirmRemove && removeLast(confirmRemove.variant, confirmRemove.condition)}
       onclose={() => (confirmRemove = null)}
     />
     <ConfirmDialog
@@ -283,6 +313,35 @@
 {/if}
 
 <style>
+  .vhead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .cgroup {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .ctxt {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .cond.add {
+    margin-top: 8px;
+    color: var(--accent);
+  }
+
   .small a {
     color: var(--accent);
   }
@@ -431,8 +490,8 @@
     border-radius: 24px;
     background: var(--bg);
     display: flex;
-    align-items: center;
-    gap: 12px;
+    flex-direction: column;
+    justify-content: center;
   }
 
   .vtxt {

@@ -33,5 +33,7 @@
 }
 
 @supports (corner-shape: squircle) {
-  .card, .btn, .chip, .nav, .avatar { corner-shape: squircle; }
+  .card, .btn, .chip, .nav { corner-shape: squircle; }
+  /* Card previews and pictures keep ordinary rounded corners, like the printed cards. */
+  img, picture, .art, .thumb, .mini, .ph, .avatar, .cover, .fan, .stack { corner-shape: round; }
 }

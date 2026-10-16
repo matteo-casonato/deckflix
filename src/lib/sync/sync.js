@@ -381,12 +381,17 @@ export async function resolveChoice(keep) {
 }
 
 /** Explicit "Ripristina da Drive" from the Profile. */
-export async function restoreFromDrive() {
+/**
+ * Replaces this phone's data with the backup on Drive.
+ * @param {{ previous?: boolean }} [o] previous: the copy saved at the first backup of the day
+ *   (deckflix-backup-prev.json), to undo a bad day (wrong restore, mass deletion).
+ */
+export async function restoreFromDrive({ previous = false } = {}) {
   try {
     await requestToken({ interactive: true, hint: account.user?.email });
-    const file = await drive.findFile(BACKUP_FILE);
+    const file = await drive.findFile(previous ? BACKUP_PREV_FILE : BACKUP_FILE);
     if (!file) {
-      account.error = 'Su Google Drive non c’è ancora un backup';
+      account.error = previous ? 'Su Google Drive non c’è ancora una copia del giorno precedente' : 'Su Google Drive non c’è ancora un backup';
       return;
     }
     account.signIn = { step: 'restoring', progress: 0.5 };
