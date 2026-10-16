@@ -109,6 +109,7 @@
     font-weight: 700;
     display: flex;
     align-items: center;
+    gap: 5px;
   }
 
   .tags :global(.tag.ok) {

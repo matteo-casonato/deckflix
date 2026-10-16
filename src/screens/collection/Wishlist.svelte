@@ -3,6 +3,7 @@
   // Wishlist (docs/mockups/Desideri.html): total to complete it, sorting, price and trend.
   // "Per deck" arrives with the decks (Phase 6).
   import { liveQuery } from 'dexie';
+  import Flag from '../../lib/ui/Flag.svelte';
   import StackRow from '../../lib/ui/StackRow.svelte';
   import { cardImage } from '../../lib/api/tcgdex.js';
   import { Add01Icon } from '@hugeicons/core-free-icons';
@@ -99,7 +100,7 @@
           <!-- For a wish, a falling price is good news. -->
           {#if r.trend === 'down'}<span class="tag ok">In calo{pct != null ? ` ${pct}%` : ''}</span>{/if}
           {#if r.trend === 'up'}<span class="tag bad">In aumento{pct != null ? ` +${pct}%` : ''}</span>{/if}
-          {#if r.lang}<span class="tag">{LANG_LABELS[r.lang] ?? r.lang}</span>{/if}
+          {#if r.lang}<span class="tag lang"><Flag lang={r.lang} width={16} />{LANG_LABELS[r.lang] ?? r.lang}</span>{/if}
         </StackRow>
       </li>
     {:else}

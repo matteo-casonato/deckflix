@@ -3,6 +3,7 @@
   // Statistics (docs/mockups/Statistiche.html): value and change over a period, chart,
   // key numbers, most valuable, rising, by rarity and language.
   import { liveQuery } from 'dexie';
+  import Flag from '../../lib/ui/Flag.svelte';
   import { db } from '../../lib/db.js';
   import { settings } from '../../lib/stores/settings.svelte.js';
   import { recordTodaySnapshot, valuedCollection } from '../../lib/data/value.js';
@@ -142,7 +143,7 @@
   <ul class="bars card">
     {#each stats.byLang as [code, n] (code)}
       <li>
-        <span class="bl">{LANG_LABELS[code] ?? code}</span>
+        <span class="bl"><Flag lang={code} width={18} />{LANG_LABELS[code] ?? code}</span>
         <span class="track"><span class="bar" style:width="{(n / maxOf(stats.byLang)) * 100}%"></span></span>
         <span class="bn num">{n}</span>
       </li>
@@ -294,6 +295,9 @@
   }
 
   .bl {
+    display: flex;
+    align-items: center;
+    gap: 6px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;

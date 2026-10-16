@@ -3,6 +3,7 @@
   // First setup, after the Google screen: card language, home city for the tournaments, the
   // Play! player and the first card. Every step can be skipped; it can be run again from Profile.
   import Logo from '../lib/ui/Logo.svelte';
+  import Flag from '../lib/ui/Flag.svelte';
   import { account } from '../lib/stores/account.svelte.js';
   import { settings, setSetting } from '../lib/stores/settings.svelte.js';
   import { LANG_LABELS } from '../lib/domain/cards.js';
@@ -110,7 +111,7 @@
       <p class="lead">Deckflix mostra nomi, ricerca e scansione in questa lingua. Le copie in altre lingue le aggiungi carta per carta.</p>
       <div class="choices" role="radiogroup" aria-label="Lingua delle carte">
         {#each Object.entries(LANG_LABELS) as [code, label] (code)}
-          <button role="radio" aria-checked={settings.cardLang === code} onclick={() => setSetting('cardLang', code)}>{label}</button>
+          <button role="radio" aria-checked={settings.cardLang === code} onclick={() => setSetting('cardLang', code)}><Flag lang={code} />{label}</button>
         {/each}
       </div>
     {:else if STEPS[step] === 'city'}
@@ -129,7 +130,7 @@
       <button class="btn" disabled={locating} onclick={usePosition}>Usa la posizione del telefono</button>
       {#if placeError}<p class="warn">{placeError}</p>{/if}
       {#if settings.homePlace}
-        <p class="ok">✓ {settings.homePlace.name}</p>
+        <p class="ok"><Flag country={settings.homePlace.country} width={18} /> {settings.homePlace.name}</p>
         <div class="choices" role="radiogroup" aria-label="Raggio">
           {#each [25, 50, 100, 200] as km (km)}
             <button role="radio" aria-checked={settings.eventRadius === km} onclick={() => setSetting('eventRadius', km)}>{km} km</button>
@@ -266,6 +267,9 @@
   }
 
   .choices button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
     min-height: 48px;
     padding: 0 18px;
     border: 1px solid var(--line-2);

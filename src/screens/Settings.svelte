@@ -3,6 +3,7 @@
   // Profile › Impostazioni: one page per setting (language, quality and prices, editions,
   // images and storage), each with what it does and why.
   import { settings, setSetting } from '../lib/stores/settings.svelte.js';
+  import Flag from '../lib/ui/Flag.svelte';
   import { LANG_LABELS } from '../lib/domain/cards.js';
   import { CONDITIONS, DEFAULT_CONDITION_FACTORS } from '../lib/domain/collection.js';
   import { clearImageCache, imageCacheInfo } from '../lib/data/imageCache.js';
@@ -95,7 +96,7 @@
       {#each Object.entries(LANG_LABELS) as [code, label] (code)}
         <li>
           <button role="radio" aria-checked={settings.cardLang === code} onclick={() => setSetting('cardLang', code)}>
-            <span>{label}</span>
+            <span class="lang"><Flag lang={code} width={24} />{label}</span>
             <span class="dot" aria-hidden="true"></span>
           </button>
         </li>
@@ -194,7 +195,7 @@
     <button class="btn" disabled={locating} onclick={useMyPosition}>Usa la posizione del telefono</button>
     {#if placeError}<p class="note warn">{placeError}</p>{/if}
     {#if settings.homePlace}
-      <p class="note">Salvata: {settings.homePlace.name} ({settings.homePlace.country}).</p>
+      <p class="note saved"><Flag country={settings.homePlace.country} width={18} /> Salvata: {settings.homePlace.name} ({settings.homePlace.country}).</p>
     {/if}
 
     <h2 class="label">Raggio</h2>
@@ -256,6 +257,18 @@
 />
 
 <style>
+  .lang {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .saved {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
   .manual summary {
     min-height: 44px;
     display: flex;

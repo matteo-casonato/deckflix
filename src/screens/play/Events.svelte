@@ -5,6 +5,7 @@
   // subscription and the official locator. The list downloads by itself (the site publishes the
   // country's tournaments every morning); only countries without it need pasting pokedata's list.
   import { settings } from '../../lib/stores/settings.svelte.js';
+  import Flag from '../../lib/ui/Flag.svelte';
   import { nearbyEventsCalendar, nearbyEventsUrl, officialEventsUrl } from '../../lib/domain/players.js';
   import { liveTournaments, refreshTournaments } from '../../lib/data/tournaments.js';
   import { TOURNAMENT_TYPES, eventPageUrl, nearby, upcoming, within } from '../../lib/domain/ics.js';
@@ -177,7 +178,7 @@
     <p class="muted note">Nel calendario i tornei si aggiornano da soli. Con un altro calendario usa <a href={cal.webcal}>questo collegamento</a>.</p>
     <div class="ev-links">
       <a href={officialEventsUrl(settings.eventRadius)} target="_blank" rel="noopener noreferrer">Event Locator ufficiale</a>
-      <a href={hrefFor('settings', { key: 'tornei' })}>{settings.homePlace.name} · {settings.eventRadius} km</a>
+      <a href={hrefFor('settings', { key: 'tornei' })}><Flag country={settings.homePlace.country} width={18} />&nbsp;{settings.homePlace.name} · {settings.eventRadius} km</a>
     </div>
   </section>
 {:else}

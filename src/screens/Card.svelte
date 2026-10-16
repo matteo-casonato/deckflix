@@ -3,6 +3,7 @@
   // Card detail: prices per print, quantities per language and variant, wishlist,
   // Cardmarket link (SPEC § 2: TCGdex prices aggregate all languages and conditions).
   import { liveQuery } from 'dexie';
+  import Flag from '../lib/ui/Flag.svelte';
   import { BookmarkAdd02Icon, FavouriteIcon, LinkSquare02Icon } from '@hugeicons/core-free-icons';
   import { db } from '../lib/db.js';
   import { TcgdexError, cardImage, getCard } from '../lib/api/tcgdex.js';
@@ -210,7 +211,7 @@
           <div class="chips" role="group" aria-label="Lingua delle copie">
             {#each langOrder as code (code)}
               <button class="chip" aria-pressed={copyLang === code} onclick={() => (copyLang = code)}>
-                {LANG_LABELS[code]}{#if byLang[code]}<span class="num count">{byLang[code]}</span>{/if}
+                <Flag lang={code} />{LANG_LABELS[code]}{#if byLang[code]}<span class="num count">{byLang[code]}</span>{/if}
               </button>
             {/each}
           </div>
