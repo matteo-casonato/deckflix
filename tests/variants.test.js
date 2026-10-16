@@ -120,3 +120,13 @@ describe('listVariants in other API languages', () => {
     expect(v[0].label).toBe('Normale');
   });
 });
+
+describe('variantLabelOf', async () => {
+  const { variantLabelOf } = await import('../src/lib/domain/variants.js');
+  it('names stored variant keys the card data does not list', () => {
+    expect(variantLabelOf('normal')).toBe('Normale');
+    expect(variantLabelOf('holo+stamp-staff')).toBe('Olografica · timbro Staff');
+    expect(variantLabelOf('reverse+foil-cosmos')).toBe('Reverse · foil Cosmo');
+    expect(variantLabelOf('firstEdition')).toBe('Prima edizione');
+  });
+});

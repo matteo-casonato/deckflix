@@ -12,7 +12,7 @@
   import { showToast } from '../lib/stores/toast.svelte.js';
   import { changeCopies, moveCondition, moveToWishlist, restoreEntry, undoMoveCondition, undoMoveToWishlist } from '../lib/data/collection.js';
   import { toggleWish } from '../lib/data/actions.js';
-  import { listVariants } from '../lib/domain/variants.js';
+  import { listVariants, variantLabelOf } from '../lib/domain/variants.js';
   import { CONDITIONS, DEFAULT_CONDITION, collectionKey, conditionFactor, conditionLabel } from '../lib/domain/collection.js';
   import { LANG_LABELS, cardmarketUrl, euro, guessImage, imageAt, pricesDate, setIdOf } from '../lib/domain/cards.js';
   import { hrefFor } from '../lib/domain/routes.js';
@@ -62,6 +62,19 @@
     ($entries ?? [])
       .filter((e) => e.lang === copyLang && e.variant === variant)
       .sort((a, b) => CONDITION_ORDER.indexOf(a.condition || DEFAULT_CONDITION) - CONDITION_ORDER.indexOf(b.condition || DEFAULT_CONDITION));
+  /**
+   * The card's prints, plus any print stored for this language that the data doesn't list
+   * (e.g. a copy saved as "Normale" of a holo-only card): it must show up to be removed or fixed.
+   * @param {import('../lib/domain/variants.js').VariantOption[]} variants
+   * @returns {{ key: string, label: string, price: number | null }[]}
+   */
+  const withStored = (variants) => {
+    /** @type {{ key: string, label: string, price: number | null }[]} */
+    const base = variants.length ? variants : [{ key: 'normal', label: 'Normale', price: null }];
+    const known = new Set(base.map((v) => v.key));
+    const extra = [...new Set(($entries ?? []).filter((e) => e.lang === copyLang && !known.has(e.variant)).map((e) => e.variant))];
+    return [...base, ...extra.map((key) => ({ key, label: `${variantLabelOf(key)} · non in elenco`, price: null }))];
+  };
   /** @param {string} variant */
   const qtyOf = (variant) => groupsOf(variant).reduce((n, e) => n + e.qty, 0);
   /** Copies per language (the same card in Italian and English are separate copies). */
@@ -222,12 +235,12 @@
           <p class="muted">TCGdex non elenca le stampe di questa carta.</p>
         {/if}
         <ul class="variants">
-          {#each variants.length ? variants : [{ key: 'normal', label: 'Normale', price: null }] as v (v.key)}
+          {#each withStored(variants) as v (v.key)}
             {@const groups = groupsOf(v.key)}
             <li class="variant">
               <div class="vhead">
                 <span class="vtxt">
-                  <strong>{v.label}{variants.length === 1 ? ' · unica stampa' : ''}</strong>
+                  <strong>{v.label}{variants.length === 1 && v.key === variants[0].key ? ' · unica stampa' : ''}</strong>
                   <span class="muted num">{v.price != null ? euro(v.price) : 'Prezzo non disponibile'}</span>
                 </span>
                 {#if !groups.length}

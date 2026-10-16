@@ -131,6 +131,25 @@ export function listVariants(card) {
     }));
 }
 
+/**
+ * Label of a stored variant key ("holo+stamp-staff" → "Olografica · timbro Staff"), for copies
+ * whose print the card's data doesn't list.
+ * @param {string} key
+ */
+export function variantLabelOf(key) {
+  const [finish, ...rest] = key.split('+');
+  return [
+    finish === 'firstEdition' ? 'Prima edizione' : (TYPE_LABELS[finish] ?? humanize(finish)),
+    ...rest.map((part) =>
+      part.startsWith('foil-')
+        ? `foil ${FOIL_LABELS[part.slice(5)] ?? humanize(part.slice(5))}`
+        : part.startsWith('stamp-')
+          ? `timbro ${STAMP_LABELS[part.slice(6)] ?? humanize(part.slice(6))}`
+          : humanize(part),
+    ),
+  ].join(' · ');
+}
+
 /** Printed words that reveal a stamp. Most stamps are logos and need the user's tap. */
 const STAMP_HINTS = /** @type {[RegExp, string][]} */ ([
   [/\bSTAFF\b/i, 'staff'],
