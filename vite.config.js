@@ -65,8 +65,8 @@ export default defineConfig({
             },
           },
           {
-            // Set symbols from pokesymbols.com: they don't change, keep them.
-            urlPattern: ({ url }) => url.hostname === 'pokesymbols.com',
+            // Set symbols and logos (pokesymbols.com, The Hobby Bin): they don't change, keep them.
+            urlPattern: ({ url }) => url.hostname === 'pokesymbols.com' || url.hostname === 'thehobbybin.com',
             handler: 'CacheFirst',
             options: {
               cacheName: 'set-symbols',

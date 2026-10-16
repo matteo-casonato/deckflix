@@ -197,5 +197,20 @@ export const SET_SYMBOLS = {
   "30th": "30th-celebration"
 };
 
+/** Sets whose logo pokesymbols has. */
+const LOGOS = new Set(["151","30th-celebration","ancient-origins","aquapolis","arceus","ascended-heroes","astral-radiance","base-set-2","battle-styles","best-of-game","black-and-white","black-bolt","boundaries-crossed","breakpoint","breakthrough","brilliant-stars","burning-shadows","call-of-legends","celebrations","celestial-storm","champions-path","chaos-rising","chilling-reign","cosmic-eclipse","crimson-invasion","crown-zenith","crystal-guardians","dark-explorers","darkness-ablaze","delta-species","deoxys","destined-rivals","detective-pikachu","diamond-and-pearl","double-crisis","dragon","dragon-frontiers","dragon-majesty","dragon-vault","dragons-exalted","emerald","emerging-powers","evolving-skies","expedition","firered-leafgreen","forbidden-light","fossil","furious-fists","fusion-strike","fustal-promos","great-encounters","guardians-rising","gym-challenge","gym-heroes","hidden-fates","hidden-fates-shiny-vault","hidden-legends","holon-phantoms","journey-together","jungle","kalos-starter-set","legend-maker","legendary-collection","legendary-treasures","legends-awakened","lost-origin","lost-thunder","majestic-dawn","mcdonalds-collection-dragon-discovery-2024","mega-evolution","mysterious-treasures","neo-destiny","neo-discovery","neo-genesis","neo-revelation","next-destinies","noble-victories","obsidian-flames","paldea-evolved","paldean-fates","paradox-rift","perfect-order","phantasmal-flames","phantom-forces","pitch-black","plasma-blast","plasma-freeze","plasma-storm","platinum","pokemon-go","pokemon-rumble","power-keepers","primal-clash","prismatic-evolutions","rebel-clash","rising-rivals","roaring-skies","sandstorm","scarlet-and-violet","secret-wonders","shining-fates","shining-legends","shrouded-fable","silver-tempest","skyridge","southern-islands","stellar-crown","stormfront","sun-and-moon","supreme-victors","surging-sparks","sword-and-shield","team-magma-vs-team-aqua","team-rocket","team-rocket-returns","team-up","temporal-forces","triumphant","twilight-masquerade","ultra-prism","unbroken-bonds","undaunted","unified-minds","unleashed","unseen-forces","vivid-voltage","white-flare","xy","xy-evolutions","xy-fates-collide","xy-generations","xy-steam-siege"]);
+
 /** Set symbol image (loaded from pokesymbols.com, cached by the app), or null. @param {string} setId */
 export const setSymbolUrl = (setId) => (SET_SYMBOLS[setId] ? `https://pokesymbols.com/images/tcg/sets/symbols/${SET_SYMBOLS[setId]}.png` : null);
+
+/**
+ * Set logo: TCGdex's in the card language when it has one (few Italian ones), else the English
+ * one from pokesymbols.com, else null (show the name).
+ * @param {string} setId
+ * @param {string | null | undefined} [localLogo] TCGdex `logo` of the set in the card language
+ */
+export function setLogoUrl(setId, localLogo) {
+  if (localLogo) return `${localLogo}.png`;
+  const slug = SET_SYMBOLS[setId];
+  return slug && LOGOS.has(slug) ? `https://pokesymbols.com/images/tcg/sets/logos/${slug}.png` : null;
+}

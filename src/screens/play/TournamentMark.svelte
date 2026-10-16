@@ -1,17 +1,23 @@
 <script>
   // @ts-check
-  // Tournament type at the start of a row: the League Cup / League Challenge logo, or a tile
-  // with the word (Lega, Prerelease) for the types without one.
+  // Tournament type at the start of a row: the League Cup / League Challenge logo, the logo of
+  // the set a prerelease is for (Dominio Delta), or a tile with the word (Lega, Pre).
+  import { prereleaseSet } from '../../lib/domain/upcomingSets.js';
 
-  /** @type {{ type?: import('../../lib/domain/ics.js').TournamentType, size?: number }} */
-  let { type = 'league', size = 40 } = $props();
+  /** @type {{ type?: import('../../lib/domain/ics.js').TournamentType, size?: number, title?: string, start?: string }} */
+  let { type = 'league', size = 40, title = '', start = '' } = $props();
+
+  const set = $derived(type === 'prerelease' && start ? prereleaseSet(title, start) : null);
+  let setLogoFailed = $state(false);
 
   const LOGO = /** @type {Record<string, string>} */ ({ cup: 'league-cup.png', challenge: 'league-challenge.png' });
   const LABEL = /** @type {Record<string, string>} */ ({ cup: 'League Cup', challenge: 'League Challenge', prerelease: 'Prerelease', league: 'Lega' });
 </script>
 
-<span class="mark {type}" style:width="{size}px" style:height="{Math.round(size * 1.075)}px">
-  {#if LOGO[type]}
+<span class="mark {type}" style:width="{set && !setLogoFailed ? Math.round(size * 1.6) : size}px" style:height="{Math.round(size * 1.075)}px">
+  {#if set && !setLogoFailed}
+    <img src={set.logo} alt={`Prerelease ${set.it}`} onerror={() => (setLogoFailed = true)} />
+  {:else if LOGO[type]}
     <img src="{import.meta.env.BASE_URL}brands/{LOGO[type]}" alt={LABEL[type]} />
   {:else}
     <span class="word" style:font-size="{Math.max(8, Math.round(size * 0.24))}px">{type === 'prerelease' ? 'Pre' : LABEL[type]}</span>

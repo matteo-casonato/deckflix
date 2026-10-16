@@ -17,6 +17,7 @@
   import StackRow from '../../lib/ui/StackRow.svelte';
   import { stackIds } from '../../lib/domain/albums.js';
   import { cardImage } from '../../lib/api/tcgdex.js';
+  import { setLogoUrl } from '../../lib/domain/setSymbols.js';
 
   /** @type {{ query: Record<string, string>, copies: number, mode: 'sets' | 'cards' }} */
   let { query, copies, mode } = $props();
@@ -73,6 +74,7 @@
         return {
           setId,
           name: set?.name ?? setId,
+          logo: setLogoUrl(setId, set?.logo),
           serie: set?.serie?.name ?? '',
           code: set?.abbreviation?.official ?? setId.toUpperCase().slice(0, 4),
           progress: setProgress({ official }, ($entries ?? []).filter((e) => e.setId === setId)),
@@ -140,6 +142,7 @@
             cardImage($cards?.get(cid)),
           )}
           title={g.name}
+          logo={g.logo}
           sub={`${g.serie ? `${g.serie} · ` : ''}${g.progress.owned}/${g.progress.total || '?'}${g.value > 0 ? ` · ${euro(g.value)}` : ''}`}
           percent={g.progress.percent}
           done={g.progress.percent >= 100}

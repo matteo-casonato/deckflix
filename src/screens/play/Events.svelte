@@ -133,7 +133,7 @@
             {#each list as t (t.id)}
               <li>
                 <a href={t.code ? eventPageUrl(t.code) : nearbyEventsUrl(settings.homePlace, settings.eventRadius)} target="_blank" rel="noopener noreferrer">
-                  <TournamentMark type={t.type} />
+                  <TournamentMark type={t.type} title={t.title} start={t.start} />
                   <span class="ttxt">
                     <strong>{t.title || t.place}</strong>
                     {#if subline(t)}<span class="muted">{subline(t)}</span>{/if}

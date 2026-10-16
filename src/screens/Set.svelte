@@ -17,9 +17,13 @@
   import Segmented from '../lib/ui/Segmented.svelte';
   import CardTile from '../lib/ui/CardTile.svelte';
   import Icon from '../lib/ui/Icon.svelte';
+  import { setLogoUrl } from '../lib/domain/setSymbols.js';
 
   /** @type {{ id: string, query: Record<string, string> }} */
   let { id, query } = $props();
+
+  /** The set logo did not load: the name in the header is enough. */
+  let logoFailed = $state(false);
 
   const filter = $derived(['owned', 'missing'].includes(query.show) ? query.show : 'all');
 
@@ -123,11 +127,16 @@
   <p class="muted pad" aria-busy="true">Carico l’edizione…</p>
 {:then set}
   {@const v = view(set)}
+  {@const logo = setLogoUrl(id, set.logo)}
   <BackHeader title={set.name} fallback={hrefFor('collection', {}, { tab: 'owned' })}>
     <a class="round" href={hrefFor('quick', {}, { set: id })} aria-label="Inserimento rapido in questa edizione">
       <Icon icon={KeyboardIcon} size={20} />
     </a>
   </BackHeader>
+
+  {#if logo && !logoFailed}
+    <img class="set-logo" src={logo} alt="" onerror={() => (logoFailed = true)} />
+  {/if}
 
   <section class="summary card">
     <svg class="ring" viewBox="0 0 64 64" aria-hidden="true">
@@ -207,6 +216,14 @@
     display: flex;
     align-items: center;
     justify-content: center;
+  }
+
+  .set-logo {
+    display: block;
+    height: 72px;
+    max-width: calc(100% - 64px);
+    margin: 0 auto 12px;
+    object-fit: contain;
   }
 
   .summary {

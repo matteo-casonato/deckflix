@@ -115,7 +115,7 @@
         <ul class="preview">
           {#each nextThree as t (t.id)}
             <li>
-              <TournamentMark type={t.type} size={30} />
+              <TournamentMark type={t.type} size={30} title={t.title} start={t.start} />
               <span class="pv-txt">
                 <strong>{t.title || t.place}</strong>
                 <span class="num">{dayText(t.start)}{t.city ? ` · ${t.city}` : ''}{km(t) != null ? ` · ${km(t)} km` : ''}</span>

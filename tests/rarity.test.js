@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { rarityIcon } from '../src/lib/domain/rarity.js';
-import { SET_SYMBOLS, setSymbolUrl } from '../src/lib/domain/setSymbols.js';
+import { SET_SYMBOLS, setLogoUrl, setSymbolUrl } from '../src/lib/domain/setSymbols.js';
+import { prereleaseSet } from '../src/lib/domain/upcomingSets.js';
 
 describe('rarityIcon', () => {
   it('reads the rarity in every card language', () => {
@@ -42,5 +43,24 @@ describe('setSymbolUrl', () => {
     expect(SET_SYMBOLS.sv03).toBe('obsidian-flames');
     expect(setSymbolUrl('sv03.5')).toBe('https://pokesymbols.com/images/tcg/sets/symbols/151.png');
     expect(setSymbolUrl('A1')).toBe(null);
+    expect(setLogoUrl('sv03')).toBe('https://pokesymbols.com/images/tcg/sets/logos/obsidian-flames.png');
+    expect(setLogoUrl('sv03', 'https://assets.tcgdex.net/it/sv/sv03/logo')).toBe('https://assets.tcgdex.net/it/sv/sv03/logo.png');
+    expect(setLogoUrl('svp')).toBe(null);
+  });
+});
+
+describe('prereleaseSet', () => {
+  const sets = [
+    { en: 'Delta Reign', it: 'Dominio Delta', release: '2026-11-06', logo: 'dr.png' },
+    { en: 'Next Set', it: 'Set Successivo', release: '2027-01-29', logo: 'ns.png' },
+  ];
+  it('finds the set named in the title, in English or Italian', () => {
+    expect(prereleaseSet('pre-release Delta Reign Sora', '2026-10-24T16:00', sets)?.en).toBe('Delta Reign');
+    expect(prereleaseSet('Prerelease DOMINIO DELTA - Ludi&Co', '2026-10-25T10:00', sets)?.en).toBe('Delta Reign');
+    expect(prereleaseSet('Pre-release Set Successivo', '2027-01-10T10:00', sets)?.en).toBe('Next Set');
+  });
+  it('else picks the set coming out in the next three weeks', () => {
+    expect(prereleaseSet('Torneo Win a PRERELEASE', '2026-10-19T20:00', sets)?.en).toBe('Delta Reign');
+    expect(prereleaseSet('Prerelease', '2026-12-01T10:00', sets)).toBe(null);
   });
 });
