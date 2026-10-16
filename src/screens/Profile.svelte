@@ -13,6 +13,7 @@
     GridViewIcon,
     LinkSquare02Icon,
     QrCodeIcon,
+    UserAccountIcon,
     LicenseIcon,
     Settings02Icon,
     Location01Icon,
@@ -90,6 +91,7 @@
   const APP_URL = `${location.origin}${import.meta.env.BASE_URL}`;
   let shareSheet = $state(false);
   let licenseSheet = $state(false);
+  let accountSheet = $state(false);
   const canShare = typeof navigator.share === 'function';
   function shareLink() {
     navigator.share({ title: 'Deckflix', text: 'Le tue carte Pokémon: collezione, valore, deck e tornei.', url: APP_URL }).catch(() => {});
@@ -148,7 +150,24 @@
     <span class="text"><strong>Ripristina da Drive</strong><span>Ultimo backup o quello del giorno prima</span></span>
     <span class="chev"><Icon icon={ArrowRight01Icon} size={20} /></span>
   </button>
+  {#if account.user}
+    <button class="row" onclick={() => (accountSheet = true)}>
+      <span class="ico"><Icon icon={UserAccountIcon} /></span>
+      <span class="text"><strong>Account</strong><span>Esci o cancella i dati da questo telefono</span></span>
+      <span class="chev"><Icon icon={ArrowRight01Icon} size={20} /></span>
+    </button>
+  {/if}
 </section>
+
+<Sheet open={accountSheet} title="Account" onclose={() => (accountSheet = false)}>
+  <div class="acct">
+    {#if account.user}<p class="muted">Collegato come <strong>{account.user.email}</strong></p>{/if}
+    <button class="btn danger-outline" onclick={() => ((accountSheet = false), (confirm = 'signout'))}>Esci dall’account</button>
+    <p class="muted">La collezione resta su questo telefono; il backup automatico su Drive si ferma finché non accedi di nuovo.</p>
+    <button class="btn danger" onclick={() => ((accountSheet = false), (confirm = 'wipe'))}>Esci e cancella i dati da questo telefono</button>
+    <p class="muted">Collezione, deck e impostazioni spariscono da questo telefono; il backup su Drive resta e si può ripristinare accedendo di nuovo.</p>
+  </div>
+</Sheet>
 
 <h2 class="section">Play!</h2>
 <section class="card list">
@@ -242,12 +261,6 @@
   </div>
 </Sheet>
 
-{#if account.user}
-  <button class="signout" onclick={() => (confirm = 'signout')}>Esci dall’account</button>
-  <button class="signout subtle" onclick={() => (confirm = 'wipe')}>Esci e cancella i dati da questo telefono</button>
-  <p class="foot">I dati restano su questo telefono finché non li cancelli.</p>
-{/if}
-
 <h2 class="section">Il progetto</h2>
 <section class="card about">
   <p>
@@ -262,7 +275,7 @@
     <p>Hai un’idea o hai trovato un errore? Scrivimi. E se l’app ti è utile, puoi offrirmi un caffè.</p>
     <div class="about-actions">
       {#if ABOUT.donateUrl}
-        <a class="btn primary" href={ABOUT.donateUrl} target="_blank" rel="noopener noreferrer">☕ Offrimi un caffè</a>
+        <a class="btn primary" href={ABOUT.donateUrl} target="_blank" rel="noopener noreferrer">☕ Supporta il progetto</a>
       {/if}
       {#if ABOUT.contactEmail}
         <a class="btn" href={`mailto:${ABOUT.contactEmail}?subject=${encodeURIComponent('Deckflix: suggerimento')}`}>Scrivimi un suggerimento</a>
@@ -563,25 +576,7 @@
     display: flex;
   }
 
-  .signout {
-    display: block;
-    width: calc(100% - 32px);
-    margin: 22px 16px 0;
-    min-height: 52px;
-    border: 0;
-    border-radius: 26px;
-    background: transparent;
-    color: var(--danger);
-    font-size: 15px;
-    font-weight: 700;
-    cursor: pointer;
-  }
 
-  .signout.subtle {
-    margin-top: 0;
-    font-weight: 500;
-    font-size: 14px;
-  }
 
   .about {
     margin: 0 16px;
@@ -624,12 +619,6 @@
     line-height: 1.45;
   }
 
-  .foot {
-    margin: 8px 24px 0;
-    font-size: 12px;
-    color: var(--muted);
-    text-align: center;
-  }
 
   .share {
     display: flex;
@@ -701,5 +690,30 @@
 
   .credits a {
     color: var(--accent);
+  }
+
+  .acct {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .acct p {
+    margin: 0 4px 6px;
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  .acct strong {
+    color: var(--text);
+  }
+
+  .btn.danger-outline {
+    color: var(--danger);
+  }
+
+  .btn.danger {
+    background: color-mix(in srgb, var(--danger) 16%, var(--surface));
+    color: var(--danger);
   }
 </style>
