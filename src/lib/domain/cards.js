@@ -212,3 +212,26 @@ export function cheapestPrice(card) {
   const prices = [copyPrice(card, 'normal'), ...listVariants(card).map((v) => v.price)].filter((p) => typeof p === 'number' && p > 0);
   return prices.length ? Math.min(.../** @type {number[]} */ (prices)) : null;
 }
+
+/**
+ * The print a card normally comes in: "normal" when it exists (commons, uncommons), else its
+ * first print. For rares and above TCGdex lists only "Olografica": that holo IS the card,
+ * not a special version (Squirtle 148/142 Rara illustrazione, Charizard-ex Rara doppia).
+ * @param {any} card
+ */
+export function standardPrint(card) {
+  const options = listVariants(card);
+  return options.find((v) => v.key === 'normal')?.key ?? options[0]?.key ?? 'normal';
+}
+
+/**
+ * Tag for a copy only when its print differs from the card's standard one (Rev, Timbro,
+ * 1ª ed., or Holo where a non-holo print exists). Rarity is a different thing: it is the
+ * symbol on the card and is shown as text, not as a print tag.
+ * @param {any} card full TCGdex card (null when not loaded yet)
+ * @param {string} variantKey
+ */
+export function printBadge(card, variantKey) {
+  if (!card) return variantKey === 'normal' || /^holo$/.test(variantKey) ? null : variantBadge(variantKey);
+  return variantKey === standardPrint(card) ? null : variantBadge(variantKey);
+}

@@ -1,7 +1,7 @@
 // @ts-check
 // Albums ("Raccolte", SPEC Phase 9): manual boards of cards chosen by the user and automatic
 // ones computed from the collection. Pure: entries, cached cards and albums in.
-import { copyPrice, priceTrend } from './cards.js';
+import { copyPrice, priceTrend, standardPrint } from './cards.js';
 import { entryPrice } from './value.js';
 import { listVariants } from './variants.js';
 
@@ -18,7 +18,7 @@ export const AUTO_ALBUMS = /** @type {const} */ ([
   ['rising', 'In crescita', 'Media 7 giorni sopra quella a 30'],
   ['fullart', 'Full art e illustrazioni', 'Ultrarare, illustrazioni, iper rare'],
   ['duplicates', 'Doppioni', 'Più di una copia'],
-  ['holo', 'Holo e reverse', 'Stampe olografiche'],
+  ['holo', 'Reverse e stampe speciali', 'Reverse, timbri, prime edizioni'],
   ['pokemon', 'Per Pokémon', 'Stesso Pokémon in più carte'],
   ['artist', 'Per illustratore', 'Stesso artista in più carte'],
 ]);
@@ -125,7 +125,7 @@ export function autoAlbum(id, tiles, cards) {
     case 'duplicates':
       return flat(tiles.filter((t) => t.qty > 1).sort((a, b) => b.qty - a.qty || byValue(a, b)));
     case 'holo':
-      return flat(tiles.filter((t) => t.variants.some((v) => v.startsWith('holo') || v.startsWith('reverse'))).sort(byValue));
+      return flat(tiles.filter((t) => t.variants.some((v) => v !== standardPrint(card(t)))).sort(byValue));
     case 'pokemon':
       // dexId is the same in every language, so "Pikachu" and "Pikachu ex" end up together.
       return groupBy(

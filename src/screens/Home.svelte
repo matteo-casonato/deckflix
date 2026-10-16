@@ -3,6 +3,7 @@
   // Home (docs/mockups/Home.html): value with its 30-day trend, shortcuts, featured deck,
   // card of the day, price movers, wishes getting cheaper, recent additions, set in progress.
   import { liveQuery } from 'dexie';
+  import Logo from '../lib/ui/Logo.svelte';
   import { FlashIcon, KeyboardIcon, ScanIcon, Search01Icon } from '@hugeicons/core-free-icons';
   import { db } from '../lib/db.js';
   import { account } from '../lib/stores/account.svelte.js';
@@ -106,7 +107,7 @@
 </script>
 
 <header class="top">
-  <h1 class="logo">Deck<span>flix</span></h1>
+  <Logo tag="h1" size={28} />
   {#if account.user}<span class="hello">{greeting}, {account.user.givenName || account.user.name}</span>{/if}
 </header>
 
@@ -209,14 +210,7 @@
     align-items: center;
   }
 
-  .logo {
-    font-size: 28px;
-    letter-spacing: -0.5px;
-  }
 
-  .logo span {
-    color: var(--accent);
-  }
 
   .hello {
     font-size: 13px;

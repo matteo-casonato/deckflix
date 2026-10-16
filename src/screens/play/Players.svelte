@@ -159,6 +159,7 @@
 <Sheet open={!!showing} title="Codice per la lega" onclose={() => (showing = null)}>
   {#if showing}
     <div class="qr-view">
+      {@render avatar(showing, 56)}
       <p class="id">ID giocatore: <strong class="num">{showing.playerId}</strong></p>
       <p class="name">{showing.name}</p>
       {#if !hideYear}<p class="year">Anno di nascita: <strong class="num">{showing.birthYear}</strong></p>{/if}
@@ -166,7 +167,8 @@
       <div class="qr-box">
         <QrCode
           text={playerQrText(showing, Date.now())}
-          logo={showing.avatar ?? null}
+          logo={`${import.meta.env.BASE_URL}brands/play-pokemon.png`}
+          fit="meet"
           label={`Codice QR del giocatore ${showing.name}, ID ${showing.playerId}`}
         />
       </div>

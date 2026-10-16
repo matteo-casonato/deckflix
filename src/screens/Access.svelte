@@ -3,6 +3,7 @@
   // First run only (docs/mockups/AccessoGoogle.html): official Google button or continue
   // without an account.
   import { onMount } from 'svelte';
+  import Logo from '../lib/ui/Logo.svelte';
   import { LockIcon } from '@hugeicons/core-free-icons';
   import Icon from '../lib/ui/Icon.svelte';
   import { renderSignInButton } from '../lib/sync/google-auth.js';
@@ -21,7 +22,7 @@
 
 <div class="access">
   <div class="intro">
-    <span class="logo">Deck<span>flix</span></span>
+    <Logo size={26} />
     <h1>La tua collezione,<br />sempre al sicuro.</h1>
     <p>Accedi con Google: Deckflix salva una copia su Drive mentre la usi e la ritrova su qualsiasi telefono.</p>
   </div>
@@ -56,15 +57,7 @@
     padding: 0 6px 22px;
   }
 
-  .logo {
-    font-family: var(--font-display);
-    font-weight: 800;
-    font-size: 26px;
-  }
 
-  .logo span {
-    color: var(--accent);
-  }
 
   h1 {
     font-size: 34px;

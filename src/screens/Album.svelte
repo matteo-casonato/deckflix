@@ -10,7 +10,7 @@
   import { prefetchCards, liveCards } from '../lib/data/catalog.js';
   import { deleteAlbum, renameAlbum, restoreAlbum, toggleInAlbum } from '../lib/data/albums.js';
   import { AUTO_ALBUMS, autoAlbum, bestPrice, isAutoAlbum, ownedTiles } from '../lib/domain/albums.js';
-  import { euro, setIdOf, variantBadge } from '../lib/domain/cards.js';
+  import { euro, printBadge, setIdOf } from '../lib/domain/cards.js';
   import { hrefFor } from '../lib/domain/routes.js';
   import { navigate } from '../lib/router.svelte.js';
   import BackHeader from '../lib/ui/BackHeader.svelte';
@@ -99,7 +99,7 @@
       localId: card?.localId ?? t.cardId.slice(setIdOf(t.cardId).length + 1),
       image: card?.image ?? null,
       qty: t.qty,
-      badge: t.qty === 0 ? 'Manca' : t.variants.length === 1 ? variantBadge(t.variants[0]) : null,
+      badge: t.qty === 0 ? 'Manca' : t.variants.length === 1 ? printBadge(card, t.variants[0]) : null,
       price: t.unit > 0 ? euro(t.unit) : null,
       href: hrefFor('card', { lang: settings.cardLang, id: t.cardId }),
     };

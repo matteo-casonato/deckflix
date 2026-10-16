@@ -205,7 +205,7 @@
             <li class="variant">
               <div class="vhead">
                 <span class="vtxt">
-                  <strong>{v.label}</strong>
+                  <strong>{v.label}{variants.length === 1 ? ' · unica stampa' : ''}</strong>
                   <span class="muted num">{v.price != null ? euro(v.price) : 'Prezzo non disponibile'}</span>
                 </span>
                 {#if !groups.length}

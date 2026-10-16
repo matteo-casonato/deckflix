@@ -156,3 +156,23 @@ describe('cheapestPrice', async () => {
     expect(cheapestPrice(null)).toBe(null);
   });
 });
+
+describe('standardPrint and printBadge', async () => {
+  const { printBadge, standardPrint } = await import('../src/lib/domain/cards.js');
+  const holoOnly = { variants_detailed: [{ type: 'Olografica', pricing: {} }] };
+  const common = { variants_detailed: [{ type: 'Normale' }, { type: 'Reverse' }, { type: 'Normale', stamp: ['pokemon-together'] }] };
+  it('treats the only holo print of rares as the card itself', () => {
+    expect(standardPrint(holoOnly)).toBe('holo');
+    expect(printBadge(holoOnly, 'holo')).toBe(null);
+  });
+  it('tags reverse and stamped copies of commons, not the normal print', () => {
+    expect(standardPrint(common)).toBe('normal');
+    expect(printBadge(common, 'normal')).toBe(null);
+    expect(printBadge(common, 'reverse')).toBe('Rev');
+    expect(printBadge(common, 'normal+stamp-pokemon-together')).toBe('Timbro');
+  });
+  it('without card data only shows unambiguous tags', () => {
+    expect(printBadge(null, 'holo')).toBe(null);
+    expect(printBadge(null, 'reverse')).toBe('Rev');
+  });
+});

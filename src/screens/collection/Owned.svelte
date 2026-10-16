@@ -6,7 +6,7 @@
   import { db } from '../../lib/db.js';
   import { settings } from '../../lib/stores/settings.svelte.js';
   import { prefetchCards, setDetails, setsMap, liveCards } from '../../lib/data/catalog.js';
-  import { copyPrice, euro, setIdOf, setProgress, variantBadge } from '../../lib/domain/cards.js';
+  import { euro, printBadge, setIdOf, setProgress } from '../../lib/domain/cards.js';
   import { hrefFor } from '../../lib/domain/routes.js';
   import { replace } from '../../lib/router.svelte.js';
   import Icon from '../../lib/ui/Icon.svelte';
@@ -99,7 +99,7 @@
       localId: card?.localId ?? t.cardId.slice(setIdOf(t.cardId).length + 1),
       image: card?.image ?? null,
       qty: t.qty,
-      badge: only ? variantBadge(only) : null,
+      badge: only ? printBadge(card, only) : null,
       price: t.value > 0 ? euro(t.value) : null,
       href: hrefFor('card', { lang: settings.cardLang, id: t.cardId }),
     };

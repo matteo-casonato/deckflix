@@ -8,7 +8,7 @@
   import { recordTodaySnapshot, valuedCollection } from '../../lib/data/value.js';
   import { setsMap } from '../../lib/data/catalog.js';
   import { PERIODS, collectionStats, periodChange } from '../../lib/domain/value.js';
-  import { LANG_LABELS, euro, pricesDate, setIdOf, variantBadge } from '../../lib/domain/cards.js';
+  import { LANG_LABELS, euro, pricesDate, printBadge, setIdOf } from '../../lib/domain/cards.js';
   import { hrefFor } from '../../lib/domain/routes.js';
   import { replace } from '../../lib/router.svelte.js';
   import ValueChart from '../../lib/ui/ValueChart.svelte';
@@ -87,7 +87,7 @@
     <span><strong class="num">{stats.unique}</strong> uniche</span>
     <span><strong class="num">{stats.sets}</strong> edizioni</span>
     <span><strong class="num">{stats.duplicates}</strong> doppioni</span>
-    <span><strong class="num">{stats.holo}</strong> holo</span>
+    <span><strong class="num">{stats.special}</strong> stampe speciali</span>
     <span><strong class="num">{stats.reverse}</strong> reverse</span>
   </section>
 
@@ -100,7 +100,7 @@
             <span class="rank num">{i + 1}</span>
             <span class="txt">
               <strong>{data.cards.get(t.cardId)?.name ?? t.cardId}</strong>
-              <span class="muted num">{sub(t.cardId)}{variantBadge(t.variant) ? ` · ${variantBadge(t.variant)}` : ''}{t.qty > 1 ? ` · ×${t.qty}` : ''}</span>
+              <span class="muted num">{sub(t.cardId)}{printBadge(data.cards.get(t.cardId), t.variant) ? ` · ${printBadge(data.cards.get(t.cardId), t.variant)}` : ''}{t.qty > 1 ? ` · ×${t.qty}` : ''}</span>
             </span>
             <span class="price num">{euro(t.unit)}</span>
           </a>

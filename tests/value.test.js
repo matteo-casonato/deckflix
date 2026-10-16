@@ -51,7 +51,7 @@ describe('periodChange', () => {
 describe('collectionStats', () => {
   it('counts copies, uniques, duplicates, finishes, ranks and distributions', () => {
     const s = collectionStats([e('a', 2), e('a', 1, 'reverse', 'en'), e('b', 1, 'holo'), e('c', 1)], cards);
-    expect(s).toMatchObject({ copies: 5, unique: 3, sets: 1, duplicates: 2, holo: 1, reverse: 1 });
+    expect(s).toMatchObject({ copies: 5, unique: 3, sets: 1, duplicates: 2, special: 1, reverse: 1 });
     expect(s.mostValuable.map((t) => t.cardId)).toEqual(['b', 'a']);
     expect(s.rising.map((t) => [t.cardId, Math.round(t.pct)])).toEqual([['b', 20]]);
     expect(s.byRarity).toEqual([

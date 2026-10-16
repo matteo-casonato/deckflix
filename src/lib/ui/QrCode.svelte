@@ -1,12 +1,12 @@
 <script>
   // @ts-check
   // QR code as SVG (dark modules on white, 4-module quiet zone), from src/lib/domain/qr.js.
-  // With `logo` (a player photo) the code uses the highest error correction (H) and the
-  // picture covers the center: checked to decode with up to 30% of the width covered.
+  // With `logo` (the Play! Pokémon logo, or a photo) the code uses the highest error correction
+  // (H) and the picture covers the center: checked to decode with up to 30% of the width covered.
   import { qrMatrix } from '../domain/qr.js';
 
-  /** @type {{ text: string, label: string, size?: number, logo?: string | null }} */
-  let { text, label, size = 260, logo = null } = $props();
+  /** @type {{ text: string, label: string, size?: number, logo?: string | null, fit?: 'slice' | 'meet' }} */
+  let { text, label, size = 260, logo = null, fit = 'slice' } = $props();
 
   const matrix = $derived(qrMatrix(text, logo ? 'H' : 'M'));
   /** Side of the center picture, in modules (24% of the code, white margin included). */
@@ -27,7 +27,15 @@
     {@const x = (n - hole) / 2}
     <rect {x} y={x} width={hole} height={hole} rx={hole * 0.22} fill="#fff" />
     <clipPath id="qr-logo"><rect x={x + 0.6} y={x + 0.6} width={hole - 1.2} height={hole - 1.2} rx={hole * 0.2} /></clipPath>
-    <image href={logo} x={x + 0.6} y={x + 0.6} width={hole - 1.2} height={hole - 1.2} clip-path="url(#qr-logo)" preserveAspectRatio="xMidYMid slice" />
+    <image
+      href={logo}
+      x={x + 0.6}
+      y={x + 0.6}
+      width={hole - 1.2}
+      height={hole - 1.2}
+      clip-path="url(#qr-logo)"
+      preserveAspectRatio={fit === 'meet' ? 'xMidYMid meet' : 'xMidYMid slice'}
+    />
   {/if}
 </svg>
 

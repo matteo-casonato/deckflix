@@ -418,6 +418,9 @@ Esporta CSV, invito ad accedere per chi usa l'app senza account, copia di sicure
 
 - **Play! a pannelli come Cards**: pagina principale con tre riquadri, Deck (le copertine degli ultimi due deck), Giocatori (foto o iniziali e divisione) e Tornei (città, raggio e il prossimo torneo importato); ogni riquadro apre la sua sezione (`#/deck?tab=decks|players|events`) con la freccia per tornare. I collegamenti da deck, importazione, stampa, Home e Profilo portano alla sezione giusta.
 
+- **Rarità e stampa**: la rarità è il simbolo della carta (`rarity`: Comune, Rara doppia, Rara illustrazione…), la stampa è come è stampata la copia (varianti: normale, reverse, olografica, timbro, prima edizione). Per le rare e superiori TCGdex elenca solo “Olografica”: quella è la carta stessa, non una versione speciale (Squirtle 148/142 Rara illustrazione, Charizard-ex Rara doppia). Il tag sulle anteprime compare solo se la copia ha una stampa diversa da quella standard della carta (`standardPrint`, `printBadge`: Rev, Timbro, 1ª ed., Holo dove esiste la normale); nella scheda “unica stampa” quando la carta ne ha una sola. Statistiche: “stampe speciali” al posto di “holo”; raccolta automatica “Reverse e stampe speciali”.
+- **Logo**: la Poké Ball accanto al nome Deckflix (Home, accesso, ripristino). Nel codice per la lega il logo Play! Pokémon al centro del QR (copia ridotta in `public/brands/`, originale locale in `docs/brands/`; scelta dell'utente), la foto del giocatore sopra il nome; il QR resta leggibile (verificato con CoreImage).
+
 ## 9. Fuori ambito
 
 Prezzi per lingua e per condizione, riconoscimento con IA a pagamento, notifiche push e backup a app chiusa (servirebbe un server), profili multipli sullo stesso telefono, backup su servizi diversi da Google Drive, pubblicazione sugli store, app nativa con Capacitor (piano B se la scansione web non basta).

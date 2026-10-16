@@ -9,7 +9,7 @@
   import { settings, toggleCover } from '../lib/stores/settings.svelte.js';
   import { showToast } from '../lib/stores/toast.svelte.js';
   import { prefetchCards, liveCards } from '../lib/data/catalog.js';
-  import { cheapestPrice, euro, guessImage, setProgress, variantBadge } from '../lib/domain/cards.js';
+  import { cheapestPrice, euro, guessImage, printBadge, setProgress } from '../lib/domain/cards.js';
   import { hrefFor } from '../lib/domain/routes.js';
   import { replace } from '../lib/router.svelte.js';
   import { entryPrice } from '../lib/domain/value.js';
@@ -105,7 +105,7 @@
           ghost: settings.missingImages,
           starred: settings.covers[`set:${id}`] === c.id,
           onhold: qty > 0 ? (/** @type {Event} */ e) => chooseCover(e, c) : null,
-          badge: variants.size === 1 ? variantBadge([...variants][0]) : null,
+          badge: variants.size === 1 ? printBadge($cards?.get(c.id), [...variants][0]) : null,
           href: hrefFor('card', { lang: settings.cardLang, id: c.id }),
         },
       };

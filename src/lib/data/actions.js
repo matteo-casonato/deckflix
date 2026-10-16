@@ -1,6 +1,7 @@
 // @ts-check
 // User actions shared by several screens, with their confirmation and "Annulla".
 import { getCard } from '../api/tcgdex.js';
+import { standardPrint } from '../domain/cards.js';
 import { listVariants } from '../domain/variants.js';
 import { collectionKey } from '../domain/collection.js';
 import { showToast } from '../stores/toast.svelte.js';
@@ -11,8 +12,7 @@ import { addToWishlist, changeCopies, isWished, removeFromWishlist, restoreEntry
  * @param {any} card
  */
 export function defaultVariant(card) {
-  const variants = listVariants(card);
-  return variants.find((v) => v.key === 'normal')?.key ?? variants[0]?.key ?? 'normal';
+  return standardPrint(card);
 }
 
 /**

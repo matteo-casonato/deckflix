@@ -3,6 +3,7 @@
   // After signing in (docs/mockups/Ripristino.html): Drive access, backup check and
   // automatic restore. Without a backup the app goes straight to Home.
   import { Tick02Icon } from '@hugeicons/core-free-icons';
+  import Logo from '../lib/ui/Logo.svelte';
   import Icon from '../lib/ui/Icon.svelte';
   import Avatar from '../lib/ui/Avatar.svelte';
   import { account } from '../lib/stores/account.svelte.js';
@@ -26,7 +27,7 @@
 </script>
 
 <div class="restore">
-  <span class="logo">Deck<span>flix</span></span>
+  <Logo size={22} />
 
   {#if account.user}
     <section class="card who">
@@ -84,15 +85,7 @@
     gap: 16px;
   }
 
-  .logo {
-    font-family: var(--font-display);
-    font-weight: 800;
-    font-size: 22px;
-  }
 
-  .logo span {
-    color: var(--accent);
-  }
 
   .card {
     padding: 20px;

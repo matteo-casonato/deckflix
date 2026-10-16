@@ -1,6 +1,6 @@
 // @ts-check
 // Collection value and statistics (SPEC § 4.3). Pure: entries, cached cards and snapshots in.
-import { copyPrice, priceTrend } from './cards.js';
+import { copyPrice, priceTrend, standardPrint } from './cards.js';
 import { conditionFactor } from './collection.js';
 
 /**
@@ -113,7 +113,9 @@ export function collectionStats(entries, cards, factors) {
     unique: byCard.size,
     sets: new Set(entries.map((e) => e.setId)).size,
     duplicates: tiles.reduce((n, t) => n + Math.max(0, t.qty - 1), 0),
-    holo: entries.filter((e) => e.variant.startsWith('holo')).reduce((n, e) => n + e.qty, 0),
+    // Prints other than the card's standard one (stamps, 1st edition, holo where a normal
+    // print exists); reverse holos are counted apart.
+    special: entries.filter((e) => !e.variant.startsWith('reverse') && e.variant !== standardPrint(cards.get(e.cardId))).reduce((n, e) => n + e.qty, 0),
     reverse: entries.filter((e) => e.variant.startsWith('reverse')).reduce((n, e) => n + e.qty, 0),
     mostValuable: tiles.filter((t) => t.unit > 0).sort((a, b) => b.unit - a.unit).slice(0, 5),
     rising: tiles
