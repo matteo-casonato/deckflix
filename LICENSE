@@ -1,11 +1,12 @@
 Deckflix
-Copyright © 2026 Matteo Casonato. Tutti i diritti riservati.
+Copyright © 2026 Matteo Casonato e Alessio Casonato. Tutti i diritti riservati.
 
 ITALIANO
 
 1. Opera protetta
 Il codice sorgente, la grafica, i testi e la documentazione di questo repository (insieme,
-"Deckflix") sono opera di Matteo Casonato e sono protetti dalla legge sul diritto d'autore.
+"Deckflix") sono opera di Matteo Casonato e Alessio Casonato e sono protetti dalla legge
+sul diritto d'autore.
 Il fatto che il repository sia pubblico non concede alcuna licenza.
 
 2. Uso dell'app pubblicata
@@ -17,10 +18,10 @@ condividerne il link.
 Salvo quanto previsto dal punto 2 e dalle eccezioni di legge, non è permesso, in tutto o in
 parte: copiare, modificare, tradurre, adattare, ripubblicare o distribuire Deckflix; usarlo
 per creare opere derivate o servizi; usarlo a fini commerciali. Per qualsiasi richiesta
-scrivere all'autore.
+scrivere agli autori.
 
 4. Parti di terzi
-Le parti seguenti non sono dell'autore, restano dei rispettivi titolari e sono soggette
+Le parti seguenti non sono degli autori, restano dei rispettivi titolari e sono soggette
 alle loro condizioni:
 - Bandiere in public/flags/: Flagpack (https://flagpack.xyz), © Yummygum, licenza MIT
   (testo completo in public/flags/LICENSE.txt). Le altre bandiere sono caricate da
@@ -36,24 +37,24 @@ alle loro condizioni:
   rispettive licenze.
 
 5. Nessuna garanzia
-Deckflix è fornito "così com'è", senza garanzie di alcun tipo. L'autore non risponde di
+Deckflix è fornito "così com'è", senza garanzie di alcun tipo. Gli autori non rispondono di
 danni o perdite di dati derivanti dal suo uso.
 
 
 ENGLISH (translation; the Italian text prevails)
 
-Copyright © 2026 Matteo Casonato. All rights reserved.
+Copyright © 2026 Matteo Casonato and Alessio Casonato. All rights reserved.
 
 The source code, graphics, texts and documentation in this repository ("Deckflix") are the
-work of Matteo Casonato and are protected by copyright law. The repository being public
-grants no license.
+work of Matteo Casonato and Alessio Casonato and are protected by copyright law. The
+repository being public grants no license.
 
 Anyone may freely use the published app at https://matteo-casonato.github.io/deckflix/,
 install it on their own devices and share its link.
 
 Except as stated above and as allowed by law, you may not, in whole or in part, copy,
 modify, translate, adapt, republish or distribute Deckflix, use it to build derivative
-works or services, or use it for commercial purposes, without the author's written
+works or services, or use it for commercial purposes, without the authors' written
 permission.
 
 Third-party parts remain their owners' and follow their terms: Flagpack flags in

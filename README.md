@@ -46,4 +46,4 @@ Pagina: `lab/scan/` (`/deckflix/lab/scan/`). Per ogni carta: inquadra, "Scatta e
 
 ## Licenza
 
-© 2026 Matteo Casonato. Tutti i diritti riservati: l'app pubblicata si può usare liberamente, il codice non si può copiare né riutilizzare senza permesso. Bandiere Flagpack (MIT) e immagini Pokémon restano dei rispettivi titolari. Dettagli in [LICENSE](LICENSE).
+© 2026 Matteo Casonato e Alessio Casonato. Tutti i diritti riservati: l'app pubblicata si può usare liberamente, il codice non si può copiare né riutilizzare senza permesso. Bandiere Flagpack (MIT) e immagini Pokémon restano dei rispettivi titolari. Dettagli in [LICENSE](LICENSE).

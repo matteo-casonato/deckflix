@@ -219,7 +219,7 @@
   </button>
   <button class="row" onclick={() => (licenseSheet = true)}>
     <span class="ico"><Icon icon={LicenseIcon} /></span>
-    <span class="text"><strong>Licenza e crediti</strong><span>© 2026 Matteo Casonato · fonti di dati e immagini</span></span>
+    <span class="text"><strong>Licenza e crediti</strong><span>© 2026 Matteo e Alessio Casonato · fonti</span></span>
     <span class="chev"><Icon icon={ArrowRight01Icon} size={20} /></span>
   </button>
 </section>
@@ -227,9 +227,9 @@
 <Sheet open={licenseSheet} title="Licenza e crediti" onclose={() => (licenseSheet = false)}>
   <div class="license">
     <p>
-      <strong>© 2026 Matteo Casonato. Tutti i diritti riservati.</strong> L’app si usa liberamente e gratis, e puoi condividerne
+      <strong>© 2026 Matteo Casonato e Alessio Casonato. Tutti i diritti riservati.</strong> L’app si usa liberamente e gratis, e puoi condividerne
       il link. Il codice, la grafica e i testi di Deckflix non si possono copiare, modificare, ripubblicare né usare a fini
-      commerciali senza il permesso dell’autore.
+      commerciali senza il permesso degli autori.
     </p>
     <p class="muted">
       Pokémon, i nomi delle carte e le relative immagini sono di The Pokémon Company, Nintendo, Creatures e Game Freak.
@@ -265,7 +265,7 @@
 <section class="card about">
   <p>
     <strong>👋 Ciao, sono Matteo.</strong> Deckflix è la web app che ho creato per tenere in ordine le carte Pokémon di mio
-    figlio Alessio e per trovare più facilmente tornei vicini, tutto in un posto solo.
+    figlio Alessio e trovare più facilmente i tornei vicini, tutto nella stessa app.
   </p>
   <p>
     È gratuita e lo resterà finché lo saranno i servizi su cui si appoggia (TCGdex, Google Drive, GitHub). Niente
@@ -274,7 +274,7 @@
   {#if ABOUT.contactEmail || ABOUT.donateUrl}
     <p>
       Non pretende di essere perfetta: è nata dalla passione per il gioco e cresce con i suggerimenti, a partire da quelli
-      di mio figlio. Se trovi un errore o hai un’idea, scrivimi. E se ti è utile e vuoi supportare il progetto, puoi sempre
+      di Alessio. Se trovi un errore o hai un’idea, scrivimi. E se ti è utile e vuoi supportare il progetto, puoi sempre
       offrirmi un caffè.
     </p>
     <div class="about-actions">
