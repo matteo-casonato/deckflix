@@ -4,6 +4,7 @@
   // birth year, age division, format, then Pokémon (set, number, regulation mark), Trainers
   // and Energy. Print or save as PDF (browser print), or share the text list.
   import { liveQuery } from 'dexie';
+  import Logo from '../lib/ui/Logo.svelte';
   import Picker from '../lib/ui/Picker.svelte';
   import { db } from '../lib/db.js';
   import { deckRows, exportDecklist, ownedMap } from '../lib/data/decks.js';
@@ -92,6 +93,7 @@
 {#if sheet}
   <article class="sheet" aria-label="Anteprima del foglio">
     <header>
+      <Logo size={20} />
       <h1>Pokémon TCG · Lista del mazzo</h1>
       <span class="date">{today}</span>
     </header>
@@ -187,13 +189,23 @@
 
   .sheet header {
     display: flex;
-    justify-content: space-between;
-    align-items: baseline;
+    align-items: center;
+    gap: 12px;
     border-bottom: 2px solid #000;
     padding-bottom: 6px;
   }
 
+  /* Deckflix logo at the top: black name, "flix" in a darker yellow that prints well. */
+  .sheet header :global(.logo) {
+    color: #000;
+  }
+
+  .sheet header :global(.logo .flix) {
+    color: #c99400;
+  }
+
   .sheet h1 {
+    flex: 1;
     font-size: 15px;
     color: #000;
   }
