@@ -2,10 +2,13 @@
   // @ts-check
   // "Link utili" from the Profile: useful Pokémon TCG websites (list in src/lib/domain/links.js).
   import { LinkSquare02Icon } from '@hugeicons/core-free-icons';
-  import { USEFUL_LINKS, hostOf } from '../lib/domain/links.js';
+  import { USEFUL_LINKS, faviconOf, hostOf } from '../lib/domain/links.js';
   import { hrefFor } from '../lib/domain/routes.js';
   import BackHeader from '../lib/ui/BackHeader.svelte';
   import Icon from '../lib/ui/Icon.svelte';
+
+  /** Favicons that did not load: the initial is shown instead. */
+  let failed = $state(new Set());
 </script>
 
 <BackHeader title="Link utili" big fallback={hrefFor('profile')} />
@@ -16,7 +19,11 @@
   {#each USEFUL_LINKS as l (l.url)}
     <li>
       <a href={l.url} target="_blank" rel="noopener noreferrer">
-        <span class="ico" aria-hidden="true">{l.name[0]}</span>
+        <span class="ico" aria-hidden="true">
+          {#if !failed.has(l.url)}
+            <img src={faviconOf(l)} alt="" width="26" height="26" loading="lazy" onerror={() => (failed = new Set([...failed, l.url]))} />
+          {:else}{l.name[0]}{/if}
+        </span>
         <span class="text">
           <strong>{l.name}</strong>
           <span>{l.text}</span>
@@ -73,6 +80,12 @@
     display: flex;
     align-items: center;
     justify-content: center;
+  }
+
+  .ico img {
+    width: 26px;
+    height: 26px;
+    object-fit: contain;
   }
 
   .text {
