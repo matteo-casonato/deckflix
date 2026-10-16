@@ -7,7 +7,9 @@
   import { CONDITIONS, DEFAULT_CONDITION_FACTORS } from '../lib/domain/collection.js';
   import { clearImageCache, imageCacheInfo } from '../lib/data/imageCache.js';
   import { currentPosition, geocodeCity } from '../lib/data/geocode.js';
-  import { nearbyEventsUrl } from '../lib/domain/players.js';
+  import { nearbyEventsCalendar, nearbyEventsUrl } from '../lib/domain/players.js';
+  import { clearTournaments, importTournaments, liveTournaments } from '../lib/data/tournaments.js';
+  import { showToast } from '../lib/stores/toast.svelte.js';
   import { hrefFor } from '../lib/domain/routes.js';
   import BackHeader from '../lib/ui/BackHeader.svelte';
   import ConfirmDialog from '../lib/ui/ConfirmDialog.svelte';
@@ -47,6 +49,20 @@
       placeError = err instanceof Error ? err.message : String(err);
     } finally {
       locating = false;
+    }
+  }
+
+  const saved = liveTournaments();
+  /** @param {Event & { currentTarget: HTMLInputElement }} e */
+  async function pickIcs(e) {
+    const file = e.currentTarget.files?.[0];
+    e.currentTarget.value = '';
+    if (!file) return;
+    try {
+      const n = await importTournaments(file);
+      showToast(`${n} tornei importati`);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'File non valido');
     }
   }
 
@@ -208,6 +224,32 @@
     {#if settings.homePlace}
       <a class="btn" href={nearbyEventsUrl(settings.homePlace, settings.eventRadius)} target="_blank" rel="noopener noreferrer">Vedi i tornei vicini</a>
     {/if}
+    <h2 class="label">Elenco dei tornei nell’app</h2>
+    <section class="explain card">
+      <p>
+        Pokedata non lascia leggere i tornei ad altre app, ma il loro calendario si può scaricare come file e importare qui:
+        i prossimi tornei compaiono in Play!. Per aggiornarli, ripeti i due passaggi ogni tanto.
+      </p>
+      {#if settings.homePlace}
+        <a class="btn" href={nearbyEventsCalendar(settings.homePlace, settings.eventRadius).https} target="_blank" rel="noopener noreferrer" download="tornei.ics">
+          1 · Scarica il file dei tornei
+        </a>
+      {:else}
+        <p class="warn">Prima salva la città qui sopra.</p>
+      {/if}
+      <label class="btn primary file">
+        2 · Importa il file scaricato
+        <input class="visually-hidden" type="file" accept=".ics,text/calendar" onchange={pickIcs} />
+      </label>
+      {#if $saved}
+        <p class="num">
+          {$saved.events.length} tornei importati il {new Date($saved.importedAt).toLocaleDateString('it-IT')}.
+          <button class="link" onclick={() => clearTournaments()}>Rimuovi</button>
+        </p>
+      {/if}
+      <p class="small-note">Se il telefono apre il calendario invece di salvare il file, tieni premuto il pulsante 1 e scegli “Scarica link”.</p>
+    </section>
+
     <p class="note">
       La città viene cercata una volta su OpenStreetMap (gratuito) per averne la posizione; la posizione del telefono invece non
       lascia il telefono. I tornei si aprono su pokedata.ovh, che raccoglie gli eventi ufficiali Play! Pokémon: il loro elenco non
@@ -228,6 +270,25 @@
 />
 
 <style>
+  .file {
+    cursor: pointer;
+  }
+
+  .link {
+    min-height: 40px;
+    padding: 0 6px;
+    border: 0;
+    background: none;
+    color: var(--accent);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .small-note {
+    font-size: 12px;
+  }
+
   .place {
     padding: 14px;
     display: grid;

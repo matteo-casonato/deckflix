@@ -8,7 +8,7 @@ export const BACKUP_PREV_FILE = 'deckflix-backup-prev.json';
 export const SCHEMA_VERSION = 2;
 
 /** Settings that describe this device or the sync itself: never sent to Drive. */
-export const LOCAL_ONLY_SETTINGS = new Set(['account', 'lastBackupAt', 'lastRemoteBackupAt', 'firstRunDone', 'signInReminderUntil', 'lastExportAt']);
+export const LOCAL_ONLY_SETTINGS = new Set(['account', 'lastBackupAt', 'lastRemoteBackupAt', 'firstRunDone', 'signInReminderUntil', 'lastExportAt', 'tournaments']);
 
 /**
  * @typedef {{ collection: any[], wishlist: any[], decks: any[], albums: any[], priceSnapshots: any[], settings: { key: string, value: any }[] }} BackupTables
