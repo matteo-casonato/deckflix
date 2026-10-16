@@ -146,3 +146,13 @@ describe('guessImage', async () => {
     expect(guessImage('A1-001', '001')).toBe(null);
   });
 });
+
+describe('cheapestPrice', async () => {
+  const { cheapestPrice } = await import('../src/lib/domain/cards.js');
+  it('takes the cheapest priced print', () => {
+    const card = { variants_detailed: [{ type: 'Normale', pricing: { cardmarket: { trend: 7.2 } } }, { type: 'Olografica', pricing: { cardmarket: { trend: 0.3, 'trend-holo': 0.33 } } }] };
+    expect(cheapestPrice(card)).toBe(0.33);
+    expect(cheapestPrice({})).toBe(null);
+    expect(cheapestPrice(null)).toBe(null);
+  });
+});

@@ -9,7 +9,7 @@
   import { settings, toggleCover } from '../lib/stores/settings.svelte.js';
   import { showToast } from '../lib/stores/toast.svelte.js';
   import { prefetchCards, liveCards } from '../lib/data/catalog.js';
-  import { copyPrice, euro, guessImage, setProgress, variantBadge } from '../lib/domain/cards.js';
+  import { cheapestPrice, euro, guessImage, setProgress, variantBadge } from '../lib/domain/cards.js';
   import { hrefFor } from '../lib/domain/routes.js';
   import { replace } from '../lib/router.svelte.js';
   import { entryPrice } from '../lib/domain/value.js';
@@ -41,6 +41,39 @@
   /** @param {string} cardId */
   const copiesOf = (cardId) => ($entries ?? []).filter((e) => e.cardId === cardId);
   const value = $derived(($entries ?? []).reduce((s, e) => s + (entryPrice($cards?.get(e.cardId), e, settings.conditionFactors) ?? 0) * e.qty, 0));
+
+  // Cost of the missing cards (numbered ones, like the "mancanti" count): the set list has no
+  // prices, so their details are downloaded once and cached; the total grows as they arrive.
+  /** @type {{ id: string, localId: string }[]} */
+  let setCards = $state([]);
+  let official = $state(0);
+  $effect(() => {
+    request.then((d) => {
+      setCards = d.cards ?? [];
+      official = d.cardCount?.official ?? 0;
+    });
+  });
+  const missingIds = $derived(
+    setCards
+      .filter((c) => /^\d+$/.test(c.localId) && (!official || Number(c.localId) <= official) && !ownedIds.includes(c.id))
+      .map((c) => c.id),
+  );
+  const missingCards = $derived(liveCards(missingIds, settings.cardLang));
+  $effect(() => {
+    if (missingIds.length) prefetchCards(missingIds, settings.cardLang);
+  });
+  const missingCost = $derived.by(() => {
+    let total = 0;
+    let priced = 0;
+    for (const cid of missingIds) {
+      const p = cheapestPrice($missingCards?.get(cid));
+      if (p != null) {
+        total += p;
+        priced++;
+      }
+    }
+    return { total, priced, loaded: missingIds.filter((cid) => $missingCards?.has(cid)).length };
+  });
 
   /**
    * Long press on an owned card: it becomes the cover of this set in the Edizioni list.
@@ -106,6 +139,15 @@
       <strong class="num">{v.progress.owned} di {v.progress.total} carte</strong>
       <span class="num">{v.progress.missing} mancanti · {v.progress.duplicates} doppioni</span>
       <span class="num">Valore {euro(value)}</span>
+      {#if missingIds.length}
+        <span class="num missing-cost">
+          {#if missingCost.loaded < missingIds.length}
+            Mancanti: almeno {euro(missingCost.total)} · prezzi {missingCost.loaded}/{missingIds.length}…
+          {:else}
+            Mancanti: circa {euro(missingCost.total)}{missingCost.priced < missingIds.length ? ` · ${missingIds.length - missingCost.priced} senza prezzo` : ''}
+          {/if}
+        </span>
+      {/if}
     </span>
   </section>
 
@@ -138,6 +180,10 @@
 {/await}
 
 <style>
+  .missing-cost {
+    color: var(--accent);
+  }
+
   .hint {
     margin: 10px 20px 0;
     font-size: 12px;

@@ -201,3 +201,14 @@ export function guessImage(cardId, localId, lang = 'en') {
   if (series === 'sm') folder = folder.replace('.', '');
   return `https://assets.tcgdex.net/${lang}/${series}/${folder}/${localId}`;
 }
+
+/**
+ * What it costs to get a card you don't have: its cheapest print with a price (any
+ * variant), or null when Cardmarket has no price.
+ * @param {any} card
+ */
+export function cheapestPrice(card) {
+  if (!card) return null;
+  const prices = [copyPrice(card, 'normal'), ...listVariants(card).map((v) => v.price)].filter((p) => typeof p === 'number' && p > 0);
+  return prices.length ? Math.min(.../** @type {number[]} */ (prices)) : null;
+}

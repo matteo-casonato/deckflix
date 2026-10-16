@@ -397,6 +397,8 @@ Esporta CSV, invito ad accedere per chi usa l'app senza account, copia di sicure
 - **Stima per condizione**: i prezzi TCGdex/Cardmarket sono medie di tutte le lingue e condizioni; il valore delle copie usa una percentuale per condizione (predefinite: Mint 110, Near Mint 100, Excellent 85, Good 70, Light Played 60, Played 45, Poor 30; modificabili, preferenza `conditionFactors` nel backup) in collezione, edizioni, raccolte e statistiche (`entryPrice`). La pagina Qualità e prezzi spiega il calcolo e il limite (i prezzi per condizione di Cardmarket sono riservati ai venditori, con credenziali e server). Scheda carta: nota sul prezzo di riferimento, “stima Light Played € X” sotto le stampe possedute non Near Mint, link Cardmarket con `minCondition` della copia (1 Mint … 7 Poor, da confermare sul sito).
 - **Strisce della Home** allineate al titolo (20 px) anche dopo l'aggancio dello scorrimento.
 
+- **Edizione: costo delle mancanti** nel riepilogo (“Mancanti: circa € X”), somma della stampa più economica di ogni carta numerata che non hai (`cheapestPrice`); i dettagli delle mancanti si scaricano una volta e restano in cache, intanto il totale è “almeno € X · prezzi n/m”.
+
 ## 9. Fuori ambito
 
 Prezzi per lingua e per condizione, riconoscimento con IA a pagamento, notifiche push e backup a app chiusa (servirebbe un server), profili multipli sullo stesso telefono, backup su servizi diversi da Google Drive, pubblicazione sugli store, app nativa con Capacitor (piano B se la scansione web non basta).
