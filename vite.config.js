@@ -27,7 +27,7 @@ export default defineConfig({
         id: '/deckflix/',
         name: 'Deckflix',
         short_name: 'Deckflix',
-        description: 'Le tue carte Pokémon: collezione, valore e deck.',
+        description: 'Le tue carte Pokémon: collezione, valore, deck e tornei.',
         lang: 'it',
         start_url: '/deckflix/#/home',
         scope: '/deckflix/',
