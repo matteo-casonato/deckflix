@@ -404,6 +404,8 @@ Esporta CSV, invito ad accedere per chi usa l'app senza account, copia di sicure
 - **Desideri** nello stile a righe con anteprima (prezzo a destra, etichette “In calo” verde / “In aumento” rosso, lingua).
 - **Immagini senza squircle**: anteprime delle carte, foto e avatar hanno angoli arrotondati normali (`corner-shape: round`); lo squircle resta su riquadri, pulsanti, chip e barra.
 
+- **Bits UI** (2.19.4, come da stack): pannelli (`Sheet`, su Dialog) e conferme distruttive (`ConfirmDialog`, su AlertDialog) usano Bits UI al posto del `<dialog>` nativo; il tasto indietro di Android li chiude grazie a una voce nella cronologia (`backToClose.svelte.js`).
+
 ## 9. Fuori ambito
 
 Prezzi per lingua e per condizione, riconoscimento con IA a pagamento, notifiche push e backup a app chiusa (servirebbe un server), profili multipli sullo stesso telefono, backup su servizi diversi da Google Drive, pubblicazione sugli store, app nativa con Capacitor (piano B se la scansione web non basta).

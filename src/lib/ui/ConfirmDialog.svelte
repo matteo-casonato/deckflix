@@ -1,54 +1,71 @@
 <script>
   // @ts-check
-  // Dialog for destructive confirmations only (CLAUDE.md UI guidelines). Native <dialog>:
-  // focus trap, Esc and the Android back gesture close it.
+  // Dialog for destructive confirmations only (CLAUDE.md UI guidelines), on Bits UI
+  // AlertDialog: focus trap, Esc and the Android back gesture cancel it. Style is ours.
+  import { AlertDialog } from 'bits-ui';
+  import { backToClose } from './backToClose.svelte.js';
+
   /** @type {{ open: boolean, title: string, text: string, confirmLabel: string, danger?: boolean, onconfirm: () => void, onclose: () => void }} */
   let { open, title, text, confirmLabel, danger = false, onconfirm, onclose } = $props();
 
-  /** @type {HTMLDialogElement} */
-  let dialog;
-
-  $effect(() => {
-    if (open && !dialog.open) dialog.showModal();
-    if (!open && dialog.open) dialog.close();
-  });
+  backToClose(() => open, () => onclose());
 </script>
 
-<dialog bind:this={dialog} onclose={onclose} aria-labelledby="dlg-title">
-  <h2 id="dlg-title">{title}</h2>
-  <p>{text}</p>
-  <div class="actions">
-    <button class="btn" onclick={() => dialog.close()}>Annulla</button>
-    <button
-      class="btn"
-      class:danger
-      onclick={() => {
-        onconfirm();
-        dialog.close();
-      }}>{confirmLabel}</button
-    >
-  </div>
-</dialog>
+<AlertDialog.Root {open} onOpenChange={(o) => !o && onclose()}>
+  <AlertDialog.Portal>
+    <AlertDialog.Overlay class="dfx-overlay" />
+    <AlertDialog.Content class="dfx-dialog">
+      <AlertDialog.Title class="dfx-dialog-title">{title}</AlertDialog.Title>
+      <AlertDialog.Description class="dfx-dialog-text">{text}</AlertDialog.Description>
+      <div class="actions">
+        <AlertDialog.Cancel class="btn">Annulla</AlertDialog.Cancel>
+        <AlertDialog.Action
+          class={danger ? 'btn danger' : 'btn'}
+          onclick={() => {
+            onconfirm();
+            onclose();
+          }}>{confirmLabel}</AlertDialog.Action
+        >
+      </div>
+    </AlertDialog.Content>
+  </AlertDialog.Portal>
+</AlertDialog.Root>
 
 <style>
-  dialog {
+  :global(.dfx-overlay) {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    background: rgb(0 0 0 / 0.6);
+  }
+
+  :global(.dfx-dialog) {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    z-index: 51;
+    transform: translate(-50%, -50%);
     width: min(360px, calc(100vw - 32px));
     padding: 22px;
     border: 1px solid var(--line-2);
     border-radius: var(--r-card);
     background: var(--surface);
     color: var(--text);
+    outline: none;
   }
 
-  dialog::backdrop {
-    background: rgb(0 0 0 / 0.6);
+  @supports (corner-shape: squircle) {
+    :global(.dfx-dialog) {
+      corner-shape: squircle;
+    }
   }
 
-  h2 {
+  :global(.dfx-dialog-title) {
+    margin: 0;
     font-size: 20px;
   }
 
-  p {
+  :global(.dfx-dialog-text) {
     color: var(--muted);
     margin: 10px 0 18px;
   }
@@ -59,8 +76,8 @@
     gap: 10px;
   }
 
-  .danger {
-    background: var(--danger);
-    color: var(--on-accent);
+  .actions :global(.btn.danger) {
+    background: color-mix(in srgb, var(--danger) 18%, var(--surface));
+    color: var(--danger);
   }
 </style>

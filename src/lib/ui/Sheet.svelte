@@ -1,53 +1,61 @@
 <script>
   // @ts-check
-  // Bottom sheet for contextual actions (CLAUDE.md UI guidelines). Native modal <dialog>:
-  // focus trap, Esc and the Android back gesture close it; a tap on the backdrop too.
+  // Bottom sheet for contextual actions (CLAUDE.md UI guidelines), on Bits UI Dialog: focus
+  // trap, Esc, tap on the backdrop and the Android back gesture close it. Style is ours.
+  import { Dialog } from 'bits-ui';
+  import { backToClose } from './backToClose.svelte.js';
+
   /** @type {{ open: boolean, title: string, onclose: () => void, children: import('svelte').Snippet }} */
   let { open, title, onclose, children } = $props();
 
-  /** @type {HTMLDialogElement} */
-  let dialog;
-
-  $effect(() => {
-    if (open && !dialog.open) dialog.showModal();
-    if (!open && dialog.open) dialog.close();
-  });
-
-  /** @param {MouseEvent} e */
-  function onclick(e) {
-    if (e.target === dialog) dialog.close();
-  }
+  backToClose(() => open, () => onclose());
 </script>
 
-<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
-<dialog bind:this={dialog} {onclose} {onclick} aria-labelledby="sheet-title">
-  <div class="body">
-    <span class="grip" aria-hidden="true"></span>
-    <h2 id="sheet-title">{title}</h2>
-    {@render children()}
-  </div>
-</dialog>
+<Dialog.Root {open} onOpenChange={(o) => !o && onclose()}>
+  <Dialog.Portal>
+    <Dialog.Overlay class="dfx-overlay" />
+    <Dialog.Content class="dfx-sheet">
+      <div class="body">
+        <span class="grip" aria-hidden="true"></span>
+        <Dialog.Title class="dfx-sheet-title">{title}</Dialog.Title>
+        {@render children()}
+      </div>
+    </Dialog.Content>
+  </Dialog.Portal>
+</Dialog.Root>
 
 <style>
-  dialog {
+  :global(.dfx-overlay) {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    background: rgb(0 0 0 / 0.6);
+  }
+
+  :global(.dfx-sheet) {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 51;
     width: 100%;
     max-width: 560px;
     max-height: 85dvh;
-    margin: auto auto 0;
-    padding: 0;
+    margin: 0 auto;
+    overflow-y: auto;
     border: 1px solid var(--line-2);
     border-bottom: 0;
     border-radius: var(--r-section) var(--r-section) 0 0;
     background: var(--surface);
     color: var(--text);
+    animation: dfx-up 220ms ease-out;
+    outline: none;
   }
 
-  dialog[open] {
-    animation: up 220ms ease-out;
-  }
-
-  dialog::backdrop {
-    background: rgb(0 0 0 / 0.6);
+  @supports (corner-shape: squircle) {
+    :global(.dfx-sheet) {
+      corner-shape: squircle;
+    }
   }
 
   .body {
@@ -65,12 +73,13 @@
     background: var(--line-2);
   }
 
-  h2 {
-    font-size: 19px;
+  :global(.dfx-sheet-title) {
+    margin: 0;
     padding: 0 4px;
+    font-size: 19px;
   }
 
-  @keyframes up {
+  @keyframes -global-dfx-up {
     from {
       transform: translateY(40px);
       opacity: 0;

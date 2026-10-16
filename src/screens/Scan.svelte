@@ -151,9 +151,19 @@
    * @param {{ id: string, localId: string, name: string, image?: string }} c
    * @param {any} set
    */
-  function pickNumber(c, set) {
+  async function pickNumber(c, set) {
     numberOpen = false;
     miss = null;
+    // The number sheet takes its history entry back when it closes: wait for that before
+    // opening the add sheet, or the same back would close it.
+    await new Promise((resolve) => {
+      const done = () => {
+        window.removeEventListener('popstate', done);
+        resolve(undefined);
+      };
+      window.addEventListener('popstate', done);
+      setTimeout(done, 400);
+    });
     rec = {
       status: 'found',
       reading: { num: null, special: null, setCode: null, lang: null, nameText: '', text: '', engine: 'google' },
