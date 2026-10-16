@@ -195,11 +195,37 @@ const SERIES_OF_SET = /** @type {Record<string, string>} */ ({ cel25: 'swsh', ce
  */
 export function guessImage(cardId, localId, lang = 'en') {
   const setId = setIdOf(cardId);
+  const elsewhere = OTHER_IMAGES[setId]?.(localId);
+  if (elsewhere) return elsewhere;
   const series = SERIES_OF_SET[setId] ?? SERIES.find((s) => setId.startsWith(s));
   if (!series) return null;
   let folder = /^(TG|GG|SV)\d/.test(localId) ? setId.replace(/(tg|gg|sv)$/, '') : setId;
   if (series === 'sm') folder = folder.replace('.', '');
   return `https://assets.tcgdex.net/${lang}/${series}/${folder}/${localId}`;
+}
+
+/** Limitless TCG card images (English), for sets TCGdex has no images of. */
+const LIMITLESS = 'https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/tpci';
+
+/**
+ * Sets whose images TCGdex lacks entirely, with where they are instead (checked 16/10/2026):
+ * 30th Celebration Classic Collection → Limitless "30C_CC1".
+ * @type {Record<string, (localId: string) => string | null>}
+ */
+const OTHER_IMAGES = {
+  '30th-c': (localId) => (/^\d+$/.test(localId) ? `${LIMITLESS}/30C/30C_CC${Number(localId)}_R_EN` : null),
+};
+
+/**
+ * Image URL from an image base (TCGdex's `image`, or guessImage's): TCGdex serves
+ * `{base}/low.webp` and `/high.webp`, Limitless `{base}_SM.png` and `_LG.png`.
+ * @param {string | null | undefined} base
+ * @param {'low' | 'high'} [quality]
+ */
+export function imageAt(base, quality = 'low') {
+  if (!base) return null;
+  if (base.startsWith(LIMITLESS)) return `${base}_${quality === 'high' ? 'LG' : 'SM'}.png`;
+  return `${base}/${quality}.webp`;
 }
 
 /**
@@ -210,7 +236,7 @@ export function guessImage(cardId, localId, lang = 'en') {
 export function thumbUrl(card) {
   if (!card) return null;
   const base = card.image ?? (card.id && card.localId ? guessImage(card.id, card.localId, 'en') : null);
-  return base ? `${base}/low.webp` : null;
+  return imageAt(base);
 }
 
 /**

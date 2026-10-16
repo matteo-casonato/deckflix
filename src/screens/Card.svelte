@@ -14,7 +14,7 @@
   import { toggleWish } from '../lib/data/actions.js';
   import { listVariants } from '../lib/domain/variants.js';
   import { CONDITIONS, DEFAULT_CONDITION, collectionKey, conditionFactor, conditionLabel } from '../lib/domain/collection.js';
-  import { LANG_LABELS, cardmarketUrl, euro, guessImage, pricesDate, setIdOf } from '../lib/domain/cards.js';
+  import { LANG_LABELS, cardmarketUrl, euro, guessImage, imageAt, pricesDate, setIdOf } from '../lib/domain/cards.js';
   import { hrefFor } from '../lib/domain/routes.js';
   import { rarityIcon } from '../lib/domain/rarity.js';
   import { setSymbolUrl } from '../lib/domain/setSymbols.js';
@@ -45,7 +45,7 @@
     if (!image && lang !== 'en') image = await getCard('en', id).then((en) => cardImage(en.data, 'high')).catch(() => null);
     // TCGdex data without image: the file is often on the server anyway (see guessImage).
     const guess = guessImage(id, res.data.localId ?? '', 'en');
-    if (!image && guess) image = `${guess}/high.webp`;
+    if (!image && guess) image = imageAt(guess, 'high');
     return { card: res.data, image, fetchedAt: res.fetchedAt, source: res.source, englishOnly: 'englishOnly' in res };
   }
 

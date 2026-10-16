@@ -135,11 +135,17 @@ describe('euro and variantBadge', async () => {
 });
 
 describe('guessImage', async () => {
-  const { guessImage } = await import('../src/lib/domain/cards.js');
+  const { guessImage, imageAt } = await import('../src/lib/domain/cards.js');
   it('builds the asset path, gallery cards in the folder of their main set', () => {
     expect(guessImage('swsh12tg-TG20', 'TG20')).toBe('https://assets.tcgdex.net/en/swsh/swsh12/TG20');
     expect(guessImage('mep-028', '028')).toBe('https://assets.tcgdex.net/en/me/mep/028');
     expect(guessImage('swsh4.5sv-SV107', 'SV107')).toBe('https://assets.tcgdex.net/en/swsh/swsh4.5/SV107');
+    // Classic Collection of the 30th: TCGdex has no images, Limitless does.
+    const cc = guessImage('30th-c-001', '001');
+    expect(cc).toBe('https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/tpci/30C/30C_CC1_R_EN');
+    expect(imageAt(cc)).toBe(`${cc}_SM.png`);
+    expect(imageAt(cc, 'high')).toBe(`${cc}_LG.png`);
+    expect(imageAt('https://assets.tcgdex.net/en/sv/sv03/1')).toBe('https://assets.tcgdex.net/en/sv/sv03/1/low.webp');
     expect(guessImage('sm7.5-3', '3')).toBe('https://assets.tcgdex.net/en/sm/sm75/3');
     expect(guessImage('sv03.5-025', '025', 'it')).toBe('https://assets.tcgdex.net/it/sv/sv03.5/025');
     expect(guessImage('cel25-11', '11')).toBe('https://assets.tcgdex.net/en/swsh/cel25/11');

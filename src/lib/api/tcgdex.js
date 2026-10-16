@@ -4,6 +4,7 @@
 // With VITE_TCGDEX_FIXTURES=1 the responses come from tests/fixtures/tcgdex/ instead of
 // the network (offline development, same data as the tests).
 import { db } from '../db.js';
+import { imageAt } from '../domain/cards.js';
 import { kindFilter } from '../domain/kinds.js';
 import { CARD_TTL, LIST_TTL, cacheDecision } from '../domain/cache.js';
 
@@ -171,7 +172,7 @@ export const getRarities = (lang) => getCachedPath(`/${lang}/rarities`);
  * @param {'low' | 'high'} [quality]
  */
 export function cardImage(card, quality = 'low') {
-  return card?.image ? `${card.image}/${quality}.webp` : null;
+  return imageAt(card?.image, quality);
 }
 
 /**

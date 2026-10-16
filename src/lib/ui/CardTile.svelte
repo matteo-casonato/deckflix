@@ -4,15 +4,19 @@
   // badges, or a missing card: dashed slot with its number, or its image greyed out (`ghost`).
   // 63:88 placeholder while loading or without image.
   /** @type {{ name: string, localId: string, image?: string | null, qty?: number, badge?: string | null, href?: string, price?: string | null, missing?: boolean, ghost?: boolean, starred?: boolean, onhold?: ((e: Event) => void) | null }} */
+  import { imageAt } from '../domain/cards.js';
+
   let { name, localId, image = null, qty = 0, badge = null, href, price = null, missing = false, ghost = false, starred = false, onhold = null } = $props();
 
   // Fallbacks when the thumbnail doesn't load. Images are cached as opaque responses (CORS
   // headers on TCGdex assets are sometimes broken), so a missing image once cached as an
   // error would never come back: retry past the cache, then English, then the large image.
   const sources = $derived(
-    image
-      ? [`${image}/low.webp`, `${image}/low.webp?retry=1`, ...(/\/(it|fr|de|es|pt)\//.test(image) ? [`${image.replace(/\/(it|fr|de|es|pt)\//, '/en/')}/low.webp`] : []), `${image}/high.webp`]
-      : [],
+    !image
+      ? []
+      : !image.startsWith('https://assets.tcgdex.net/')
+        ? /** @type {string[]} */ ([imageAt(image), imageAt(image, 'high')])
+        : [`${image}/low.webp`, `${image}/low.webp?retry=1`, ...(/\/(it|fr|de|es|pt)\//.test(image) ? [`${image.replace(/\/(it|fr|de|es|pt)\//, '/en/')}/low.webp`] : []), `${image}/high.webp`],
   );
   let attempt = $state(0);
   $effect(() => {
