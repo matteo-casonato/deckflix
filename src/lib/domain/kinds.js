@@ -1,7 +1,8 @@
 // @ts-check
-// Kind of card for the search filter: Pokémon, Trainer (and Item, Supporter, Stadium, Tool),
-// Energy (basic, special). TCGdex filters them by field (category, trainerType, energyType)
-// with the value in the card language, so each kind lists its name in every language
+// Kind of card for the search filter: Pokémon, Trainer, Energy (any), then the Trainer kinds
+// (Item, Supporter, Stadium, Tool) and the Energy kinds (basic, special). TCGdex filters them by
+// field (category, trainerType, energyType) with the value in the card language, so each kind
+// lists its name in every language
 // (checked on /{lang}/categories, /trainer-types, /energy-types, 16/10/2026).
 
 /**
@@ -13,11 +14,11 @@
 export const KINDS = [
   { key: 'pokemon', label: 'Pokémon', field: 'category', values: { en: 'Pokemon', it: 'Pokémon', fr: 'Pokémon', de: 'Pokémon', es: 'Pokémon', pt: 'Pokémon' } },
   { key: 'trainer', label: 'Allenatore', field: 'category', values: { en: 'Trainer', it: 'Allenatore', fr: 'Dresseur', de: 'Trainer', es: 'Entrenador', pt: 'Treinador' } },
+  { key: 'energy', label: 'Energia', field: 'category', values: { en: 'Energy', it: 'Energia', fr: 'Énergie', de: 'Energie', es: 'Energía', pt: 'Energia' } },
   { key: 'item', label: 'Strumento', parent: 'Allenatore', field: 'trainerType', values: { en: 'Item', it: 'Strumento', fr: 'Objet', de: 'Itemkarte', es: 'Objeto', pt: 'Item' } },
   { key: 'supporter', label: 'Aiuto', parent: 'Allenatore', field: 'trainerType', values: { en: 'Supporter', it: 'Aiuto', fr: 'Supporter', de: 'Unterstützerkarte', es: 'Partidario', pt: 'Apoiador' } },
   { key: 'stadium', label: 'Stadio', parent: 'Allenatore', field: 'trainerType', values: { en: 'Stadium', it: 'Stadio', fr: 'Stade', de: 'Stadionkarte', es: 'Estadio', pt: 'Estádio' } },
   { key: 'tool', label: 'Oggetto Pokémon', parent: 'Allenatore', field: 'trainerType', values: { en: 'Tool', it: 'Oggetto', fr: 'Outil', de: 'Pokémon-Ausrüstung', es: 'Herramienta', pt: 'Ferramenta' } },
-  { key: 'energy', label: 'Energia', field: 'category', values: { en: 'Energy', it: 'Energia', fr: 'Énergie', de: 'Energie', es: 'Energía', pt: 'Energia' } },
   { key: 'basic-energy', label: 'Energia base', parent: 'Energia', field: 'energyType', values: { en: 'Normal', it: 'Base', fr: 'De base', de: 'Basis', es: 'Básico', pt: 'Normal' } },
   { key: 'special-energy', label: 'Energia speciale', parent: 'Energia', field: 'energyType', values: { en: 'Special', it: 'Speciale', fr: 'Spécial', de: 'Spezial', es: 'Especial', pt: 'Especial' } },
 ];

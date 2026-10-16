@@ -3,7 +3,7 @@
 // rarities with their symbol.
 import { LANG_LABELS } from '../domain/cards.js';
 import { sortTypes, typeIcon } from '../domain/types.js';
-import { rarityIcon } from '../domain/rarity.js';
+import { isPocketRarity, rarityIcon } from '../domain/rarity.js';
 
 /**
  * @typedef {{ value: string, label: string, sub?: string, icon?: string | null, tile?: boolean, flag?: string }} Option
@@ -21,4 +21,4 @@ export const typeOptions = (types) =>
 
 /** @param {string[]} rarities TCGdex names in the card language @returns {Option[]} */
 export const rarityOptions = (rarities) =>
-  rarities.map((r) => ({ value: r, label: r, icon: rarityIcon(r) ? `${base}rarities/${rarityIcon(r)}.png` : null, tile: true }));
+  rarities.filter((r) => !isPocketRarity(r)).map((r) => ({ value: r, label: r, icon: rarityIcon(r) ? `${base}rarities/${rarityIcon(r)}.png` : null, tile: true }));

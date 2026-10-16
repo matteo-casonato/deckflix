@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { rarityIcon } from '../src/lib/domain/rarity.js';
+import { isPocketRarity, rarityIcon } from '../src/lib/domain/rarity.js';
 import { SET_SYMBOLS, setLogoUrl, setSymbolUrl } from '../src/lib/domain/setSymbols.js';
 import { prereleaseSet } from '../src/lib/domain/upcomingSets.js';
 
@@ -24,15 +24,21 @@ describe('rarityIcon', () => {
     expect(rarityIcon('Peu Commune')).toBe('uncommon');
     expect(rarityIcon('Comune')).toBe('common');
     expect(rarityIcon('Häufig')).toBe('common');
-    expect(rarityIcon('Olografica Rara VSTAR')).toBe('rare');
+    expect(rarityIcon('Olografica Rara VSTAR')).toBe('holo-rare-vstar');
+    expect(rarityIcon('Olografica Rara')).toBe('rare-holo');
     expect(rarityIcon('Rara')).toBe('rare');
   });
-  it('has no icon for Pocket and old special rarities', () => {
+  it('has the older symbols (Bulbapedia) and none for Pocket', () => {
+    expect(rarityIcon('Rare Holo LV.X')).toBe('rare-holo-lvx');
+    expect(rarityIcon('Rara Radiante')).toBe('radiant-rare');
+    expect(rarityIcon('Atemberaubend')).toBe('amazing-rare');
+    expect(rarityIcon('Promo')).toBe('promo');
+    expect(rarityIcon('Segreto rara')).toBe('rare');
     expect(rarityIcon('Une Étoile')).toBe(null);
     expect(rarityIcon('Two Diamond')).toBe(null);
     expect(rarityIcon('Un Chromatique')).toBe(null);
-    expect(rarityIcon('Segreto rara')).toBe(null);
-    expect(rarityIcon('Rare Holo LV.X')).toBe(null);
+    expect(isPocketRarity('Couronne')).toBe(true);
+    expect(isPocketRarity('Rara')).toBe(false);
     expect(rarityIcon('Nessuna')).toBe(null);
     expect(rarityIcon(undefined)).toBe(null);
   });
