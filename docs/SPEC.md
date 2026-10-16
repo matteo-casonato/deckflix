@@ -423,6 +423,7 @@ Esporta CSV, invito ad accedere per chi usa l'app senza account, copia di sicure
 
 - **Tornei con città, distanza e tipo**: il file da scaricare è il JSON dietro la mappa di pokedata (`events.php?includePast=false&lat&lng&radius&unit=km&startDate=oggi&tcgTypes=…`: negozio, città, coordinate, tipo `challenges|cups|prerelease|friendly`, codice evento), aperto nel browser e salvato (⋮ › ⬇), poi importato; l'.ics resta accettato (tipo ricavato dal titolo). Distanza in linea d'aria dalla città di casa (haversine, nessuna API). Play! › Tornei: prossime 2 settimane (poi “Mostra anche dopo”), filtri per tipo, vista per data o per città (più vicine prima). Play!: riquadri tutti a tutta larghezza, quello dei Tornei con l'anteprima dei prossimi tre (prima Challenge, Cup e Prerelease).
 - **Deck**: una sola matita accanto al nome apre il Deck List Creator (i contatori non sono più collegamenti); cancellando tutto il nome il campo resta vuoto invece di tornare al nome salvato.
+- **Foto del giocatore centrabile**: dopo la scelta dal telefono si apre "Centra la foto": la foto si trascina sotto un cerchio e si ingrandisce con il cursore o con due dita; si salva solo il quadrato inquadrato (192 px JPEG, `avatarFromCrop`).
 
 ## 9. Fuori ambito
 

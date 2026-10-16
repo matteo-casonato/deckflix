@@ -1,21 +1,38 @@
 // @ts-check
-// Player photos: cropped to a centered square and shrunk on the phone, so they weigh a few
-// KB in IndexedDB and in the Drive backup (no image leaves the phone otherwise).
+// Player photos: cropped on the phone to the square the user framed, shrunk to 192 px, so they
+// weigh a few KB in IndexedDB and in the Drive backup (no image leaves the phone otherwise).
 
 const SIZE = 192;
 
 /**
- * @param {File} file image chosen by the user
- * @returns {Promise<string>} JPEG data URL, SIZE × SIZE
+ * Loads a picked image file.
+ * @param {File} file
+ * @returns {Promise<HTMLImageElement>}
  */
-export async function avatarFromFile(file) {
-  const bitmap = await createImageBitmap(file);
-  const side = Math.min(bitmap.width, bitmap.height);
+export function loadImage(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('Non riesco a leggere questa immagine'));
+    };
+    img.src = url;
+  });
+}
+
+/**
+ * JPEG data URL (SIZE × SIZE) of a square of the image.
+ * @param {HTMLImageElement} img
+ * @param {{ cx: number, cy: number, side: number }} crop centre and side, in image pixels
+ */
+export function avatarFromCrop(img, { cx, cy, side }) {
   const canvas = document.createElement('canvas');
   canvas.width = SIZE;
   canvas.height = SIZE;
   const ctx = /** @type {CanvasRenderingContext2D} */ (canvas.getContext('2d'));
-  ctx.drawImage(bitmap, (bitmap.width - side) / 2, (bitmap.height - side) / 2, side, side, 0, 0, SIZE, SIZE);
-  bitmap.close();
-  return canvas.toDataURL('image/jpeg', 0.82);
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(img, cx - side / 2, cy - side / 2, side, side, 0, 0, SIZE, SIZE);
+  return canvas.toDataURL('image/jpeg', 0.85);
 }

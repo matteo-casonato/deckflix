@@ -5,7 +5,8 @@
   import { Add01Icon, QrCodeIcon } from '@hugeicons/core-free-icons';
   import { settings, setSetting } from '../../lib/stores/settings.svelte.js';
   import { showToast } from '../../lib/stores/toast.svelte.js';
-  import { avatarFromFile } from '../../lib/data/avatar.js';
+  import { loadImage } from '../../lib/data/avatar.js';
+  import AvatarCropper from './AvatarCropper.svelte';
   import { QR_VALID_DAYS, ageDivision, playerQrText, pointsUrl, validPlayerId } from '../../lib/domain/players.js';
   import ConfirmDialog from '../../lib/ui/ConfirmDialog.svelte';
   import Icon from '../../lib/ui/Icon.svelte';
@@ -56,10 +57,18 @@
     e.currentTarget.value = '';
     if (!file) return;
     try {
-      form.avatar = await avatarFromFile(file);
+      cropping = await loadImage(file);
     } catch {
       showToast('Non riesco a leggere questa immagine');
     }
+  }
+
+  /** Photo being framed (opens the cropper). */
+  /** @type {HTMLImageElement | null} */
+  let cropping = $state(null);
+  function closeCropper() {
+    if (cropping) URL.revokeObjectURL(cropping.src);
+    cropping = null;
   }
 
   /** @param {SubmitEvent} e */
@@ -180,6 +189,15 @@
     </div>
   {/if}
 </Sheet>
+
+<AvatarCropper
+  image={cropping}
+  onconfirm={(url) => {
+    form.avatar = url;
+    closeCropper();
+  }}
+  onclose={closeCropper}
+/>
 
 <ConfirmDialog
   open={!!removing}
