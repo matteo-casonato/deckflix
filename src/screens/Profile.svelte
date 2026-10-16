@@ -240,6 +240,7 @@
     Deckflix è un progetto personale, non affiliato a The Pokémon Company, Nintendo, Creatures o Game Freak.
     Pokémon e i nomi delle carte sono marchi dei rispettivi titolari; immagini e dati arrivano da TCGdex.
   </p>
+  <p class="legal">© 2026 Matteo Casonato. Tutti i diritti riservati: l’app si usa liberamente, il codice non si può copiare né riutilizzare senza permesso.</p>
 </section>
 
 <ConfirmDialog

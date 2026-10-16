@@ -1,0 +1,65 @@
+Deckflix
+Copyright © 2026 Matteo Casonato. Tutti i diritti riservati.
+
+ITALIANO
+
+1. Opera protetta
+Il codice sorgente, la grafica, i testi e la documentazione di questo repository (insieme,
+"Deckflix") sono opera di Matteo Casonato e sono protetti dalla legge sul diritto d'autore.
+Il fatto che il repository sia pubblico non concede alcuna licenza.
+
+2. Uso dell'app pubblicata
+Chiunque può usare liberamente e gratuitamente l'app pubblicata all'indirizzo
+https://matteo-casonato.github.io/deckflix/, installarla sui propri dispositivi e
+condividerne il link.
+
+3. Cosa non è permesso senza autorizzazione scritta
+Salvo quanto previsto dal punto 2 e dalle eccezioni di legge, non è permesso, in tutto o in
+parte: copiare, modificare, tradurre, adattare, ripubblicare o distribuire Deckflix; usarlo
+per creare opere derivate o servizi; usarlo a fini commerciali. Per qualsiasi richiesta
+scrivere all'autore.
+
+4. Parti di terzi
+Le parti seguenti non sono dell'autore, restano dei rispettivi titolari e sono soggette
+alle loro condizioni:
+- Bandiere in public/flags/: Flagpack (https://flagpack.xyz), © Yummygum, licenza MIT
+  (testo completo in public/flags/LICENSE.txt). Le altre bandiere sono caricate da
+  jsDelivr dallo stesso pacchetto.
+- Immagini Pokémon (loghi Play! Pokémon, League Cup e League Challenge, icone dei tipi,
+  simboli di rarità e altri elementi legati al gioco): Pokémon, i nomi delle carte e i
+  relativi marchi e immagini appartengono a The Pokémon Company, Nintendo, Creatures e
+  Game Freak. Deckflix è un progetto non ufficiale e non è affiliato né approvato da loro.
+- Dati, immagini delle carte e prezzi caricati durante l'uso da servizi esterni (TCGdex,
+  pokesymbols.com, The Hobby Bin, pokedata.ovh, OpenStreetMap) restano dei rispettivi
+  titolari e soggetti alle loro condizioni.
+- Librerie e font installati tramite npm o inclusi in public/fonts/ sono distribuiti con le
+  rispettive licenze.
+
+5. Nessuna garanzia
+Deckflix è fornito "così com'è", senza garanzie di alcun tipo. L'autore non risponde di
+danni o perdite di dati derivanti dal suo uso.
+
+
+ENGLISH (translation; the Italian text prevails)
+
+Copyright © 2026 Matteo Casonato. All rights reserved.
+
+The source code, graphics, texts and documentation in this repository ("Deckflix") are the
+work of Matteo Casonato and are protected by copyright law. The repository being public
+grants no license.
+
+Anyone may freely use the published app at https://matteo-casonato.github.io/deckflix/,
+install it on their own devices and share its link.
+
+Except as stated above and as allowed by law, you may not, in whole or in part, copy,
+modify, translate, adapt, republish or distribute Deckflix, use it to build derivative
+works or services, or use it for commercial purposes, without the author's written
+permission.
+
+Third-party parts remain their owners' and follow their terms: Flagpack flags in
+public/flags/ (© Yummygum, MIT License, see public/flags/LICENSE.txt); Pokémon images,
+names and trademarks (© The Pokémon Company, Nintendo, Creatures, Game Freak; Deckflix is
+unofficial and not affiliated with or endorsed by them); data, card images and prices
+loaded at runtime from external services; npm libraries and fonts under their own licenses.
+
+Deckflix is provided "as is", without warranty of any kind.

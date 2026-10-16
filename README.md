@@ -37,3 +37,7 @@ Apri https://matteo-casonato.github.io/deckflix/ in Chrome per Android → menu 
 ## Fase 0 — prova della scansione
 
 Pagina: `lab/scan/` (`/deckflix/lab/scan/`). Per ogni carta: inquadra, "Scatta e riconosci", scegli la carta giusta se non è la prima, segna **Corretta** o **Sbagliata** (con una nota su finitura e luce). In alto c'è l'accuratezza; "Copia registro (JSON)" esporta i risultati.
+
+## Licenza
+
+© 2026 Matteo Casonato. Tutti i diritti riservati: l'app pubblicata si può usare liberamente, il codice non si può copiare né riutilizzare senza permesso. Bandiere Flagpack (MIT) e immagini Pokémon restano dei rispettivi titolari. Dettagli in [LICENSE](LICENSE).
