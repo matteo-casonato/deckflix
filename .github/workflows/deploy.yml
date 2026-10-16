@@ -40,6 +40,13 @@ jobs:
         continue-on-error: true
         env:
           TOURNAMENT_COUNTRIES: ${{ vars.TOURNAMENT_COUNTRIES || 'IT' }}
+      # Drawing fingerprints of all cards, for the scanner. Built slowly over the morning runs
+      # (20 minutes each, about one thumbnail a second), then only new cards are added; a push
+      # just republishes the index already online.
+      - run: node scripts/fingerprints.mjs dist
+        continue-on-error: true
+        env:
+          FINGERPRINT_MINUTES: ${{ github.event_name == 'push' && '0' || '20' }}
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
         with:

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { confusableNumbers, detectLanguage, nameSimilarity, parseCollectorNumber, parseSetCode, setCodeMatches } from '../src/lib/domain/recognize.js';
+import { confusableNumbers, detectLanguage, nameGuesses, nameSimilarity, parseCollectorNumber, parseSetCode, setCodeMatches } from '../src/lib/domain/recognize.js';
 
 describe('parseCollectorNumber', () => {
   it('reads a clean number', () => {
@@ -139,5 +139,14 @@ describe('parseSpecialNumber', async () => {
   it('ignores ordinary numbers', () => {
     expect(parseSpecialNumber('025/165')).toBe(null);
     expect(parseSpecialNumber('Pikachu 60 PS')).toBe(null);
+  });
+});
+
+describe('nameGuesses', () => {
+  it('keeps the name and drops stage and HP words', () => {
+    expect(nameGuesses('BASE\nCharizard ex   PS 330\nEvolve da Charmeleon')).toEqual(['Charmeleon', 'Charizard']);
+  });
+  it('limits the guesses and ignores lines further down', () => {
+    expect(nameGuesses('Pikachu\nab\ncd\nef\nRaichu Electrode', 1)).toEqual(['Pikachu']);
   });
 });

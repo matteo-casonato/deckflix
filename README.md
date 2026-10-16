@@ -14,6 +14,7 @@ npm run build
 npm run fixtures     # riscarica le risposte TCGdex usate da test e modalità offline
 node scripts/set-symbols.mjs        # rigenera l'abbinamento edizioni → simboli e loghi (nuovi set)
 node scripts/fetch-tournaments.mjs  # scarica i tornei d'Italia in dist/tournaments (lo fa il deploy ogni mattina)
+node scripts/fingerprints.mjs       # aggiorna l'indice dei disegni in dist/fingerprints.json (lo fa il deploy, piano)
 ```
 
 Per l'accesso Google vero in sviluppo: copia `.env.example` in `.env.local` e inserisci il Client ID.

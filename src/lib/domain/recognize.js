@@ -219,3 +219,23 @@ export function parseSpecialNumber(text) {
   }
   return null;
 }
+
+// Words printed near the name that are not names (stage, HP, "evolves from" in six languages).
+const NOT_NAMES = new Set(
+  'base basic basis stage fase phase stufe niveau nivel evolves evolve evolution evoluzione evoluto evolucion entwickelt from pokemon trainer allenatore energia energy strumento tool item aiuto supporter stadio stadium hp ps pv kp'.split(' '),
+);
+
+/**
+ * Words that may be the card's name, from the top of the OCR text: longest first, at most
+ * `limit`. Used to search TCGdex by name when the number can't be read.
+ * @param {string} text
+ * @param {number} [limit]
+ */
+export function nameGuesses(text, limit = 3) {
+  const lines = text.split('\n').map((l) => l.trim()).filter(Boolean).slice(0, 4);
+  const words = lines
+    .flatMap((l) => l.split(/[^\p{L}'’.-]+/u))
+    .map((w) => w.replace(/^[^\p{L}]+|[^\p{L}]+$/gu, ''))
+    .filter((w) => w.length >= 4 && !NOT_NAMES.has(normalize(w).replace(/[^a-z]/g, '')));
+  return [...new Set(words)].sort((a, b) => b.length - a.length).slice(0, limit);
+}

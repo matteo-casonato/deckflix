@@ -8,7 +8,7 @@ import { CLASSIC_COLLECTION_SETS } from '../domain/variants.js';
 /**
  * @typedef {{ id: string, localId: string, name: string, image?: string, setId: string, setName: string,
  *   setCode: string | null, official: number, releaseDate: string, lang: string, nameScore: number,
- *   codeMatch: boolean, reprint?: boolean }} Candidate
+ *   codeMatch: boolean, reprint?: boolean, artDistance?: number }} Candidate
  * @typedef {{ number: number, total: number, lang: string, nameText: string, setCode?: string | null }} Query
  */
 
