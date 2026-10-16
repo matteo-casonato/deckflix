@@ -12,17 +12,10 @@
   import { hrefFor } from '../lib/domain/routes.js';
   import { navigate } from '../lib/router.svelte.js';
   import { hasGoogleOcr } from '../lib/scan/ocr.js';
-  import { showToast } from '../lib/stores/toast.svelte.js';
+  import OcrTip from '../lib/ui/OcrTip.svelte';
 
   // Faster scanning: Google's on-device text recognition needs a Chrome setting (Android).
-  const FLAG = 'chrome://flags/#enable-experimental-web-platform-features';
   const isAndroid = /Android/i.test(navigator.userAgent);
-  function copyFlag() {
-    navigator.clipboard
-      .writeText(FLAG)
-      .then(() => showToast('Indirizzo copiato: incollalo nella barra di Chrome'))
-      .catch(() => showToast(FLAG));
-  }
 
   const STEPS = ['lang', 'city', 'player', 'card'];
   let step = $state(0);
@@ -155,25 +148,7 @@
         <button class="btn" onclick={() => finish(hrefFor('quick'))}>Inserisci per numero</button>
       </div>
       {#if !hasGoogleOcr && isAndroid}
-        <section class="tip card">
-          <strong>Scansione più veloce (facoltativo)</strong>
-          <p>
-            Senza fare niente la scansione funziona, ma è più lenta. Con il riconoscimento del testo di Google, già nel telefono,
-            è quasi istantanea: va attivato una volta in Chrome.
-          </p>
-          <p>
-            <strong>Perché serve:</strong> Chrome permette ai siti e alle app web di usare quel riconoscimento solo tra le
-            funzioni “sperimentali”, che sono spente finché non le accendi tu. Attivarle non cambia altro nel telefono e si possono
-            rispegnere quando vuoi; il riconoscimento avviene sul telefono, le foto non vengono inviate a nessuno.
-          </p>
-          <ol>
-            <li>Tocca <strong>Copia l’indirizzo</strong> qui sotto.</li>
-            <li>Apri Chrome, incollalo nella barra degli indirizzi e premi Invio.</li>
-            <li>Alla voce <strong>Experimental Web Platform features</strong> scegli <strong>Enabled</strong>.</li>
-            <li>Tocca <strong>Relaunch</strong> in basso, poi riapri Deckflix.</li>
-          </ol>
-          <button class="btn" onclick={copyFlag}>Copia l’indirizzo</button>
-        </section>
+        <div class="tipwrap"><OcrTip /></div>
       {/if}
     {/if}
   </section>
@@ -334,34 +309,8 @@
     gap: 10px;
   }
 
-  .tip {
+  .tipwrap {
     margin-top: 6px;
-    padding: 14px 16px;
-    border-radius: var(--r-card);
-    background: var(--surface);
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    font-size: 14px;
-  }
-
-  .tip p strong {
-    color: var(--text);
-  }
-
-  .tip p,
-  .tip ol {
-    margin: 0;
-    color: var(--muted);
-    line-height: 1.45;
-  }
-
-  .tip ol {
-    padding-left: 20px;
-  }
-
-  .tip li strong {
-    color: var(--text);
   }
 
   footer {

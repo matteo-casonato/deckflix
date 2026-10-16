@@ -11,6 +11,8 @@
   import { nearbyEventsUrl } from '../lib/domain/players.js';
   import { clearTournaments, liveTournaments } from '../lib/data/tournaments.js';
   import TournamentImport from './play/TournamentImport.svelte';
+  import OcrTip from '../lib/ui/OcrTip.svelte';
+  import { hasGoogleOcr } from '../lib/scan/ocr.js';
   import { hrefFor } from '../lib/domain/routes.js';
   import BackHeader from '../lib/ui/BackHeader.svelte';
   import ConfirmDialog from '../lib/ui/ConfirmDialog.svelte';
@@ -24,6 +26,7 @@
     edizioni: 'Edizioni',
     immagini: 'Immagini e spazio',
     tornei: 'Tornei vicino a te',
+    scansione: 'Scansione',
   });
 
   // ---------- home city ----------
@@ -179,6 +182,20 @@
             : 'No: se manca spazio il browser potrebbe cancellare i dati. Installare l’app (Aggiungi a schermata Home) aiuta; il backup su Google Drive li mette comunque al sicuro.'}
       </p>
     </section>
+  {:else if key === 'scansione'}
+    {#if hasGoogleOcr}
+      <section class="explain card">
+        <p class="ok-line">✓ Il riconoscimento del testo di Google è attivo: la scansione usa quello, ed è la più veloce.</p>
+        <p class="note">Se un giorno lo spegni da chrome://flags, la scansione continua a funzionare, solo più lenta.</p>
+      </section>
+    {:else}
+      <p class="intro">
+        Su questo telefono la scansione usa il riconoscimento di riserva, più lento. Su Android puoi accendere quello di Google
+        in Chrome.
+      </p>
+      <OcrTip title={null} />
+      <p class="note">Su iPhone e su computer questa impostazione non c’è: la scansione funziona comunque.</p>
+    {/if}
   {:else if key === 'tornei'}
     <p class="intro">La tua città serve a mostrarti i tornei del gioco di carte nelle vicinanze, dalla sezione Play!.</p>
     <form class="place card" onsubmit={saveCity}>
@@ -509,5 +526,10 @@
   .switch:checked::after {
     background: var(--on-accent);
     transform: translateX(20px);
+  }
+
+  .ok-line {
+    color: var(--success);
+    font-weight: 600;
   }
 </style>

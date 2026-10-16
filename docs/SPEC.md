@@ -442,6 +442,7 @@ Esporta CSV, invito ad accedere per chi usa l'app senza account, copia di sicure
 - **Fondo della pagina Tornei**: il pulsante principale apre l'Event Locator ufficiale di Pokémon (con il raggio scelto); "Aggiungi a Google Calendar" ha un'etichetta corta che sta su una riga; la città sta su una sola riga (nome tagliato con … se lungo) con "Cambia" a destra. Tolto il link separato all'Event Locator.
 - **Profilo › Account**: "Esci dall'account" ed "Esci e cancella i dati da questo telefono" non sono più in fondo alla pagina ma in un pannello "Account" (voce sotto "Ripristina da Drive", solo se si è collegati), con l'email e cosa fa ciascuna scelta; le conferme restano le stesse. Il pulsante della donazione ora dice "☕ Supporta il progetto" (su una riga).
 - **Informativa sulla privacy e termini**: pagine statiche `public/privacy.html` e `public/termini.html` (dati solo sul telefono, permessi Google e cartella privata `drive.appdata`, fotocamera e posizione sul telefono, servizi esterni, come cancellare i dati, contatti), richieste da Google per pubblicare il progetto OAuth "In produzione". Collegate dal pannello Licenza e crediti; il service worker non le sostituisce con l'app (`navigateFallbackDenylist`).
+- **Profilo › Impostazioni › Scansione**: se il riconoscimento del testo di Google è attivo lo dice; altrimenti spiega perché e come accendere "Experimental Web Platform features" in Chrome, con il pulsante che copia l'indirizzo. Lo stesso riquadro (`OcrTip.svelte`) è nell'ultimo passo della configurazione iniziale.
 
 ## 9. Fuori ambito
 
