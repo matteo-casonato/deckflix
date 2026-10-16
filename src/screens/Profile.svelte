@@ -34,7 +34,7 @@
   import { ABOUT, USEFUL_LINKS } from '../lib/domain/links.js';
   import { CREDITS } from '../lib/domain/credits.js';
   import { backupState, relativeTime } from '../lib/domain/backup.js';
-  import { backupNow, isConfigured, restoreFromDrive, signOut } from '../lib/sync/sync.js';
+  import { backupFromTap, isConfigured, restoreFromDrive, signOut } from '../lib/sync/sync.js';
 
   const status = $derived(
     backupState({
@@ -76,7 +76,7 @@
   let confirm = $state(null);
 
   /** Interactive when Google needs a tap to renew access. */
-  const saveNow = () => backupNow({ interactive: account.needsAuth });
+  const saveNow = () => backupFromTap();
 
 
   /** Settings pages: [key, icon, title, summary]. */

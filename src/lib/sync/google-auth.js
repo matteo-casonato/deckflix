@@ -77,6 +77,8 @@ export async function renderSignInButton(el, onSignIn) {
 
 /** @type {{ value: string, expiresAt: number } | null} */
 let token = null;
+/** How long a silent token request may take before the app asks for a tap. */
+const SILENT_TIMEOUT_MS = 10_000;
 
 export const hasValidToken = () => !!token && token.expiresAt - EXPIRY_MARGIN_MS > Date.now();
 
@@ -89,12 +91,18 @@ export const hasValidToken = () => !!token && token.expiresAt - EXPIRY_MARGIN_MS
 export async function requestToken({ interactive, hint }) {
   const accounts = await loadGis();
   return new Promise((resolve, reject) => {
+    // Without UI Google sometimes never answers (mobile browsers, first time after sign-in):
+    // give up after a while, so the app asks for a tap ("Continua") instead of waiting forever.
+    const timeout = interactive
+      ? undefined
+      : setTimeout(() => reject(new AuthError('interaction-required', 'Google non ha risposto: serve un tocco per continuare')), SILENT_TIMEOUT_MS);
     const client = accounts.oauth2.initTokenClient({
       client_id: CLIENT_ID,
       scope: SCOPE,
       hint,
       prompt: interactive ? '' : 'none',
       callback: (/** @type {any} */ r) => {
+        clearTimeout(timeout);
         if (r.error) {
           const needsUi = ['interaction_required', 'login_required', 'consent_required'].includes(r.error);
           reject(new AuthError(needsUi ? 'interaction-required' : 'denied', r.error_description ?? r.error));
@@ -107,13 +115,15 @@ export async function requestToken({ interactive, hint }) {
         token = { value: r.access_token, expiresAt: Date.now() + Number(r.expires_in ?? 3600) * 1000 };
         resolve(token.value);
       },
-      error_callback: (/** @type {{ type: string }} */ e) =>
+      error_callback: (/** @type {{ type: string }} */ e) => {
+        clearTimeout(timeout);
         reject(
           new AuthError(
             e.type === 'popup_closed' ? 'denied' : 'popup',
             e.type === 'popup_closed' ? 'Accesso annullato' : 'Il browser ha bloccato la finestra di Google',
           ),
-        ),
+        );
+      },
     });
     client.requestAccessToken();
   });

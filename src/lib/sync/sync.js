@@ -225,6 +225,12 @@ async function keepPrevious(id) {
  * @param {{ interactive?: boolean, force?: boolean }} [o] interactive: called from a tap
  *   (may show Google's popup); force: overwrite even if Drive has a newer copy.
  */
+/**
+ * "Salva ora" / "Continua": a tap, so Google's window may open when there is no valid access
+ * (first save after sign-in, expired, or renewal needed) instead of a silent request.
+ */
+export const backupFromTap = () => backupNow({ interactive: account.needsAuth || !hasValidToken() });
+
 export async function backupNow({ interactive = false, force = false } = {}) {
   clearTimeout(timer);
   if (!account.user || account.saving || account.choice) return;
