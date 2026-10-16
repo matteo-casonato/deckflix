@@ -208,12 +208,22 @@ export function guessImage(cardId, localId, lang = 'en') {
 const LIMITLESS = 'https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/tpci';
 
 /**
+ * Classic Collection of the 30th: TCGdex number → Limitless "CC" number. The two lists are in
+ * a different order (TCGdex 001 Charizard is Limitless CC2), matched by card name on
+ * 16/10/2026; the two halves of Darkrai & Cresselia LEGEND keep their order.
+ */
+const CLASSIC_30TH = [2, 8, 11, 20, 3, 9, 5, 25, 22, 13, 14, 27, 24, 1, 4, 19, 23, 15, 16, 17, 18, 12, 21, 6, 10, 28, 29, 26, 7, 30];
+
+/**
  * Sets whose images TCGdex lacks entirely, with where they are instead (checked 16/10/2026):
- * 30th Celebration Classic Collection → Limitless "30C_CC1".
+ * 30th Celebration Classic Collection → Limitless "30C_CC…".
  * @type {Record<string, (localId: string) => string | null>}
  */
 const OTHER_IMAGES = {
-  '30th-c': (localId) => (/^\d+$/.test(localId) ? `${LIMITLESS}/30C/30C_CC${Number(localId)}_R_EN` : null),
+  '30th-c': (localId) => {
+    const cc = CLASSIC_30TH[Number(localId) - 1];
+    return cc ? `${LIMITLESS}/30C/30C_CC${cc}_R_EN` : null;
+  },
 };
 
 /**
