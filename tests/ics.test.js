@@ -72,6 +72,9 @@ describe('pokedata JSON', () => {
     expect(tournamentType(undefined, 'League Cup e Challenge di novembre')).toBe('cup');
     expect(tournamentType('challenges', 'Collector House - Challenge Pokemon Ottobre')).toBe('challenge');
     expect(tournamentType('friendly', '')).toBe('league');
+    expect(tournamentType(undefined, 'Sfida di Lega Ottobre')).toBe('challenge');
+    expect(tournamentType(undefined, 'Coppa di Lega Pokémon')).toBe('cup');
+    expect(tournamentType(undefined, 'Sfida di lega e Coppa di lega')).toBe('cup');
   });
   it('measures distances and keeps the next two weeks', () => {
     expect(Math.round(distanceKm({ lat: 45.6297, lng: 12.5682 }, { lat: 45.4064, lng: 11.8768 }))).toBe(59); // San Donà–Padova
