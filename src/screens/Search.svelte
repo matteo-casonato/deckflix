@@ -21,6 +21,7 @@
   import SetPicker from '../lib/ui/SetPicker.svelte';
   import Picker from '../lib/ui/Picker.svelte';
   import { langOptions, rarityOptions, typeOptions } from '../lib/ui/options.js';
+  import { KINDS, isKind } from '../lib/domain/kinds.js';
 
   /** @type {{ query: Record<string, string> }} */
   let { query } = $props();
@@ -29,7 +30,7 @@
   let text = $state(query.q ?? '');
   const mine = $derived(query.mine === '1');
   const lang = $derived(query.lang || settings.cardLang);
-  const filters = $derived({ setId: query.set ?? '', type: query.type ?? '', rarity: query.rarity ?? '' });
+  const filters = $derived({ setId: query.set ?? '', type: query.type ?? '', rarity: query.rarity ?? '', kind: query.kind ?? '' });
   // "Aggiungi al deck" (docs/mockups/CercaCarte.html): + adds to the deck, Standard only by default.
   const deckId = $derived(query.deck ?? '');
   const standard = $derived(deckId ? query.standard !== '0' : query.standard === '1');
@@ -118,6 +119,7 @@
       .filter((c) => !filters.setId || setIdOf(c.id) === filters.setId)
       .filter((c) => !filters.type || (c.types ?? []).includes(filters.type))
       .filter((c) => !filters.rarity || c.rarity === filters.rarity)
+      .filter((c) => isKind(c, filters.kind))
       .sort((a, b) => a.id.localeCompare(b.id, 'it', { numeric: true }));
   }
 
@@ -160,7 +162,7 @@
 
   $effect(() => {
     // Re-run when the query in the URL changes.
-    void [q, mine, lang, filters.setId, filters.type, filters.rarity, standard, $owned?.size];
+    void [q, mine, lang, filters.setId, filters.type, filters.rarity, filters.kind, standard, $owned?.size];
     run(1);
   });
 
@@ -201,6 +203,14 @@
   <div class="chips" role="group" aria-label="Filtri">
     <button class="chip" aria-pressed={standard} onclick={() => update({ standard: standard ? (deckId ? '0' : null) : '1' })}>Solo Standard</button>
     <SetPicker {sets} value={filters.setId} placeholder="Edizione" noneLabel="Tutte le edizioni" active recent={settings.recentSets} onchange={(v) => update({ set: v || null })} />
+    <Picker
+      title="Tipo di carta"
+      placeholder="Categoria"
+      active
+      value={filters.kind}
+      options={[{ value: '', label: 'Tutte le categorie' }, ...KINDS.map((k) => ({ value: k.key, label: k.label, sub: k.parent }))]}
+      onchange={(k) => update({ kind: k || null })}
+    />
     <Picker title="Tipo" placeholder="Tipo" active value={filters.type} options={[{ value: '', label: 'Tutti i tipi' }, ...typeOptions(types)]} onchange={(t) => update({ type: t || null })} />
     <Picker title="Rarità" placeholder="Rarità" active value={filters.rarity} options={[{ value: '', label: 'Tutte le rarità' }, ...rarityOptions(rarities)]} onchange={(r) => update({ rarity: r || null })} />
     <Picker title="Lingua" active={!!query.lang} value={lang} options={langOptions()} onchange={(l) => update({ lang: l === settings.cardLang ? null : l })} />
@@ -245,8 +255,8 @@
     </p>
     {#if mine}
       <button class="btn" onclick={() => update({ mine: null })}>Cerca in tutte le carte</button>
-    {:else if filters.setId || filters.type || filters.rarity}
-      <button class="btn" onclick={() => update({ set: null, type: null, rarity: null })}>Togli i filtri</button>
+    {:else if filters.setId || filters.type || filters.rarity || filters.kind}
+      <button class="btn" onclick={() => update({ set: null, type: null, rarity: null, kind: null })}>Togli i filtri</button>
     {/if}
   </section>
 {:else}

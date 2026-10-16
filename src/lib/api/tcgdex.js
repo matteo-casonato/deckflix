@@ -4,6 +4,7 @@
 // With VITE_TCGDEX_FIXTURES=1 the responses come from tests/fixtures/tcgdex/ instead of
 // the network (offline development, same data as the tests).
 import { db } from '../db.js';
+import { kindFilter } from '../domain/kinds.js';
 import { CARD_TTL, LIST_TTL, cacheDecision } from '../domain/cache.js';
 
 export const BASE_URL = 'https://api.tcgdex.net/v2';
@@ -122,15 +123,18 @@ export const PAGE_SIZE = 60;
  * name contains `name`; set, type and rarity are exact. Results are card briefs
  * ({ id, localId, name, image? }).
  * @param {string} lang
- * @param {{ name?: string, setId?: string, type?: string, rarity?: string, standard?: boolean, page?: number }} f
+ * @param {{ name?: string, setId?: string, type?: string, rarity?: string, kind?: string, standard?: boolean, page?: number }} f
  */
-export function searchCards(lang, { name, setId, type, rarity, standard, page = 1 }) {
+export function searchCards(lang, { name, setId, type, rarity, kind, standard, page = 1 }) {
   const p = new URLSearchParams();
   if (name) p.set('name', name);
   if (standard) p.set('legal.standard', 'true');
   if (setId) p.set('set.id', `eq:${setId}`);
   if (type) p.set('types', type);
   if (rarity) p.set('rarity', `eq:${rarity}`);
+  // Kind of card (Pokémon, Aiuto, Energia base…): its field and its name in this language.
+  const k = kindFilter(kind, lang);
+  if (k) p.set(k[0], `eq:${k[1]}`);
   p.set('pagination:page', String(page));
   p.set('pagination:itemsPerPage', String(PAGE_SIZE));
   return getCachedPath(`/${lang}/cards?${p}`, CARD_TTL);

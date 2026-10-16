@@ -12,7 +12,7 @@ const MAX_TRANSLATED = 40;
 
 /**
  * @typedef {{ id: string, localId: string, name: string, image?: string }} Brief
- * @typedef {{ setId: string, type: string, rarity: string, standard: boolean }} Filters
+ * @typedef {{ setId: string, type: string, rarity: string, kind?: string, standard: boolean }} Filters
  * @typedef {{ results: Brief[], more: boolean, understood: { sets: string[], number: string | null, total: number | null, english: number } }} SearchResult
  */
 
@@ -97,7 +97,7 @@ export async function smartSearch(lang, text, filters, sets, page = 1) {
 
   const understood = { sets: setIds.map((id) => sets.get(id)?.name ?? id), number: rawNumber, total, english: 0 };
   const local = Boolean(number || total || setIds.length > 1);
-  const params = { type: filters.type, rarity: filters.rarity, standard: filters.standard, setId: setIds.length === 1 ? setIds[0] : '' };
+  const params = { type: filters.type, rarity: filters.rarity, kind: filters.kind, standard: filters.standard, setId: setIds.length === 1 ? setIds[0] : '' };
 
   // No name: browse the set(s), or the sets of that size, by number.
   if (!name.trim()) {
