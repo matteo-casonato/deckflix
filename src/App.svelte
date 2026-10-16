@@ -77,15 +77,6 @@
       })
       .catch(() => {});
   });
-  // The loading screen of index.html stays until the first screen is ready, then fades out.
-  $effect(() => {
-    if (flow === 'loading') return;
-    const splash = document.getElementById('splash');
-    if (!splash) return;
-    splash.style.opacity = '0';
-    setTimeout(() => splash.remove(), matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 220);
-  });
-
   const showNav = $derived(flow === 'app' && !FULL_SCREEN.has(route.name));
 </script>
 
