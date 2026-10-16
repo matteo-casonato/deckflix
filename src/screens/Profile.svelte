@@ -246,6 +246,10 @@
       {/each}
     </ul>
     <a class="btn" href="https://github.com/matteo-casonato/deckflix/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">Testo completo della licenza</a>
+    <div class="legal-links">
+      <a href={`${import.meta.env.BASE_URL}privacy.html`} target="_blank" rel="noopener">Informativa sulla privacy</a>
+      <a href={`${import.meta.env.BASE_URL}termini.html`} target="_blank" rel="noopener">Termini di servizio</a>
+    </div>
   </div>
 </Sheet>
 
@@ -692,8 +696,22 @@
     gap: 1px;
   }
 
-  .credits a {
+  .credits a,
+  .legal-links a {
     color: var(--accent);
+  }
+
+  .legal-links {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 14px;
+  }
+
+  .legal-links a {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
   }
 
   .acct {

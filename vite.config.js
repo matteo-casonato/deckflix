@@ -47,7 +47,8 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,woff2,png,svg}'],
         globIgnores: ['lab/**', 'assets/scanLab-*'],
         navigateFallback: 'index.html',
-        navigateFallbackDenylist: [/\/lab\//],
+        // Lab and the static privacy and terms pages open as themselves, not as the app.
+        navigateFallbackDenylist: [/\/lab\//, /\/(privacy|termini)\.html$/],
         cleanupOutdatedCaches: true,
         // Same files, same service worker: the list order varies between builds, and a changed
         // sw.js would show "Nuova versione disponibile" after every daily rebuild.

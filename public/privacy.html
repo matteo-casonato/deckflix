@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Privacy · Deckflix</title>
+  <style>
+    body { margin: 0; background: #0F1115; color: #EEF0F4; font: 16px/1.6 system-ui, sans-serif; }
+    main { max-width: 720px; margin: 0 auto; padding: 32px 20px 64px; }
+    h1 { font-size: 28px; line-height: 1.2; margin: 0 0 4px; }
+    h2 { font-size: 19px; margin: 28px 0 8px; }
+    p, li { color: #C9CDD6; }
+    a { color: #FFCB45; }
+    .muted { color: #9AA1AE; font-size: 14px; }
+    code { font-size: 14px; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Informativa sulla privacy</h1>
+  <p class="muted">Deckflix · ultimo aggiornamento 16 ottobre 2026</p>
+
+  <p>
+    Deckflix è una web app gratuita per catalogare carte Pokémon, costruire deck e trovare tornei. È un progetto
+    personale di Matteo Casonato e Alessio Casonato, senza pubblicità e senza scopo di lucro. Questa pagina spiega quali
+    dati usa e dove finiscono.
+  </p>
+
+  <h2>Dove restano i tuoi dati</h2>
+  <p>
+    Collezione, desideri, deck, raccolte, giocatori Play! Pokémon (nome, ID giocatore, anno di nascita, foto) e
+    impostazioni sono salvati <strong>solo sul tuo telefono</strong>, nella memoria del browser (IndexedDB). Non esiste un
+    server di Deckflix che li riceve: gli autori non li vedono e non li vendono.
+  </p>
+
+  <h2>Accesso con Google e backup su Drive</h2>
+  <p>L’accesso con Google è facoltativo: l’app funziona anche senza account. Se accedi, Deckflix chiede questi permessi:</p>
+  <ul>
+    <li><code>openid</code>, <code>email</code>, <code>profile</code>: nome, email e foto del profilo, usati solo per mostrarti con quale account sei collegato. Restano sul telefono.</li>
+    <li><code>drive.appdata</code>: una cartella privata e nascosta di Google Drive riservata a Deckflix, dove l’app salva il backup (<code>deckflix-backup.json</code> e la copia del giorno prima). Deckflix <strong>non può vedere né toccare gli altri file</strong> del tuo Drive.</li>
+  </ul>
+  <p>
+    Il backup va direttamente dal telefono al tuo Google Drive. Il permesso di accesso di Google resta solo nella memoria
+    dell’app mentre la usi e non viene salvato. L’uso dei dati ricevuti dalle API di Google rispetta le
+    <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener">Norme sui dati utente dei servizi API di Google</a>,
+    compresi i requisiti di uso limitato.
+  </p>
+
+  <h2>Fotocamera e posizione</h2>
+  <p>
+    La scansione delle carte usa la fotocamera e riconosce il testo <strong>sul telefono</strong>: le immagini non vengono
+    inviate a nessuno. La posizione del telefono, se la usi per i tornei, serve solo a calcolare le distanze sul
+    telefono. Se invece scrivi il nome della tua città, quel nome viene cercato una volta su OpenStreetMap (Nominatim) per
+    trovarne le coordinate.
+  </p>
+
+  <h2>Servizi esterni usati dall’app</h2>
+  <p>Per funzionare l’app scarica dati pubblici da questi servizi, che come ogni sito ricevono l’indirizzo IP della richiesta:</p>
+  <ul>
+    <li><a href="https://tcgdex.dev" target="_blank" rel="noopener">TCGdex</a>: dati, immagini e prezzi delle carte.</li>
+    <li>pokesymbols.com, The Hobby Bin, jsDelivr: simboli e loghi delle edizioni, bandiere.</li>
+    <li>GitHub Pages: ospita l’app e l’elenco dei tornei (dati pubblici degli eventi ufficiali, raccolti da pokedata.ovh).</li>
+    <li>OpenStreetMap (Nominatim): solo il nome della città, quando lo salvi.</li>
+  </ul>
+  <p>Deckflix non usa cookie di profilazione, strumenti di statistica o pubblicità.</p>
+
+  <h2>Come cancellare i dati</h2>
+  <ul>
+    <li><strong>Dal telefono:</strong> nell’app, Profilo › Account › “Esci e cancella i dati da questo telefono”, oppure cancella i dati del sito dalle impostazioni del browser.</li>
+    <li><strong>Il backup su Drive:</strong> su Google Drive (web), Impostazioni › Gestisci app › Deckflix › Elimina dati app nascosti.</li>
+    <li><strong>Il permesso a Google:</strong> lo revochi in qualsiasi momento da <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener">myaccount.google.com/permissions</a>.</li>
+  </ul>
+
+  <h2>Contatti</h2>
+  <p>
+    Per domande su questa informativa: Matteo Casonato,
+    <a href="mailto:matteocasonato@gmail.com">matteocasonato@gmail.com</a>.
+  </p>
+
+  <p class="muted"><a href="./">Torna a Deckflix</a> · <a href="termini.html">Termini di servizio</a></p>
+</main>
+</body>
+</html>
