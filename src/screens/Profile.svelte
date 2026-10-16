@@ -13,6 +13,7 @@
     GridViewIcon,
     LinkSquare02Icon,
     QrCodeIcon,
+    Location01Icon,
   } from '@hugeicons/core-free-icons';
   import Icon from '../lib/ui/Icon.svelte';
   import Avatar from '../lib/ui/Avatar.svelte';
@@ -76,6 +77,7 @@
       ['qualita', Analytics01Icon, 'Qualità e prezzi', 'Come si stima il valore in base alla condizione'],
       ['edizioni', GridViewIcon, 'Edizioni', settings.missingImages ? 'Carte mancanti in grigio' : 'Carte mancanti solo col numero'],
       ['immagini', Image01Icon, 'Immagini e spazio', 'Cache delle immagini, dati protetti'],
+      ['tornei', Location01Icon, 'Tornei vicino a te', settings.homePlace ? `${settings.homePlace.name} · ${settings.eventRadius} km` : 'Imposta la tua città'],
     ]),
   );
 

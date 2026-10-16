@@ -71,3 +71,32 @@ export function pointsUrl(p, now, region = 'Europe') {
   const params = new URLSearchParams({ game: 'TCG', region, division, search: p.name.trim() });
   return `https://pokedata.ovh/${seasonYear(now)}/?${params}`;
 }
+
+/** @typedef {{ name: string, country: string, lat: number, lng: number }} HomePlace */
+
+/** Event types of the trading card game on pokedata.ovh (League Cup, Challenge, Prerelease, friendly). */
+const TCG_EVENT_TYPES = ['cups', 'challenges', 'prerelease', 'friendly'];
+
+/**
+ * Tournaments near home on pokedata.ovh's event map (built on the official Play! Pokémon
+ * events). Their data can't be read by the app (CORS limited to their site), so this is a
+ * link with the map already centred, radius set and only TCG events.
+ * @param {HomePlace} place
+ * @param {number} radiusKm
+ */
+export function nearbyEventsUrl(place, radiusKm) {
+  const params = new URLSearchParams({
+    spatialMode: 'radius',
+    lat: place.lat.toFixed(5),
+    lng: place.lng.toFixed(5),
+    radius: String(radiusKm),
+    unit: 'km',
+    country: place.country.toUpperCase(),
+    tcgTypes: TCG_EVENT_TYPES.join(','),
+  });
+  return `https://pokedata.ovh/events2/?${params}`;
+}
+
+/** Official Play! Pokémon event locator (TCG, within `radiusKm`), as a fallback. @param {number} radiusKm */
+export const officialEventsUrl = (radiusKm) =>
+  `https://events.pokemon.com/EventLocator/?locale=it-IT&range=${radiusKm}&iskm=true&filters=tcg`;

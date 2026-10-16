@@ -14,6 +14,8 @@
   import Icon from '../lib/ui/Icon.svelte';
   import EmptyState from '../lib/ui/EmptyState.svelte';
   import Players from './play/Players.svelte';
+  import { settings } from '../lib/stores/settings.svelte.js';
+  import { nearbyEventsUrl, officialEventsUrl } from '../lib/domain/players.js';
   import StackRow from '../lib/ui/StackRow.svelte';
 
   const decks = liveQuery(() => db.decks.orderBy('updatedAt').reverse().toArray());
@@ -57,6 +59,27 @@
 
 <h2 class="label">Giocatori</h2>
 <Players />
+
+<h2 class="label">Tornei vicino a te</h2>
+<section class="events card">
+  {#if settings.homePlace}
+    <span class="ev-txt">
+      <strong>{settings.homePlace.name}</strong>
+      <span class="muted">League Cup, Challenge, Prerelease e amichevoli entro {settings.eventRadius} km</span>
+    </span>
+    <a class="btn primary" href={nearbyEventsUrl(settings.homePlace, settings.eventRadius)} target="_blank" rel="noopener noreferrer">Apri la mappa dei tornei</a>
+    <div class="ev-links">
+      <a href={officialEventsUrl(settings.eventRadius)} target="_blank" rel="noopener noreferrer">Event Locator ufficiale</a>
+      <a href={hrefFor('settings', { key: 'tornei' })}>Cambia città</a>
+    </div>
+  {:else}
+    <span class="ev-txt">
+      <strong>Trova i tornei della tua zona</strong>
+      <span class="muted">Imposta la tua città una volta e da qui apri la mappa dei tornei vicini.</span>
+    </span>
+    <a class="btn" href={hrefFor('settings', { key: 'tornei' })}>Imposta la città</a>
+  {/if}
+</section>
 
 <div class="decks-head">
   <h2 class="label">I miei deck</h2>
@@ -107,6 +130,40 @@
 {/if}
 
 <style>
+  .events {
+    margin: 0 16px;
+    padding: 16px;
+    border-radius: var(--r-card);
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .ev-txt {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .ev-txt strong {
+    font-size: 16px;
+  }
+
+  .ev-links {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 13px;
+  }
+
+  .ev-links a {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    color: var(--accent);
+  }
+
   .label {
     margin: 18px 20px 10px;
     font-size: 13px;

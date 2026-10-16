@@ -412,6 +412,8 @@ Esporta CSV, invito ad accedere per chi usa l'app senza account, copia di sicure
 
 - **Punti campionato**: nel codice per la lega di ogni giocatore, “Punti campionato e classifica” apre pokedata.ovh già filtrato (stagione, Europa, divisione, nome). Pokedata legge le classifiche ufficiali Play! Pokémon dal proprio server e ne conserva la storia; il sito non permette ad altre app di leggere i dati (niente CORS), quindi l'app non può mostrare i punti al suo interno senza un server.
 
+- **Tornei vicino a te**: nelle impostazioni la città (posizione cercata una volta su OpenStreetMap Nominatim, gratuito, oppure la posizione del telefono) e il raggio (25/50/100/200 km), preferenze `homePlace` ed `eventRadius` nel backup. In Play! una sezione apre la mappa eventi di pokedata.ovh già centrata, col raggio e solo eventi GCC (`spatialMode=radius&lat&lng&radius&unit=km&country&tcgTypes=cups,challenges,prerelease,friendly`), più l'Event Locator ufficiale. Pokedata raccoglie gli eventi ufficiali sul proprio server (`events.php`), che accetta richieste solo dal loro sito (CORS `https://pokedata.ovh`): l'elenco non si può mostrare dentro Deckflix senza un server.
+
 ## 9. Fuori ambito
 
 Prezzi per lingua e per condizione, riconoscimento con IA a pagamento, notifiche push e backup a app chiusa (servirebbe un server), profili multipli sullo stesso telefono, backup su servizi diversi da Google Drive, pubblicazione sugli store, app nativa con Capacitor (piano B se la scansione web non basta).

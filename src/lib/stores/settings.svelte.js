@@ -19,12 +19,17 @@ export const settings = $state({
   /** Share of the Cardmarket price by condition, in % (estimate; see Qualità e prezzi). */
   /** @type {Record<string, number>} */
   conditionFactors: { MT: 110, NM: 100, EX: 85, GD: 70, LP: 60, PL: 45, PO: 30 },
+  /** Home city for "Tornei vicino a te" (position from OpenStreetMap or the phone). */
+  /** @type {import('../domain/players.js').HomePlace | null} */
+  homePlace: null,
+  /** Radius of the nearby tournaments, in km. */
+  eventRadius: 50,
   /** navigator.storage.persist() result: true = the browser won't evict IndexedDB. */
   /** @type {boolean | null} */
   persisted: null,
 });
 
-const SYNCED = /** @type {const} */ (['cardLang', 'recentSets', 'missingImages', 'players', 'covers', 'conditionFactors']);
+const SYNCED = /** @type {const} */ (['cardLang', 'recentSets', 'missingImages', 'players', 'covers', 'conditionFactors', 'homePlace', 'eventRadius']);
 
 export async function loadSettings() {
   const rows = await db.settings.bulkGet([...SYNCED]);

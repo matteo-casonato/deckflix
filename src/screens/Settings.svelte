@@ -6,6 +6,8 @@
   import { LANG_LABELS } from '../lib/domain/cards.js';
   import { CONDITIONS, DEFAULT_CONDITION_FACTORS } from '../lib/domain/collection.js';
   import { clearImageCache, imageCacheInfo } from '../lib/data/imageCache.js';
+  import { currentPosition, geocodeCity } from '../lib/data/geocode.js';
+  import { nearbyEventsUrl } from '../lib/domain/players.js';
   import { hrefFor } from '../lib/domain/routes.js';
   import BackHeader from '../lib/ui/BackHeader.svelte';
   import ConfirmDialog from '../lib/ui/ConfirmDialog.svelte';
@@ -18,7 +20,49 @@
     qualita: 'Qualità e prezzi',
     edizioni: 'Edizioni',
     immagini: 'Immagini e spazio',
+    tornei: 'Tornei vicino a te',
   });
+
+  // ---------- home city ----------
+  let city = $state(settings.homePlace?.name ?? '');
+  let country = $state(settings.homePlace?.country ?? 'IT');
+  let locating = $state(false);
+  /** @type {string | null} */
+  let placeError = $state(null);
+
+  /** @param {SubmitEvent} e */
+  async function saveCity(e) {
+    e.preventDefault();
+    if (!city.trim()) return;
+    locating = true;
+    placeError = null;
+    try {
+      const place = await geocodeCity(city, country);
+      if (!place) placeError = `Non trovo “${city.trim()}”: controlla il nome o il paese.`;
+      else {
+        await setSetting('homePlace', place);
+        city = place.name;
+      }
+    } catch (err) {
+      placeError = err instanceof Error ? err.message : String(err);
+    } finally {
+      locating = false;
+    }
+  }
+
+  async function useMyPosition() {
+    locating = true;
+    placeError = null;
+    try {
+      const { lat, lng } = await currentPosition();
+      await setSetting('homePlace', { name: 'La mia posizione', country: country.toUpperCase() || 'IT', lat, lng });
+      city = 'La mia posizione';
+    } catch (err) {
+      placeError = err instanceof Error ? err.message : String(err);
+    } finally {
+      locating = false;
+    }
+  }
 
   // ---------- quality ----------
   /** @param {string} code @param {string} value */
@@ -131,6 +175,44 @@
             : 'No: se manca spazio il browser potrebbe cancellare i dati. Installare l’app (Aggiungi a schermata Home) aiuta; il backup su Google Drive li mette comunque al sicuro.'}
       </p>
     </section>
+  {:else if key === 'tornei'}
+    <p class="intro">La tua città serve a mostrarti i tornei del gioco di carte nelle vicinanze, dalla sezione Play!.</p>
+    <form class="place card" onsubmit={saveCity}>
+      <label>
+        <span>Città</span>
+        <input bind:value={city} placeholder="Es. Treviso" autocomplete="address-level2" />
+      </label>
+      <label class="short">
+        <span>Paese</span>
+        <input bind:value={country} maxlength="2" autocapitalize="characters" placeholder="IT" />
+      </label>
+      <button class="btn primary" disabled={!city.trim() || locating}>{locating ? 'Cerco…' : 'Salva'}</button>
+    </form>
+    <button class="btn" disabled={locating} onclick={useMyPosition}>Usa la posizione del telefono</button>
+    {#if placeError}<p class="note warn">{placeError}</p>{/if}
+    {#if settings.homePlace}
+      <p class="note">Salvata: {settings.homePlace.name} ({settings.homePlace.country}).</p>
+    {/if}
+
+    <h2 class="label">Raggio</h2>
+    <ul class="choices card" role="radiogroup" aria-label="Raggio">
+      {#each [25, 50, 100, 200] as km (km)}
+        <li>
+          <button role="radio" aria-checked={settings.eventRadius === km} onclick={() => setSetting('eventRadius', km)}>
+            <span class="num">{km} km</span>
+            <span class="dot" aria-hidden="true"></span>
+          </button>
+        </li>
+      {/each}
+    </ul>
+    {#if settings.homePlace}
+      <a class="btn" href={nearbyEventsUrl(settings.homePlace, settings.eventRadius)} target="_blank" rel="noopener noreferrer">Vedi i tornei vicini</a>
+    {/if}
+    <p class="note">
+      La città viene cercata una volta su OpenStreetMap (gratuito) per averne la posizione; la posizione del telefono invece non
+      lascia il telefono. I tornei si aprono su pokedata.ovh, che raccoglie gli eventi ufficiali Play! Pokémon: il loro elenco non
+      si può leggere da altre app, quindi Deckflix apre la mappa già centrata su di te.
+    </p>
   {:else}
     <p class="intro">Impostazione non trovata.</p>
   {/if}
@@ -146,6 +228,40 @@
 />
 
 <style>
+  .place {
+    padding: 14px;
+    display: grid;
+    grid-template-columns: 1fr 76px;
+    gap: 10px;
+    align-items: end;
+  }
+
+  .place label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .place input {
+    min-height: 48px;
+    padding: 0 14px;
+    border: 1px solid var(--line-2);
+    border-radius: 14px;
+    background: var(--bg);
+    color: var(--text);
+    font: inherit;
+  }
+
+  .place .btn {
+    grid-column: 1 / -1;
+  }
+
+  .warn {
+    color: var(--danger);
+  }
+
   .page {
     padding: 0 16px 24px;
     display: flex;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ageDivision, playerQrText, pointsUrl, seasonYear, validPlayerId } from '../src/lib/domain/players.js';
+import { ageDivision, nearbyEventsUrl, officialEventsUrl, playerQrText, pointsUrl, seasonYear, validPlayerId } from '../src/lib/domain/players.js';
 import { qrMatrix } from '../src/lib/domain/qr.js';
 
 const alessio = { id: 'x', name: 'Alessio Casonato', playerId: '4359311', birthYear: 2015 };
@@ -50,5 +50,24 @@ describe('pointsUrl', () => {
     expect(pointsUrl(alessio, new Date(2026, 9, 16).getTime())).toBe(
       'https://pokedata.ovh/2027/?game=TCG&region=Europe&division=Juniors&search=Alessio+Casonato',
     );
+  });
+});
+
+describe('nearby events links', () => {
+  it('centres the event map on the home city with the radius and TCG events only', () => {
+    const url = new URL(nearbyEventsUrl({ name: 'Treviso', country: 'it', lat: 45.6658505, lng: 12.2455414 }, 50));
+    expect(url.origin + url.pathname).toBe('https://pokedata.ovh/events2/');
+    expect(Object.fromEntries(url.searchParams)).toEqual({
+      spatialMode: 'radius',
+      lat: '45.66585',
+      lng: '12.24554',
+      radius: '50',
+      unit: 'km',
+      country: 'IT',
+      tcgTypes: 'cups,challenges,prerelease,friendly',
+    });
+  });
+  it('has the official locator as a fallback', () => {
+    expect(officialEventsUrl(100)).toBe('https://events.pokemon.com/EventLocator/?locale=it-IT&range=100&iskm=true&filters=tcg');
   });
 });
