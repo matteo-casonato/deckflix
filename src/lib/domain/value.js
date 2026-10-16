@@ -1,6 +1,7 @@
 // @ts-check
 // Collection value and statistics (SPEC § 4.3). Pure: entries, cached cards and snapshots in.
 import { copyPrice, priceTrend } from './cards.js';
+import { conditionFactor } from './collection.js';
 
 /**
  * @typedef {import('../db.js').CollectionEntry} Entry
@@ -15,11 +16,23 @@ export function dayKey(t) {
 }
 
 /**
- * Value = sum of price × qty. Copies without a price don't count and are reported.
+ * Estimated price of one copy: Cardmarket price of its print × its condition factor.
+ * @param {any} card
+ * @param {{ variant: string, condition?: string }} entry
+ * @param {Record<string, number>} [factors]
+ */
+export function entryPrice(card, entry, factors) {
+  const p = copyPrice(card, entry.variant);
+  return p == null ? null : Math.round(p * conditionFactor(entry.condition, factors) * 100) / 100;
+}
+
+/**
+ * Value = sum of estimated price × qty. Copies without a price don't count and are reported.
  * @param {Entry[]} entries
  * @param {Map<string, any>} cards full TCGdex cards by id (any language: prices are the same)
+ * @param {Record<string, number>} [factors] condition factors in %
  */
-export function collectionValue(entries, cards) {
+export function collectionValue(entries, cards, factors) {
   let total = 0;
   let unpriced = 0;
   let missingData = 0;
@@ -29,7 +42,7 @@ export function collectionValue(entries, cards) {
       missingData += e.qty;
       continue;
     }
-    const p = copyPrice(card, e.variant);
+    const p = entryPrice(card, e, factors);
     if (p == null) unpriced += e.qty;
     else total += p * e.qty;
   }
@@ -69,13 +82,14 @@ export function periodChange(snapshots, days, now) {
  * Numbers and lists of the statistics screen.
  * @param {Entry[]} entries
  * @param {Map<string, any>} cards
+ * @param {Record<string, number>} [factors]
  */
-export function collectionStats(entries, cards) {
+export function collectionStats(entries, cards, factors) {
   const copies = entries.reduce((n, e) => n + e.qty, 0);
   /** @type {Map<string, { cardId: string, qty: number, unit: number, variant: string }>} */
   const byCard = new Map();
   for (const e of entries) {
-    const unit = copyPrice(cards.get(e.cardId), e.variant) ?? 0;
+    const unit = entryPrice(cards.get(e.cardId), e, factors) ?? 0;
     const t = byCard.get(e.cardId);
     if (!t) byCard.set(e.cardId, { cardId: e.cardId, qty: e.qty, unit, variant: e.variant });
     else {

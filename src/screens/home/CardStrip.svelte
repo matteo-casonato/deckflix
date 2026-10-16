@@ -29,14 +29,17 @@
 </ul>
 
 <style>
+  /* Starts aligned with the section title (20px); scroll-padding keeps that margin when
+     the strip snaps, so the first card never sticks to the screen edge. */
   .strip {
     list-style: none;
     margin: 0;
-    padding: 0 16px 4px;
+    padding: 0 20px 4px;
     display: flex;
     gap: 10px;
     overflow-x: auto;
     scroll-snap-type: x proximity;
+    scroll-padding-inline: 20px;
     scrollbar-width: none;
   }
 

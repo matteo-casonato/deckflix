@@ -11,7 +11,7 @@
   import { changeCopies, moveToWishlist, restoreEntry, setCondition, undoMoveToWishlist } from '../lib/data/collection.js';
   import { toggleWish } from '../lib/data/actions.js';
   import { listVariants } from '../lib/domain/variants.js';
-  import { CONDITIONS, DEFAULT_CONDITION, collectionKey } from '../lib/domain/collection.js';
+  import { CONDITIONS, DEFAULT_CONDITION, collectionKey, conditionFactor, conditionLabel } from '../lib/domain/collection.js';
   import { LANG_LABELS, cardmarketUrl, euro, guessImage, pricesDate, setIdOf } from '../lib/domain/cards.js';
   import { hrefFor } from '../lib/domain/routes.js';
   import { freshnessLabel } from '../lib/domain/cache.js';
@@ -109,6 +109,13 @@
     return mine.length === 1 ? (mine[0].productId ?? null) : null;
   }
 
+  /** Condition of the copies, when only one print is owned in this language (for Cardmarket). */
+  /** @param {import('../lib/domain/variants.js').VariantOption[]} variants */
+  function cardmarketCondition(variants) {
+    const mine = variants.filter((v) => qtyOf(v.key) > 0);
+    return mine.length === 1 ? conditionOf(mine[0].key) : null;
+  }
+
   /** @param {unknown} err */
   function errorText(err) {
     if (err instanceof TcgdexError && err.kind === 'not-found') return 'Questa carta non esiste su TCGdex.';
@@ -187,7 +194,11 @@
             <li class="variant">
               <span class="vtxt">
                 <strong>{v.label}</strong>
-                <span class="muted num">{v.price != null ? euro(v.price) : 'Prezzo non disponibile'}</span>
+                <span class="muted num">
+                  {v.price != null ? euro(v.price) : 'Prezzo non disponibile'}{v.price != null && qty > 0 && conditionOf(v.key) !== DEFAULT_CONDITION
+                    ? ` · stima ${conditionLabel(conditionOf(v.key))} ${euro(v.price * conditionFactor(conditionOf(v.key), settings.conditionFactors))}`
+                    : ''}
+                </span>
                 {#if qty > 0}
                   <select
                     class="cond"
@@ -225,10 +236,13 @@
           {#if prices}<span class="small" class:warn={prices.old}>{prices.label}</span>{/if}
         </div>
         <p class="muted small">
-          È la media di tutte le lingue e condizioni. Il prezzo reale della tua copia lo trovi su Cardmarket.
+          Il prezzo indicato è la <strong>media Cardmarket di tutte le lingue e condizioni</strong>, come riferimento per una copia
+          Near Mint. Per le tue copie l’app stima il valore in base alla condizione (vedi
+          <a href={hrefFor('settings', { key: 'qualita' })}>Qualità e prezzi</a>); il prezzo reale lo trovi su Cardmarket, con le offerte
+          nella lingua e nella condizione della tua copia.
         </p>
         <PriceTrend cardId={id} cardmarket={card.pricing?.cardmarket} />
-        <a class="btn" href={cardmarketUrl(card, copyLang, cardmarketProduct(variants))} target="_blank" rel="noopener noreferrer">
+        <a class="btn" href={cardmarketUrl(card, copyLang, cardmarketProduct(variants), cardmarketCondition(variants))} target="_blank" rel="noopener noreferrer">
           <Icon icon={LinkSquare02Icon} size={18} /> Apri su Cardmarket
         </a>
         <p class="source">
@@ -269,6 +283,14 @@
 {/if}
 
 <style>
+  .small a {
+    color: var(--accent);
+  }
+
+  .small strong {
+    color: var(--text);
+  }
+
   .cond {
     align-self: flex-start;
     margin-top: 4px;

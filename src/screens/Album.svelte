@@ -36,7 +36,7 @@
     if (ids.length) prefetchCards(ids, settings.cardLang);
   });
 
-  const owned = $derived(new Map(ownedTiles($entries ?? [], $cards ?? new Map()).map((t) => [t.cardId, t])));
+  const owned = $derived(new Map(ownedTiles($entries ?? [], $cards ?? new Map(), settings.conditionFactors).map((t) => [t.cardId, t])));
 
   /** @type {{ title: string, tiles: { cardId: string, qty: number, unit: number, variants: string[] }[] }[]} */
   const groups = $derived.by(() => {

@@ -39,11 +39,11 @@
   });
 
   // Value from the cached prices (App records the daily snapshot).
-  const value = $derived($entries && $cards ? collectionValue($entries, $cards) : null);
+  const value = $derived($entries && $cards ? collectionValue($entries, $cards, settings.conditionFactors) : null);
   const snapshots = liveQuery(() => db.priceSnapshots.toArray());
   const trend = $derived(periodChange($snapshots ?? [], 30, Date.now()));
 
-  const tiles = $derived($entries && $cards ? ownedTiles($entries, $cards) : []);
+  const tiles = $derived($entries && $cards ? ownedTiles($entries, $cards, settings.conditionFactors) : []);
   const today = dayKey(Date.now());
   const spotlight = $derived($cards ? cardOfTheDay(tiles, $cards, today) : null);
   const movers = $derived($cards ? priceMovers(tiles, $cards) : { up: [], down: [] });

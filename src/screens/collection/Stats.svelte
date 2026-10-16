@@ -30,7 +30,7 @@
       recordTodaySnapshot();
     });
   });
-  const stats = $derived(data ? collectionStats(data.entries, data.cards) : null);
+  const stats = $derived(data ? collectionStats(data.entries, data.cards, settings.conditionFactors) : null);
 
   /** @type {Map<string, any>} */
   let sets = $state(new Map());

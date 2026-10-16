@@ -12,6 +12,7 @@
   import { copyPrice, euro, guessImage, setProgress, variantBadge } from '../lib/domain/cards.js';
   import { hrefFor } from '../lib/domain/routes.js';
   import { replace } from '../lib/router.svelte.js';
+  import { entryPrice } from '../lib/domain/value.js';
   import BackHeader from '../lib/ui/BackHeader.svelte';
   import Segmented from '../lib/ui/Segmented.svelte';
   import CardTile from '../lib/ui/CardTile.svelte';
@@ -39,7 +40,7 @@
 
   /** @param {string} cardId */
   const copiesOf = (cardId) => ($entries ?? []).filter((e) => e.cardId === cardId);
-  const value = $derived(($entries ?? []).reduce((s, e) => s + (copyPrice($cards?.get(e.cardId), e.variant) ?? 0) * e.qty, 0));
+  const value = $derived(($entries ?? []).reduce((s, e) => s + (entryPrice($cards?.get(e.cardId), e, settings.conditionFactors) ?? 0) * e.qty, 0));
 
   /**
    * Long press on an owned card: it becomes the cover of this set in the Edizioni list.

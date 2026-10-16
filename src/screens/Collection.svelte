@@ -52,7 +52,7 @@
   const ownedCovers = $derived(
     $cards
       ? images(
-          ownedTiles($entries ?? [], $cards)
+          ownedTiles($entries ?? [], $cards, settings.conditionFactors)
             .sort((a, b) => b.unit - a.unit)
             .map((t) => t.cardId),
         )
@@ -62,7 +62,7 @@
   const setCovers = $derived.by(() => {
     if (!$cards || !$entries) return [];
     const bySet = new Map();
-    for (const t of ownedTiles($entries, $cards).sort((a, b) => b.unit - a.unit)) {
+    for (const t of ownedTiles($entries, $cards, settings.conditionFactors).sort((a, b) => b.unit - a.unit)) {
       const setId = t.cardId.slice(0, t.cardId.lastIndexOf('-'));
       if (!bySet.has(setId) && $cards.get(t.cardId)?.image) bySet.set(setId, t.cardId);
     }

@@ -16,7 +16,7 @@ export async function valuedCollection({ refresh = false } = {}) {
   const ids = [...new Set(entries.map((e) => e.cardId))];
   if (refresh && ids.length) await prefetchCards(ids, settings.cardLang);
   const cards = await cachedCards(ids, settings.cardLang);
-  return { entries, cards, value: collectionValue(entries, cards) };
+  return { entries, cards, value: collectionValue(entries, cards, settings.conditionFactors) };
 }
 
 /**

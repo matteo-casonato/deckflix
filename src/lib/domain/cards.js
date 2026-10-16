@@ -130,13 +130,17 @@ const CARDMARKET_LANG = /** @type {Record<string, number>} */ ({ en: 1, fr: 2, d
  * @param {{ name: string, pricing?: any } | string} card full TCGdex card (or just a name)
  * @param {string} lang language of the copy
  * @param {number | null} [productId] product of a specific print (variant)
+ * @param {string | null} [condition] minimum condition of the offers (MT…PO), e.g. the copy's
  */
-export function cardmarketUrl(card, lang, productId = null) {
+export function cardmarketUrl(card, lang, productId = null, condition = null) {
   const name = typeof card === 'string' ? card : card.name;
   const id = productId ?? (typeof card === 'string' ? null : card.pricing?.cardmarket?.idProduct ?? null);
   const params = new URLSearchParams(id ? { idProduct: String(id) } : { searchString: name });
   const langId = CARDMARKET_LANG[lang];
   if (langId) params.set('language', String(langId));
+  // Cardmarket's condition filter: 1 Mint … 7 Poor (to be confirmed on the site).
+  const cond = condition ? ['MT', 'NM', 'EX', 'GD', 'LP', 'PL', 'PO'].indexOf(condition) + 1 : 0;
+  if (id && cond > 0) params.set('minCondition', String(cond));
   return `https://www.cardmarket.com/it/Pokemon/Products${id ? '' : '/Search'}?${params}`;
 }
 

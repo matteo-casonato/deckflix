@@ -28,7 +28,7 @@
 
   const auto = $derived.by(() => {
     if (!$cards) return [];
-    const tiles = ownedTiles($entries ?? [], $cards);
+    const tiles = ownedTiles($entries ?? [], $cards, settings.conditionFactors);
     return AUTO_ALBUMS.map(([id, name, sub]) => {
       const groups = autoAlbum(id, tiles, $cards);
       const count = groups.reduce((n, g) => n + g.tiles.length, 0);

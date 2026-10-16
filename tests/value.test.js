@@ -64,3 +64,17 @@ describe('collectionStats', () => {
     ]);
   });
 });
+
+describe('entryPrice and condition factors', async () => {
+  const { entryPrice } = await import('../src/lib/domain/value.js');
+  it('scales the print price by the condition (Near Mint by default)', () => {
+    const c = cards.get('b');
+    expect(entryPrice(c, { variant: 'normal' })).toBe(10);
+    expect(entryPrice(c, { variant: 'normal', condition: 'LP' })).toBe(6);
+    expect(entryPrice(c, { variant: 'normal', condition: 'LP' }, { LP: 50 })).toBe(5);
+    expect(entryPrice(cards.get('c'), { variant: 'normal', condition: 'PO' })).toBe(null);
+  });
+  it('applies to the collection value', () => {
+    expect(collectionValue([{ ...e('b', 2), condition: 'EX' }], cards).total).toBe(17);
+  });
+});

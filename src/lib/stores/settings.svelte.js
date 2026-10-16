@@ -16,12 +16,15 @@ export const settings = $state({
   /** Cover card chosen with a long press, by list: "set:sv01", "album:top10", "album:<uuid>". */
   /** @type {Record<string, string>} */
   covers: {},
+  /** Share of the Cardmarket price by condition, in % (estimate; see Qualità e prezzi). */
+  /** @type {Record<string, number>} */
+  conditionFactors: { MT: 110, NM: 100, EX: 85, GD: 70, LP: 60, PL: 45, PO: 30 },
   /** navigator.storage.persist() result: true = the browser won't evict IndexedDB. */
   /** @type {boolean | null} */
   persisted: null,
 });
 
-const SYNCED = /** @type {const} */ (['cardLang', 'recentSets', 'missingImages', 'players', 'covers']);
+const SYNCED = /** @type {const} */ (['cardLang', 'recentSets', 'missingImages', 'players', 'covers', 'conditionFactors']);
 
 export async function loadSettings() {
   const rows = await db.settings.bulkGet([...SYNCED]);

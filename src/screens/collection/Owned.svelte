@@ -13,6 +13,7 @@
   import CardTile from '../../lib/ui/CardTile.svelte';
   import EmptyState from '../../lib/ui/EmptyState.svelte';
   import Stats from './Stats.svelte';
+  import { entryPrice } from '../../lib/domain/value.js';
   import StackRow from '../../lib/ui/StackRow.svelte';
   import { stackIds } from '../../lib/domain/albums.js';
   import { cardImage } from '../../lib/api/tcgdex.js';
@@ -44,7 +45,7 @@
   });
 
   /** @param {import('../../lib/db.js').CollectionEntry} e */
-  const price = (e) => copyPrice($cards?.get(e.cardId), e.variant);
+  const price = (e) => entryPrice($cards?.get(e.cardId), e, settings.conditionFactors);
 
   /** One tile per card: total copies, badge only when all copies share a special print. */
   const byCard = $derived.by(() => {

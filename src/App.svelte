@@ -29,6 +29,7 @@
   import Profile from './screens/Profile.svelte';
   import Csv from './screens/Csv.svelte';
   import Links from './screens/Links.svelte';
+  import Settings from './screens/Settings.svelte';
   import DeckPrint from './screens/DeckPrint.svelte';
   import Album from './screens/Album.svelte';
   import Access from './screens/Access.svelte';
@@ -90,6 +91,8 @@
     <Decks />
   {:else if route.name === 'deckPrint'}
     {#key route.params.id}<DeckPrint id={route.params.id} />{/key}
+  {:else if route.name === 'settings'}
+    {#key route.params.key}<Settings key={route.params.key} />{/key}
   {:else if route.name === 'links'}
     <Links />
   {:else if route.name === 'csv'}

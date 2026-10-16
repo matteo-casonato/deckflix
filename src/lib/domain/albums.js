@@ -2,6 +2,7 @@
 // Albums ("Raccolte", SPEC Phase 9): manual boards of cards chosen by the user and automatic
 // ones computed from the collection. Pure: entries, cached cards and albums in.
 import { copyPrice, priceTrend } from './cards.js';
+import { entryPrice } from './value.js';
 import { listVariants } from './variants.js';
 
 /**
@@ -64,13 +65,14 @@ export function bestPrice(card) {
  * One tile per owned card: total copies, highest unit price among its copies, total value.
  * @param {Entry[]} entries
  * @param {Map<string, any>} cards
+ * @param {Record<string, number>} [factors] condition factors in %
  * @returns {Tile[]}
  */
-export function ownedTiles(entries, cards) {
+export function ownedTiles(entries, cards, factors) {
   /** @type {Map<string, Tile>} */
   const map = new Map();
   for (const e of entries) {
-    const unit = copyPrice(cards.get(e.cardId), e.variant) ?? 0;
+    const unit = entryPrice(cards.get(e.cardId), e, factors) ?? 0;
     const t = map.get(e.cardId) ?? { cardId: e.cardId, qty: 0, unit: 0, value: 0, variants: [] };
     t.qty += e.qty;
     t.unit = Math.max(t.unit, unit);

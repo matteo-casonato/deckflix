@@ -10,7 +10,6 @@
     Image01Icon,
     LanguageSkillIcon,
     Analytics01Icon,
-    LockIcon,
     GridViewIcon,
     LinkSquare02Icon,
     QrCodeIcon,
@@ -19,11 +18,10 @@
   import Avatar from '../lib/ui/Avatar.svelte';
   import ConfirmDialog from '../lib/ui/ConfirmDialog.svelte';
   import { account } from '../lib/stores/account.svelte.js';
-  import { setSetting, settings } from '../lib/stores/settings.svelte.js';
+  import { settings } from '../lib/stores/settings.svelte.js';
   import { LANG_LABELS } from '../lib/domain/cards.js';
   import { hrefFor } from '../lib/domain/routes.js';
   import { ABOUT, USEFUL_LINKS } from '../lib/domain/links.js';
-  import { clearImageCache, imageCacheInfo } from '../lib/data/imageCache.js';
   import { backupState, relativeTime } from '../lib/domain/backup.js';
   import { backupNow, isConfigured, restoreFromDrive, signOut } from '../lib/sync/sync.js';
 
@@ -62,11 +60,6 @@
   );
 
   /** @type {{ images: number, usageMb: number | null } | null} */
-  let cache = $state(null);
-  const refreshCache = () => imageCacheInfo().then((c) => (cache = c));
-  $effect(() => {
-    refreshCache();
-  });
 
   /** @type {'restore' | 'signout' | 'wipe' | 'images' | null} */
   let confirm = $state(null);
@@ -74,6 +67,16 @@
   /** Interactive when Google needs a tap to renew access. */
   const saveNow = () => backupNow({ interactive: account.needsAuth });
 
+
+  /** Settings pages: [key, icon, title, summary]. */
+  const SETTINGS = $derived(
+    /** @type {[string, any, string, string][]} */ ([
+      ['lingua', LanguageSkillIcon, 'Lingua delle carte', LANG_LABELS[settings.cardLang] ?? settings.cardLang],
+      ['qualita', Analytics01Icon, 'Qualità e prezzi', 'Come si stima il valore in base alla condizione'],
+      ['edizioni', GridViewIcon, 'Edizioni', settings.missingImages ? 'Carte mancanti in grigio' : 'Carte mancanti solo col numero'],
+      ['immagini', Image01Icon, 'Immagini e spazio', 'Cache delle immagini, dati protetti'],
+    ]),
+  );
 </script>
 
 <header class="top"><h1>Profilo</h1></header>
@@ -142,53 +145,24 @@
   </a>
 </section>
 
-<h2 class="section">App</h2>
+<h2 class="section">Impostazioni</h2>
+<section class="card list">
+  {#each SETTINGS as [key, icon, title, sub] (key)}
+    <a class="row" href={hrefFor('settings', { key })}>
+      <span class="ico"><Icon {icon} /></span>
+      <span class="text"><strong>{title}</strong><span>{sub}</span></span>
+      <span class="chev"><Icon icon={ArrowRight01Icon} size={20} /></span>
+    </a>
+  {/each}
+</section>
+
+<h2 class="section">Altro</h2>
 <section class="card list">
   <a class="row" href={hrefFor('links')}>
     <span class="ico"><Icon icon={LinkSquare02Icon} /></span>
     <span class="text"><strong>Link utili</strong><span>{USEFUL_LINKS.map((l) => l.name).join(', ')}</span></span>
     <span class="chev"><Icon icon={ArrowRight01Icon} size={20} /></span>
   </a>
-  <label class="row">
-    <span class="ico"><Icon icon={LanguageSkillIcon} /></span>
-    <span class="text"><strong>Lingua delle carte</strong><span>Nomi, ricerca e immagini</span></span>
-    <select class="chip" value={settings.cardLang} onchange={(e) => setSetting('cardLang', e.currentTarget.value)}>
-      {#each Object.entries(LANG_LABELS) as [code, label] (code)}<option value={code}>{label}</option>{/each}
-    </select>
-  </label>
-  <label class="row">
-    <span class="ico"><Icon icon={GridViewIcon} /></span>
-    <span class="text"><strong>Carte mancanti in grigio</strong><span>Nelle edizioni; spento mostra solo i numeri e risparmia dati</span></span>
-    <input class="switch" type="checkbox" role="switch" checked={settings.missingImages} onchange={(e) => setSetting('missingImages', e.currentTarget.checked)} />
-  </label>
-  <div class="row static">
-    <span class="ico"><Icon icon={Analytics01Icon} /></span>
-    <span class="text"><strong>Prezzo di riferimento</strong><span>Trend Cardmarket, aggiornato ogni giorno</span></span>
-  </div>
-  <button class="row" onclick={() => (confirm = 'images')} disabled={!cache || cache.images === 0}>
-    <span class="ico"><Icon icon={Image01Icon} /></span>
-    <span class="text">
-      <strong>Cache immagini</strong>
-      <span>
-        {!cache
-          ? 'Calcolo…'
-          : `${cache.images} ${cache.images === 1 ? 'immagine' : 'immagini'}${cache.usageMb != null ? ` · app ${cache.usageMb} MB in tutto` : ''}${cache.images ? ' · svuota' : ''}`}
-      </span>
-    </span>
-  </button>
-  <div class="row static">
-    <span class="ico"><Icon icon={LockIcon} /></span>
-    <span class="text">
-      <strong>Dati protetti sul telefono</strong>
-      <span>
-        {settings.persisted === null
-          ? 'Verifica in corso…'
-          : settings.persisted
-            ? 'Sì: il browser non li cancella quando manca spazio'
-            : 'No: se manca spazio il browser potrebbe cancellarli. Installare l’app aiuta.'}
-      </span>
-    </span>
-  </div>
 </section>
 
 {#if account.user}
@@ -224,14 +198,6 @@
   </p>
 </section>
 
-<ConfirmDialog
-  open={confirm === 'images'}
-  title="Svuotare la cache delle immagini?"
-  text="Le immagini delle carte verranno scaricate di nuovo quando le apri. La collezione non cambia."
-  confirmLabel="Svuota"
-  onconfirm={() => clearImageCache().then(refreshCache)}
-  onclose={() => (confirm = null)}
-/>
 <ConfirmDialog
   open={confirm === 'restore'}
   title="Ripristinare da Drive?"
@@ -434,9 +400,6 @@
     cursor: default;
   }
 
-  .row .chip {
-    max-width: 130px;
-  }
 
   .row.disabled,
   .row:disabled {
