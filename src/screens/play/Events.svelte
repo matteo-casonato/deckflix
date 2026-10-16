@@ -173,13 +173,14 @@
   {/if}
 
   <section class="more card">
-    <a class="btn primary" href={nearbyEventsUrl(settings.homePlace, settings.eventRadius)} target="_blank" rel="noopener noreferrer">Apri la mappa dei tornei</a>
-    <a class="btn" href={cal.google} target="_blank" rel="noopener noreferrer">Aggiungi i tornei a Google Calendar</a>
+    <a class="btn primary" href={officialEventsUrl(settings.eventRadius)} target="_blank" rel="noopener noreferrer">Apri l’Event Locator ufficiale</a>
+    <a class="btn" href={cal.google} target="_blank" rel="noopener noreferrer">Aggiungi a Google Calendar</a>
     <p class="muted note">Nel calendario i tornei si aggiornano da soli. Con un altro calendario usa <a href={cal.webcal}>questo collegamento</a>.</p>
-    <div class="ev-links">
-      <a href={officialEventsUrl(settings.eventRadius)} target="_blank" rel="noopener noreferrer">Event Locator ufficiale</a>
-      <a href={hrefFor('settings', { key: 'tornei' })}><Flag country={settings.homePlace.country} width={18} />&nbsp;{settings.homePlace.name} · {settings.eventRadius} km</a>
-    </div>
+    <a class="place" href={hrefFor('settings', { key: 'tornei' })}>
+      <Flag country={settings.homePlace.country} width={18} />
+      <span class="pname">{settings.homePlace.name} · {settings.eventRadius} km</span>
+      <span class="change">Cambia</span>
+    </a>
   </section>
 {:else}
   <section class="intro card">
@@ -316,8 +317,7 @@
     margin: 10px 20px 0;
   }
 
-  .note a,
-  .ev-links a {
+  .note a {
     color: var(--accent);
   }
 
@@ -347,16 +347,29 @@
     margin: -2px 4px 0;
   }
 
-  .ev-links {
-    display: flex;
-    justify-content: space-between;
-    gap: 12px;
-    font-size: 13px;
-  }
-
-  .ev-links a {
+  /* Home city on one line: name cut with "…" if long, "Cambia" always visible. */
+  .place {
     min-height: 44px;
+    padding: 0 4px;
     display: flex;
     align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--muted);
+    text-decoration: none;
+  }
+
+  .pname {
+    min-width: 0;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .change {
+    flex-shrink: 0;
+    color: var(--accent);
+    font-weight: 700;
   }
 </style>
