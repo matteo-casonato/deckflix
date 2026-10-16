@@ -49,6 +49,9 @@ export default defineConfig({
         navigateFallback: 'index.html',
         navigateFallbackDenylist: [/\/lab\//],
         cleanupOutdatedCaches: true,
+        // Same files, same service worker: the list order varies between builds, and a changed
+        // sw.js would show "Nuova versione disponibile" after every daily rebuild.
+        manifestTransforms: [async (entries) => ({ manifest: [...entries].sort((a, b) => a.url.localeCompare(b.url)), warnings: [] })],
         runtimeCaching: [
           {
             // Card images: they never change, keep them (SPEC: CacheFirst).
@@ -78,7 +81,8 @@ export default defineConfig({
       },
     }),
   ],
-  define: { __BUILD_TIME__: JSON.stringify(new Date().toISOString()) },
+  // BUILD_TIME comes from the workflow (last commit): rebuilding the same code gives the same app.
+  define: { __BUILD_TIME__: JSON.stringify(process.env.BUILD_TIME || new Date().toISOString()) },
   server: { https },
   build: {
     rollupOptions: {

@@ -4,6 +4,9 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  # Every morning (05:15 Italian winter time): fresh tournaments for the app.
+  schedule:
+    - cron: '15 4 * * *'
 
 permissions:
   contents: read
@@ -19,6 +22,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      # The build stamps the last commit's time, not now: the daily rebuild then produces the
+      # same app, and phones don't get a "Nuova versione disponibile" every morning.
+      - run: echo "BUILD_TIME=$(git log -1 --format=%cI)" >> "$GITHUB_ENV"
       - uses: actions/setup-node@v7
         with:
           node-version: 24
@@ -28,6 +34,12 @@ jobs:
       - run: npm run build
         env:
           VITE_GOOGLE_CLIENT_ID: ${{ vars.VITE_GOOGLE_CLIENT_ID }}
+      # Tournaments of the whole country from pokedata, next to the app. If pokedata is down
+      # the app is published anyway and phones keep the tournaments they already have.
+      - run: node scripts/fetch-tournaments.mjs dist
+        continue-on-error: true
+        env:
+          TOURNAMENT_COUNTRIES: ${{ vars.TOURNAMENT_COUNTRIES || 'IT' }}
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
         with:
@@ -42,3 +54,15 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v5
+
+  # GitHub turns off scheduled workflows after 60 days without commits; re-enabling it every
+  # day keeps the morning tournaments coming.
+  keepalive:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/deploy.yml/enable"
+        env:
+          GH_TOKEN: ${{ github.token }}

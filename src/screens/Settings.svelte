@@ -214,28 +214,32 @@
     <h2 class="label">Elenco dei tornei nell’app</h2>
     <section class="explain card">
       <p>
-        Pokedata non lascia leggere i tornei ad altre app, ma il loro elenco si può copiare e incollare qui: in Play! vedi i
-        prossimi tornei con città, distanza e tipo (Challenge, Cup, Prerelease). Per aggiornarli, ripeti i due passaggi ogni tanto
-        (anche da Play! › Tornei › Aggiorna i tornei).
+        I tornei si aggiornano da soli: ogni mattina il sito di Deckflix raccoglie da pokedata.ovh i tornei ufficiali Play!
+        Pokémon in Italia, e in Play! vedi quelli entro il raggio scelto, con città, distanza e tipo.
       </p>
-      {#if settings.homePlace}
-        <TournamentImport />
-      {:else}
-        <p class="warn">Prima salva la città qui sopra.</p>
+      {#if $saved?.source === 'auto'}
+        <p class="num">Elenco del {new Date($saved.importedAt).toLocaleDateString('it-IT')} · {$saved.events.length} tornei in {$saved.country}.</p>
       {/if}
-      {#if $saved}
-        <p class="num">
-          {$saved.events.length} tornei importati il {new Date($saved.importedAt).toLocaleDateString('it-IT')}.
-          <button class="link" onclick={() => clearTournaments()}>Rimuovi</button>
-        </p>
-      {/if}
-
+      <details class="manual">
+        <summary>Fuori dall’Italia? Importa l’elenco a mano</summary>
+        {#if settings.homePlace}
+          <TournamentImport />
+        {:else}
+          <p class="warn">Prima salva la città qui sopra.</p>
+        {/if}
+        {#if $saved?.source === 'manual'}
+          <p class="num">
+            {$saved.events.length} tornei importati il {new Date($saved.importedAt).toLocaleDateString('it-IT')}.
+            <button class="link" onclick={() => clearTournaments()}>Rimuovi</button>
+          </p>
+        {/if}
+      </details>
     </section>
 
     <p class="note">
       La città viene cercata una volta su OpenStreetMap (gratuito) per averne la posizione; la posizione del telefono invece non
-      lascia il telefono. I tornei si aprono su pokedata.ovh, che raccoglie gli eventi ufficiali Play! Pokémon: il loro elenco non
-      si può leggere da altre app, quindi Deckflix apre la mappa già centrata su di te.
+      lascia il telefono. L’elenco dei tornei è lo stesso per tutti (tutta Italia): la tua città non viene inviata a nessuno,
+      la distanza la calcola il telefono.
     </p>
   {:else}
     <p class="intro">Impostazione non trovata.</p>
@@ -252,6 +256,21 @@
 />
 
 <style>
+  .manual summary {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    color: var(--accent);
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .manual[open] {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
   .link {
     min-height: 40px;
     padding: 0 6px;

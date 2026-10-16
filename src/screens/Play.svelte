@@ -7,8 +7,8 @@
   import { settings } from '../lib/stores/settings.svelte.js';
   import { cardImage, getCard } from '../lib/api/tcgdex.js';
   import { ageDivision } from '../lib/domain/players.js';
-  import { liveTournaments } from '../lib/data/tournaments.js';
-  import { distanceKm, upcoming } from '../lib/domain/ics.js';
+  import { liveTournaments, refreshTournaments } from '../lib/data/tournaments.js';
+  import { nearby, upcoming, within } from '../lib/domain/ics.js';
   import { hrefFor } from '../lib/domain/routes.js';
   import BackHeader from '../lib/ui/BackHeader.svelte';
   import CardStack from '../lib/ui/CardStack.svelte';
@@ -36,12 +36,20 @@
     ).then((imgs) => (deckCovers = imgs));
   });
 
-  const tournaments = liveTournaments();
-  // Tournaments tile: the next three, Challenge/Cup/Prerelease first among those of the next
-  // two weeks (they need booking), then the others.
+  const saved = liveTournaments();
+  /** The saved list, unless it is another country's automatic one (home moved abroad). */
+  const tournaments = $derived(
+    $saved && !($saved.source === 'auto' && $saved.country !== (settings.homePlace?.country || 'IT').toUpperCase()) ? $saved : null,
+  );
+  // Downloads the morning's tournaments when needed (at most every few hours).
+  $effect(() => {
+    if (settings.homePlace) refreshTournaments(settings.homePlace.country || 'IT').catch(() => {});
+  });
+  // Tournaments tile: the next three within the radius, Challenge/Cup/Prerelease first among
+  // those of the next two weeks (they need booking), then the others.
   const nextThree = $derived.by(() => {
-    if (!$tournaments) return [];
-    const list = upcoming($tournaments.events, Date.now());
+    if (!tournaments) return [];
+    const list = within(nearby(upcoming(tournaments.events, Date.now()), settings.homePlace, settings.eventRadius), Date.now(), 14);
     const big = list.filter((t) => t.type && t.type !== 'league').slice(0, 3);
     return (big.length >= 3 ? big : [...big, ...list.filter((t) => !big.includes(t))].slice(0, 3)).sort((a, b) => a.start.localeCompare(b.start));
   });
@@ -54,8 +62,8 @@
     const day = diff === 0 ? 'Oggi' : diff === 1 ? 'Domani' : d.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' });
     return `${day} ${start.slice(11, 16)}`;
   }
-  /** @param {import('../lib/domain/ics.js').Tournament} t */
-  const km = (t) => (settings.homePlace && t.lat != null && t.lng != null ? Math.round(distanceKm(settings.homePlace, { lat: t.lat, lng: t.lng })) : null);
+  /** @param {{ km: number | null }} t */
+  const km = (t) => (t.km != null ? Math.round(t.km) : null);
 
   const initials = (/** @type {string} */ name) =>
     name

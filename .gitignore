@@ -8,3 +8,6 @@ lab/samples/
 # Icon sketches (originals stay local; the app uses the generated public/icons)
 docs/icon-ideas/
 docs/brands/
+
+# Tournaments are fetched by the deploy workflow into dist/, never committed
+public/tournaments/

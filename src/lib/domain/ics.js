@@ -35,6 +35,19 @@ export function tournamentType(raw, title) {
   return 'league';
 }
 
+/** English names pokedata sometimes uses for Italian cities. */
+const CITY_NAMES = /** @type {Record<string, string>} */ ({
+  Padua: 'Padova', Triest: 'Trieste', Venice: 'Venezia', Milan: 'Milano', Rome: 'Roma', Turin: 'Torino',
+  Florence: 'Firenze', Naples: 'Napoli', Genoa: 'Genova', Mantua: 'Mantova', Syracuse: 'Siracusa', Leghorn: 'Livorno',
+});
+
+/** "Udine / Udin" → "Udine", "Padua" → "Padova". @param {unknown} raw */
+export function cityName(raw) {
+  if (!raw) return undefined;
+  const name = String(raw).split(' / ')[0].trim();
+  return CITY_NAMES[name] ?? name;
+}
+
 /**
  * Events of pokedata's JSON (the data behind their map: shop, city, position, type).
  * @param {string} text
@@ -51,7 +64,7 @@ export function parseEventsJson(text) {
       title: String(r.title ?? '').trim(),
       place: String(r.shopName ?? '').trim(),
       code: /^\d{2}-\d{2}-\d{6}$/.test(r.pokemon_url ?? '') ? r.pokemon_url : null,
-      city: r.city ? String(r.city) : undefined,
+      city: cityName(r.city),
       type: tournamentType(r.type, String(r.title ?? '')),
       lat: typeof r.lat === 'number' ? r.lat : undefined,
       lng: typeof r.lng === 'number' ? r.lng : undefined,
@@ -70,6 +83,21 @@ export function distanceKm(a, b) {
   const dLng = rad(b.lng - a.lng);
   const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLng / 2) ** 2;
   return 6371 * 2 * Math.asin(Math.sqrt(h));
+}
+
+/**
+ * Tournaments within `radiusKm` of home, each with its distance (null without a position: those
+ * come from the .ics, already limited to the area, and are kept).
+ * @template {Tournament} T
+ * @param {T[]} list
+ * @param {{ lat: number, lng: number } | null} home
+ * @param {number} radiusKm
+ * @returns {(T & { km: number | null })[]}
+ */
+export function nearby(list, home, radiusKm) {
+  return list
+    .map((t) => ({ ...t, km: home && t.lat != null && t.lng != null ? distanceKm(home, { lat: t.lat, lng: t.lng }) : null }))
+    .filter((t) => t.km == null || t.km <= radiusKm);
 }
 
 /**

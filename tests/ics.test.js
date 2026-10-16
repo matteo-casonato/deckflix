@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { distanceKm, eventPageUrl, parseEventsJson, parseIcs, tournamentType, upcoming, within } from '../src/lib/domain/ics.js';
+import { cityName, distanceKm, eventPageUrl, nearby, parseEventsJson, parseIcs, tournamentType, upcoming, within } from '../src/lib/domain/ics.js';
 
 const ICS = [
   'BEGIN:VCALENDAR',
@@ -81,5 +81,23 @@ describe('pokedata JSON', () => {
     const list = parseEventsJson(json);
     expect(within(list, new Date(2026, 9, 16, 8).getTime(), 0).map((t) => t.id)).toEqual(['y']);
     expect(within(list, new Date(2026, 9, 16, 8).getTime(), 14)).toHaveLength(2);
+  });
+  it('keeps the tournaments within the radius, with their distance', () => {
+    const home = { lat: 45.6297, lng: 12.5682 }; // San Donà
+    const list = parseEventsJson(json);
+    expect(nearby(list, home, 20).map((t) => [t.id, Math.round(t.km ?? -1)])).toEqual([['y', 0]]);
+    expect(nearby(list, home, 50).map((t) => t.id)).toEqual(['y', 'x']);
+    expect(nearby([{ ...list[0], lat: undefined, lng: undefined }], home, 1)[0].km).toBe(null);
+  });
+});
+
+describe('cityName', () => {
+  it('keeps the Italian name of bilingual and English city names', () => {
+    expect(cityName('Udine / Udin')).toBe('Udine');
+    expect(cityName('San Vito al Tagliamento / San Vit dal Tiliment')).toBe('San Vito al Tagliamento');
+    expect(cityName('Padua')).toBe('Padova');
+    expect(cityName('Triest')).toBe('Trieste');
+    expect(cityName('Cittadella')).toBe('Cittadella');
+    expect(cityName('')).toBe(undefined);
   });
 });

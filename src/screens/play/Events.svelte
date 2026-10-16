@@ -1,36 +1,50 @@
 <script>
   // @ts-check
-  // Play! › Tornei vicino a te: the tournaments of the next two weeks from the imported file
-  // (city, distance from home, type), by date or by city, filtered by type; then the map,
-  // the calendar subscription and the official locator.
+  // Play! › Tornei vicino a te: the tournaments of the next two weeks within the radius (city,
+  // distance from home, type), by date or by city, filtered by type; then the map, the calendar
+  // subscription and the official locator. The list downloads by itself (the site publishes the
+  // country's tournaments every morning); only countries without it need pasting pokedata's list.
   import { settings } from '../../lib/stores/settings.svelte.js';
   import { nearbyEventsCalendar, nearbyEventsUrl, officialEventsUrl } from '../../lib/domain/players.js';
-  import { liveTournaments } from '../../lib/data/tournaments.js';
-  import { TOURNAMENT_TYPES, distanceKm, eventPageUrl, upcoming, within } from '../../lib/domain/ics.js';
+  import { liveTournaments, refreshTournaments } from '../../lib/data/tournaments.js';
+  import { TOURNAMENT_TYPES, eventPageUrl, nearby, upcoming, within } from '../../lib/domain/ics.js';
   import { hrefFor } from '../../lib/domain/routes.js';
   import TournamentMark from './TournamentMark.svelte';
   import UpdateTournaments from './UpdateTournaments.svelte';
 
   /** @typedef {import('../../lib/domain/ics.js').Tournament & { km: number | null }} Row */
 
-  const tournaments = liveTournaments();
+  const saved = liveTournaments();
+  /** The saved list, unless it is another country's automatic one (home moved abroad). */
+  const tournaments = $derived(
+    $saved && !($saved.source === 'auto' && $saved.country !== (settings.homePlace?.country || 'IT').toUpperCase()) ? $saved : null,
+  );
   let typeFilter = $state('all');
   let view = $state('date');
   let later = $state(false);
   let updating = $state(false);
+  /** Automatic list: downloading, there, no file for this country, or failed (offline). */
+  let auto = $state(/** @type {'loading' | 'ok' | 'none' | 'error'} */ ('loading'));
+
+  /** @param {boolean} [force] */
+  function refresh(force = false) {
+    const country = settings.homePlace?.country || 'IT';
+    auto = 'loading';
+    refreshTournaments(country, force)
+      .then((ok) => (auto = ok ? 'ok' : 'none'))
+      .catch(() => (auto = 'error'));
+  }
+  $effect(() => {
+    if (settings.homePlace) refresh();
+  });
 
   const DAYS = 14;
   const now = Date.now();
-  const all = $derived($tournaments ? upcoming($tournaments.events, now) : []);
-  const rows = $derived.by(() => {
-    const home = settings.homePlace;
-    const list = later ? all : within(all, now, DAYS);
-    return /** @type {Row[]} */ (
-      list
-        .filter((t) => typeFilter === 'all' || t.type === typeFilter)
-        .map((t) => ({ ...t, km: home && t.lat != null && t.lng != null ? distanceKm(home, { lat: t.lat, lng: t.lng }) : null }))
-    );
-  });
+  /** Upcoming tournaments within the radius, with their distance. */
+  const all = $derived(
+    tournaments ? /** @type {Row[]} */ (nearby(upcoming(tournaments.events, now), settings.homePlace, settings.eventRadius)) : [],
+  );
+  const rows = $derived((later ? all : within(all, now, DAYS)).filter((t) => typeFilter === 'all' || t.type === typeFilter));
   const counts = $derived(
     Object.fromEntries(TOURNAMENT_TYPES.map(([k]) => [k, (later ? all : within(all, now, DAYS)).filter((t) => t.type === k).length])),
   );
@@ -49,7 +63,8 @@
     return list;
   });
 
-  const staleDays = $derived($tournaments ? Math.max(0, Math.floor((Date.now() - $tournaments.importedAt) / 86_400_000)) : 0);
+  const staleDays = $derived(tournaments ? Math.max(0, Math.floor((Date.now() - tournaments.importedAt) / 86_400_000)) : 0);
+  const isAuto = $derived(tournaments?.source === 'auto');
 
   /** Line under the title: the shop (when the title is something else), city, distance. @param {Row} t */
   const subline = (t) =>
@@ -74,15 +89,19 @@
 
 {#if settings.homePlace}
   {@const cal = nearbyEventsCalendar(settings.homePlace, settings.eventRadius)}
-  {#if $tournaments}
+  {#if tournaments}
     <div class="tools">
       <div class="update">
         <span class="muted">
-          Aggiornati {staleDays === 0 ? 'oggi' : staleDays === 1 ? 'ieri' : `${staleDays} giorni fa`}
+          {isAuto ? 'Si aggiornano da soli · ' : 'Importati '}{staleDays === 0 ? 'oggi' : staleDays === 1 ? 'ieri' : `${staleDays} giorni fa`}{auto === 'error' ? ' · offline' : ''}
         </span>
-        <button class="btn small" class:primary={staleDays > 7} onclick={() => (updating = true)}>Aggiorna i tornei</button>
+        {#if isAuto}
+          <button class="link-btn small" onclick={() => refresh(true)} disabled={auto === 'loading'}>{auto === 'loading' ? 'Aggiorno…' : 'Aggiorna'}</button>
+        {:else if auto === 'none'}
+          <button class="btn small" class:primary={staleDays > 7} onclick={() => (updating = true)}>Aggiorna i tornei</button>
+        {/if}
       </div>
-      {#if !hasCities}
+      {#if !hasCities && !isAuto}
         <p class="warn">
           Mancano città e distanza: hai importato il calendario (.ics). Tocca <strong>Aggiorna i tornei</strong> e importa
           l’elenco.
@@ -137,9 +156,18 @@
     {/if}
   {:else}
     <section class="intro card">
-      <strong>Vedi i tornei qui nell’app</strong>
-      <span class="muted">Salva l’elenco dei tornei della tua zona e importalo: due passaggi dalla pagina Tornei vicino a te.</span>
-      <button class="btn primary" onclick={() => (updating = true)}>Importa i tornei</button>
+      {#if auto === 'loading'}
+        <strong>Carico i tornei…</strong>
+        <span class="muted">Ogni mattina il sito di Deckflix raccoglie i tornei ufficiali Play! Pokémon.</span>
+      {:else if auto === 'error'}
+        <strong>Non riesco a scaricare i tornei</strong>
+        <span class="muted">Controlla la connessione e riprova.</span>
+        <button class="btn primary" onclick={() => refresh(true)}>Riprova</button>
+      {:else}
+        <strong>Vedi i tornei qui nell’app</strong>
+        <span class="muted">Per il tuo paese l’elenco automatico non c’è: copia l’elenco di pokedata e incollalo qui.</span>
+        <button class="btn primary" onclick={() => (updating = true)}>Importa i tornei</button>
+      {/if}
     </section>
   {/if}
 
@@ -248,6 +276,11 @@
     align-items: center;
     justify-content: space-between;
     gap: 12px;
+  }
+
+  .link-btn.small {
+    margin: 0;
+    padding: 0 4px;
   }
 
   .btn.small {
