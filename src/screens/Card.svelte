@@ -3,6 +3,7 @@
   // Card detail: prices per print, quantities per language and variant, wishlist,
   // Cardmarket link (SPEC § 2: TCGdex prices aggregate all languages and conditions).
   import { liveQuery } from 'dexie';
+  import Picker from '../lib/ui/Picker.svelte';
   import Flag from '../lib/ui/Flag.svelte';
   import { BookmarkAdd02Icon, FavouriteIcon, LinkSquare02Icon } from '@hugeicons/core-free-icons';
   import { db } from '../lib/db.js';
@@ -237,9 +238,9 @@
                 {@const cond = g.condition || DEFAULT_CONDITION}
                 <div class="cgroup">
                   <span class="ctxt">
-                    <select class="chip cond" aria-label={`Condizione di ${g.qty === 1 ? 'questa copia' : 'queste copie'} ${v.label}`} value={cond} onchange={(e) => regrade(g, e.currentTarget.value)}>
-                      {#each CONDITIONS as [code, label] (code)}<option value={code}>{label}</option>{/each}
-                    </select>
+                    <span class="cond">
+                      <Picker small title={`Condizione di ${g.qty === 1 ? 'questa copia' : 'queste copie'} ${v.label}`} value={cond} options={CONDITIONS.map(([code, label]) => ({ value: code, label }))} onchange={(c) => regrade(g, c)} />
+                    </span>
                     {#if v.price != null && cond !== DEFAULT_CONDITION}
                       <span class="muted num small">stima {euro(v.price * conditionFactor(cond, settings.conditionFactors))}</span>
                     {/if}
@@ -252,21 +253,16 @@
                 </div>
               {/each}
               {#if groups.length && groups.length < CONDITIONS.length}
-                <select
-                  class="chip add"
-                  aria-label={`Aggiungi una copia ${v.label} in un’altra condizione`}
-                  value=""
-                  onchange={(e) => {
-                    const c = e.currentTarget.value;
-                    e.currentTarget.value = '';
-                    if (c) change(v.key, c, 1, v.label);
-                  }}
-                >
-                  <option value="">＋ Copia in un’altra condizione</option>
-                  {#each CONDITIONS.filter(([c]) => !groups.some((g) => (g.condition || DEFAULT_CONDITION) === c)) as [code, label] (code)}
-                    <option value={code}>{label}</option>
-                  {/each}
-                </select>
+                <span class="add">
+                  <Picker
+                    wide
+                    title={`Aggiungi una copia ${v.label} in un’altra condizione`}
+                    label="＋ Copia in un’altra condizione"
+                    value=""
+                    options={CONDITIONS.filter(([c]) => !groups.some((g) => (g.condition || DEFAULT_CONDITION) === c)).map(([code, label]) => ({ value: code, label }))}
+                    onchange={(c) => change(v.key, c, 1, v.label)}
+                  />
+                </span>
               {/if}
             </li>
           {/each}
@@ -353,11 +349,12 @@
     min-width: 0;
   }
 
-  .chip.add {
-    width: 100%;
-    max-width: none;
+  .add {
+    display: block;
     margin-top: 12px;
-    justify-content: center;
+  }
+
+  .add :global(.chip) {
     color: var(--accent);
   }
 
@@ -391,7 +388,7 @@
     color: var(--text);
   }
 
-  .chip.cond {
+  .cond {
     align-self: flex-start;
     margin-top: 4px;
   }

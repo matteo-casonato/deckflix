@@ -4,6 +4,7 @@
   // birth year, age division, format, then Pokémon (set, number, regulation mark), Trainers
   // and Energy. Print or save as PDF (browser print), or share the text list.
   import { liveQuery } from 'dexie';
+  import Picker from '../lib/ui/Picker.svelte';
   import { db } from '../lib/db.js';
   import { deckRows, exportDecklist, ownedMap } from '../lib/data/decks.js';
   import { setDetails } from '../lib/data/catalog.js';
@@ -67,10 +68,12 @@
     {#if settings.players.length}
       <label class="field">
         <span>Giocatore</span>
-        <select class="chip" bind:value={playerKey}>
-          {#each settings.players as p (p.id)}<option value={p.id}>{p.name}</option>{/each}
-          <option value="">Nessuno (da compilare a mano)</option>
-        </select>
+        <Picker
+          title="Giocatore"
+          value={playerKey}
+          options={[...settings.players.map((p) => ({ value: p.id, label: p.name, sub: `ID ${p.playerId}`, icon: p.avatar ?? null })), { value: '', label: 'Nessuno (da compilare a mano)' }]}
+          onchange={(k) => (playerKey = k)}
+        />
       </label>
     {:else}
       <p class="muted">Aggiungi il tuo ID giocatore in <a href={hrefFor('deck', {}, { tab: 'players' })}>Play! › Giocatori</a> per compilare il foglio da solo.</p>

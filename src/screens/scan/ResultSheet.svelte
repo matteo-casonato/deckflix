@@ -3,8 +3,10 @@
   // Single mode result (SPEC § 4.1.7): language, print, quantity ("Ne hai già 1 → diventano 2"),
   // Riprova / Aggiungi. Several candidates: the user picks. Not read: Riprova / Inserimento rapido.
   import { liveQuery } from 'dexie';
+  import Picker from '../../lib/ui/Picker.svelte';
+  import { langOptions } from '../../lib/ui/options.js';
   import { db } from '../../lib/db.js';
-  import { LANG_LABELS, euro, thumbUrl } from '../../lib/domain/cards.js';
+  import { euro, thumbUrl } from '../../lib/domain/cards.js';
   import { hrefFor } from '../../lib/domain/routes.js';
   import { printsFor } from '../../lib/scan/pipeline.js';
   import { learnStamp } from '../../lib/scan/stamp.js';
@@ -93,9 +95,7 @@
 
     <label class="line">
       <span>Lingua</span>
-      <select class="chip" bind:value={lang}>
-        {#each Object.entries(LANG_LABELS) as [code, label] (code)}<option value={code}>{label}</option>{/each}
-      </select>
+      <Picker title="Lingua" value={lang} options={langOptions()} onchange={(l) => (lang = l)} />
     </label>
 
     <div class="prints" role="radiogroup" aria-label="Variante">

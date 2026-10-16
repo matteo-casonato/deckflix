@@ -5,6 +5,8 @@
   // the same set, fix the set and type only the numbers ("25", "26"…). Enter adds the default
   // print and clears the field for the next card.
   import { cardsByNumber, getCard, getSet } from '../lib/api/tcgdex.js';
+  import Picker from '../lib/ui/Picker.svelte';
+  import { langOptions } from '../lib/ui/options.js';
   import { settings, rememberSet } from '../lib/stores/settings.svelte.js';
   import { setsMap } from '../lib/data/catalog.js';
   import { smartSearch } from '../lib/data/search.js';
@@ -205,9 +207,7 @@
     </div>
     <label class="opt">
       <span>Lingua delle copie</span>
-      <select class="chip" bind:value={copyLang}>
-        {#each Object.entries(LANG_LABELS) as [code, label] (code)}<option value={code}>{label}</option>{/each}
-      </select>
+      <Picker title="Lingua delle copie" value={copyLang} options={langOptions()} onchange={(l) => (copyLang = l)} />
     </label>
   </div>
 

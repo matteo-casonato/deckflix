@@ -12,14 +12,15 @@
   import { addOneCopy, toggleWish } from '../lib/data/actions.js';
   import { changeDeckCard } from '../lib/data/decks.js';
   import { showToast } from '../lib/stores/toast.svelte.js';
-  import { LANG_LABELS, setIdOf, thumbUrl } from '../lib/domain/cards.js';
+  import { setIdOf, thumbUrl } from '../lib/domain/cards.js';
   import { hrefFor } from '../lib/domain/routes.js';
   import { replace } from '../lib/router.svelte.js';
   import BackHeader from '../lib/ui/BackHeader.svelte';
   import Segmented from '../lib/ui/Segmented.svelte';
   import Icon from '../lib/ui/Icon.svelte';
   import SetPicker from '../lib/ui/SetPicker.svelte';
-  import TypePicker from '../lib/ui/TypePicker.svelte';
+  import Picker from '../lib/ui/Picker.svelte';
+  import { langOptions, rarityOptions, typeOptions } from '../lib/ui/options.js';
 
   /** @type {{ query: Record<string, string> }} */
   let { query } = $props();
@@ -200,14 +201,9 @@
   <div class="chips" role="group" aria-label="Filtri">
     <button class="chip" aria-pressed={standard} onclick={() => update({ standard: standard ? (deckId ? '0' : null) : '1' })}>Solo Standard</button>
     <SetPicker {sets} value={filters.setId} placeholder="Edizione" noneLabel="Tutte le edizioni" active recent={settings.recentSets} onchange={(v) => update({ set: v || null })} />
-    <TypePicker {types} value={filters.type} onchange={(t) => update({ type: t || null })} />
-    <select class="chip" class:on={!!filters.rarity} aria-label="Rarità" value={filters.rarity} onchange={(e) => update({ rarity: e.currentTarget.value || null })}>
-      <option value="">Rarità</option>
-      {#each rarities as r (r)}<option value={r}>{r}</option>{/each}
-    </select>
-    <select class="chip" class:on={!!query.lang} aria-label="Lingua" value={lang} onchange={(e) => update({ lang: e.currentTarget.value === settings.cardLang ? null : e.currentTarget.value })}>
-      {#each Object.entries(LANG_LABELS) as [code, label] (code)}<option value={code}>{label}</option>{/each}
-    </select>
+    <Picker title="Tipo" placeholder="Tipo" active value={filters.type} options={[{ value: '', label: 'Tutti i tipi' }, ...typeOptions(types)]} onchange={(t) => update({ type: t || null })} />
+    <Picker title="Rarità" placeholder="Rarità" active value={filters.rarity} options={[{ value: '', label: 'Tutte le rarità' }, ...rarityOptions(rarities)]} onchange={(r) => update({ rarity: r || null })} />
+    <Picker title="Lingua" active={!!query.lang} value={lang} options={langOptions()} onchange={(l) => update({ lang: l === settings.cardLang ? null : l })} />
   </div>
 
   {#if problem === 'offline'}

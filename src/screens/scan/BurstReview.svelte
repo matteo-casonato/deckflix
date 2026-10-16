@@ -3,8 +3,10 @@
   // "Rivedi e salva N carte" (SPEC § 4.1.8): fix the card, language or print of each queued
   // scan, remove wrong ones, then save all. Uncertain ones are marked "Da verificare".
   import { Delete02Icon } from '@hugeicons/core-free-icons';
+  import Picker from '../../lib/ui/Picker.svelte';
+  import { langOptions } from '../../lib/ui/options.js';
   import Icon from '../../lib/ui/Icon.svelte';
-  import { LANG_LABELS, euro, thumbUrl } from '../../lib/domain/cards.js';
+  import { euro, thumbUrl } from '../../lib/domain/cards.js';
   import { printsFor } from '../../lib/scan/pipeline.js';
 
   /**
@@ -51,21 +53,21 @@
         </div>
         <div class="selects">
           {#if item.rec.candidates.length > 1}
-            <select class="chip" aria-label="Carta" value={item.chosen} onchange={(e) => pick(item, Number(e.currentTarget.value))}>
-              {#each item.rec.candidates.slice(0, 6) as cand, i (cand.id)}
-                <option value={i}>{cand.name} · {cand.setCode ?? cand.setName} {cand.localId}</option>
-              {/each}
-            </select>
+            <Picker
+              title="Carta"
+              value={String(item.chosen)}
+              options={item.rec.candidates.slice(0, 6).map((cand, i) => ({ value: String(i), label: cand.name, sub: `${cand.setCode ?? cand.setName} ${cand.localId}`, icon: thumbUrl(cand) }))}
+              onchange={(v) => pick(item, Number(v))}
+            />
           {/if}
-          <select class="chip" aria-label="Lingua" bind:value={item.lang}>
-            {#each Object.entries(LANG_LABELS) as [code, label] (code)}<option value={code}>{label}</option>{/each}
-          </select>
+          <Picker title="Lingua" value={item.lang} options={langOptions()} onchange={(l) => (item.lang = l)} />
           {#if item.options.length > 1}
-            <select class="chip" aria-label="Variante" bind:value={item.variant}>
-              {#each item.options as v (v.key)}
-                <option value={v.key}>{v.label}{v.price != null ? ` · ${euro(v.price)}` : ''}</option>
-              {/each}
-            </select>
+            <Picker
+              title="Variante"
+              value={item.variant}
+              options={item.options.map((v) => ({ value: v.key, label: v.label, sub: v.price != null ? euro(v.price) : undefined }))}
+              onchange={(k) => (item.variant = k)}
+            />
           {/if}
         </div>
       </li>
