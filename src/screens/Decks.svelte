@@ -15,7 +15,7 @@
   import EmptyState from '../lib/ui/EmptyState.svelte';
   import Players from './play/Players.svelte';
   import { settings } from '../lib/stores/settings.svelte.js';
-  import { nearbyEventsUrl, officialEventsUrl } from '../lib/domain/players.js';
+  import { nearbyEventsCalendar, nearbyEventsUrl, officialEventsUrl } from '../lib/domain/players.js';
   import StackRow from '../lib/ui/StackRow.svelte';
 
   const decks = liveQuery(() => db.decks.orderBy('updatedAt').reverse().toArray());
@@ -67,7 +67,13 @@
       <strong>{settings.homePlace.name}</strong>
       <span class="muted">League Cup, Challenge, Prerelease e amichevoli entro {settings.eventRadius} km</span>
     </span>
+    {@const cal = nearbyEventsCalendar(settings.homePlace, settings.eventRadius)}
     <a class="btn primary" href={nearbyEventsUrl(settings.homePlace, settings.eventRadius)} target="_blank" rel="noopener noreferrer">Apri la mappa dei tornei</a>
+    <a class="btn" href={cal.google} target="_blank" rel="noopener noreferrer">Aggiungi i tornei a Google Calendar</a>
+    <p class="muted cal-note">
+      I tornei compaiono nel calendario e si aggiornano da soli. Con un altro calendario usa
+      <a href={cal.webcal}>questo collegamento</a>.
+    </p>
     <div class="ev-links">
       <a href={officialEventsUrl(settings.eventRadius)} target="_blank" rel="noopener noreferrer">Event Locator ufficiale</a>
       <a href={hrefFor('settings', { key: 'tornei' })}>Cambia città</a>
@@ -148,6 +154,15 @@
 
   .ev-txt strong {
     font-size: 16px;
+  }
+
+  .cal-note {
+    margin: -4px 4px 0;
+    font-size: 12px;
+  }
+
+  .cal-note a {
+    color: var(--accent);
   }
 
   .ev-links {

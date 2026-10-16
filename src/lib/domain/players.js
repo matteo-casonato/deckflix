@@ -77,24 +77,39 @@ export function pointsUrl(p, now, region = 'Europe') {
 /** Event types of the trading card game on pokedata.ovh (League Cup, Challenge, Prerelease, friendly). */
 const TCG_EVENT_TYPES = ['cups', 'challenges', 'prerelease', 'friendly'];
 
+/** @param {HomePlace} place @param {number} radiusKm */
+const radiusParams = (place, radiusKm) => ({
+  spatialMode: 'radius',
+  lat: place.lat.toFixed(5),
+  lng: place.lng.toFixed(5),
+  radius: String(radiusKm),
+  unit: 'km',
+  tcgTypes: TCG_EVENT_TYPES.join(','),
+});
+
 /**
  * Tournaments near home on pokedata.ovh's event map (built on the official Play! Pokémon
  * events). Their data can't be read by the app (CORS limited to their site), so this is a
- * link with the map already centred, radius set and only TCG events.
+ * link with the map already centred, radius set and only TCG events. No country: with a
+ * country and a radius together their page drops the radius (checked 16/10/2026).
  * @param {HomePlace} place
  * @param {number} radiusKm
  */
 export function nearbyEventsUrl(place, radiusKm) {
-  const params = new URLSearchParams({
-    spatialMode: 'radius',
-    lat: place.lat.toFixed(5),
-    lng: place.lng.toFixed(5),
-    radius: String(radiusKm),
-    unit: 'km',
-    country: place.country.toUpperCase(),
-    tcgTypes: TCG_EVENT_TYPES.join(','),
-  });
-  return `https://pokedata.ovh/events2/?${params}`;
+  return `https://pokedata.ovh/events2/?${new URLSearchParams(radiusParams(place, radiusKm))}`;
+}
+
+/**
+ * The same tournaments as a calendar feed (iCalendar, updated by pokedata): subscribed once,
+ * they show up in the phone's calendar and stay current.
+ * @param {HomePlace} place
+ * @param {number} radiusKm
+ * @returns {{ https: string, webcal: string, google: string }}
+ */
+export function nearbyEventsCalendar(place, radiusKm) {
+  const https = `https://pokedata.ovh/events2/events.php?${new URLSearchParams({ feed: 'ics', ...radiusParams(place, radiusKm), vgTypes: '', goTypes: '' })}`;
+  const webcal = https.replace(/^https:/, 'webcal:');
+  return { https, webcal, google: `https://calendar.google.com/calendar/render?${new URLSearchParams({ cid: webcal })}` };
 }
 
 /** Official Play! Pokémon event locator (TCG, within `radiusKm`), as a fallback. @param {number} radiusKm */

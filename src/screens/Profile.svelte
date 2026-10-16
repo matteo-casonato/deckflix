@@ -77,7 +77,6 @@
       ['qualita', Analytics01Icon, 'Qualità e prezzi', 'Come si stima il valore in base alla condizione'],
       ['edizioni', GridViewIcon, 'Edizioni', settings.missingImages ? 'Carte mancanti in grigio' : 'Carte mancanti solo col numero'],
       ['immagini', Image01Icon, 'Immagini e spazio', 'Cache delle immagini, dati protetti'],
-      ['tornei', Location01Icon, 'Tornei vicino a te', settings.homePlace ? `${settings.homePlace.name} · ${settings.eventRadius} km` : 'Imposta la tua città'],
     ]),
   );
 
@@ -145,6 +144,14 @@
     <span class="text">
       <strong>ID giocatori</strong>
       <span>{settings.players.length ? `${settings.players.map((p) => p.name.split(' ')[0]).join(', ')} · ora nella sezione Play!` : 'Nella sezione Play! della barra in basso'}</span>
+    </span>
+    <span class="chev"><Icon icon={ArrowRight01Icon} size={20} /></span>
+  </a>
+  <a class="row" href={hrefFor('settings', { key: 'tornei' })}>
+    <span class="ico"><Icon icon={Location01Icon} /></span>
+    <span class="text">
+      <strong>Tornei vicino a te</strong>
+      <span>{settings.homePlace ? `${settings.homePlace.name} · ${settings.eventRadius} km` : 'Imposta la tua città'}</span>
     </span>
     <span class="chev"><Icon icon={ArrowRight01Icon} size={20} /></span>
   </a>
