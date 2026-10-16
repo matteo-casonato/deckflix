@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cityName, distanceKm, eventPageUrl, nearby, parseEventsJson, parseIcs, tournamentType, upcoming, within } from '../src/lib/domain/ics.js';
+import { cityName, distanceKm, highlights, eventPageUrl, nearby, parseEventsJson, parseIcs, tournamentType, upcoming, within } from '../src/lib/domain/ics.js';
 
 const ICS = [
   'BEGIN:VCALENDAR',
@@ -99,5 +99,14 @@ describe('cityName', () => {
     expect(cityName('Triest')).toBe('Trieste');
     expect(cityName('Cittadella')).toBe('Cittadella');
     expect(cityName('')).toBe(undefined);
+  });
+});
+
+describe('highlights', () => {
+  const t = (id, start, type) => ({ id, start, title: '', place: '', code: null, type });
+  it('puts Challenge, Cup and Prerelease first and fills with league days, by date', () => {
+    const list = [t('a', '2026-10-16T19:00', 'league'), t('b', '2026-10-17T15:00', 'challenge'), t('c', '2026-10-18T10:00', 'league'), t('d', '2026-10-20T10:00', 'cup')];
+    expect(highlights(list, 3).map((x) => x.id)).toEqual(['a', 'b', 'd']);
+    expect(highlights(list, 2).map((x) => x.id)).toEqual(['b', 'd']);
   });
 });

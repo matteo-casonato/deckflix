@@ -1,7 +1,7 @@
 <script>
   // @ts-check
-  // Home (docs/mockups/Home.html): value with its 30-day trend, shortcuts, featured deck,
-  // card of the day, price movers, wishes getting cheaper, recent additions, set in progress.
+  // Home (docs/mockups/Home.html): value with its 30-day trend, shortcuts, featured deck, price
+  // movers, wishes getting cheaper, recent additions, set in progress, next tournaments nearby.
   import { liveQuery } from 'dexie';
   import Logo from '../lib/ui/Logo.svelte';
   import { FlashIcon, KeyboardIcon, ScanIcon, Search01Icon } from '@hugeicons/core-free-icons';
@@ -12,9 +12,10 @@
   import { isConfigured } from '../lib/sync/sync.js';
   import { REMINDER_SNOOZE_MS, showSignInReminder } from '../lib/domain/backup.js';
   import { cardImage } from '../lib/api/tcgdex.js';
-  import { collectionValue, dayKey, periodChange } from '../lib/domain/value.js';
+  import { collectionValue, periodChange } from '../lib/domain/value.js';
   import { ownedTiles } from '../lib/domain/albums.js';
-  import { cardOfTheDay, priceMovers, setInProgress } from '../lib/domain/home.js';
+  import { priceMovers, setInProgress } from '../lib/domain/home.js';
+  import { setLogoUrl, setSymbolUrl } from '../lib/domain/setSymbols.js';
   import { euro, setIdOf } from '../lib/domain/cards.js';
   import { hrefFor } from '../lib/domain/routes.js';
   import Icon from '../lib/ui/Icon.svelte';
@@ -22,6 +23,7 @@
   import Sparkline from './home/Sparkline.svelte';
   import CardStrip from './home/CardStrip.svelte';
   import FeaturedDeck from './home/FeaturedDeck.svelte';
+  import HomeTournaments from './home/HomeTournaments.svelte';
 
   const entries = liveQuery(() => db.collection.toArray());
   const wishlist = liveQuery(() => db.wishlist.toArray());
@@ -45,8 +47,6 @@
   const trend = $derived(periodChange($snapshots ?? [], 30, Date.now()));
 
   const tiles = $derived($entries && $cards ? ownedTiles($entries, $cards, settings.conditionFactors) : []);
-  const today = dayKey(Date.now());
-  const spotlight = $derived($cards ? cardOfTheDay(tiles, $cards, today) : null);
   const movers = $derived($cards ? priceMovers(tiles, $cards) : { up: [], down: [] });
   const wishDrops = $derived($cards ? priceMovers(wishIds.map((cardId) => ({ cardId })), $cards, { minPrice: 0.2 }).down : []);
   const progress = $derived($entries ? setInProgress($entries, sets) : null);
@@ -102,6 +102,9 @@
       }));
   });
 
+  /** The set logo in the "Edizione in corso" band did not load. */
+  let logoFailed = $state(false);
+
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Buongiorno' : hour < 18 ? 'Buon pomeriggio' : 'Buonasera';
 </script>
@@ -151,21 +154,6 @@
 
   <FeaturedDeck />
 
-  {#if spotlight}
-    {@const c = card(spotlight.cardId)}
-    <a class="spot card" href={href(spotlight.cardId)}>
-      <img src={cardImage(c, 'high')} alt="" loading="lazy" />
-      <span class="col">
-        <span class="tag">Carta del giorno</span>
-        <strong>{c?.name}</strong>
-        <span class="muted num">{sets.get(setIdOf(spotlight.cardId))?.name ?? ''} · {c?.localId}</span>
-        {#if c?.illustrator}<span class="muted small">Illustrata da {c.illustrator}</span>{/if}
-        {#if spotlight.unit > 0}<span class="price num">{euro(spotlight.unit)}</span>{/if}
-        {#if spotlight.qty > 1}<span class="muted small num">Ne hai {spotlight.qty}</span>{/if}
-      </span>
-    </a>
-  {/if}
-
   {#if movers.up.length}
     <div class="section-head"><h2>In salita</h2><span class="hint">7 giorni su 30 · Cardmarket</span></div>
     <CardStrip label="Carte in salita" items={moverItems(movers.up)} />
@@ -190,7 +178,9 @@
 
   {#if progress}
     {@const set = sets.get(progress.setId)}
+    {@const logo = setLogoUrl(progress.setId, set?.logo) ?? setSymbolUrl(progress.setId)}
     <a class="progress card" href={hrefFor('set', { id: progress.setId }, { show: 'missing' })}>
+      <span class="setlogo" aria-hidden="true">{#if logo && !logoFailed}<img src={logo} alt="" onerror={() => (logoFailed = true)} />{/if}</span>
       <span class="col grow">
         <span class="muted small">Edizione in corso</span>
         <strong>{set?.name ?? progress.setId}</strong>
@@ -200,6 +190,8 @@
       <span class="pctbig num">{progress.percent}%</span>
     </a>
   {/if}
+
+  <HomeTournaments />
 {/if}
 
 <style>
@@ -337,53 +329,10 @@
     color: var(--on-accent);
   }
 
-  .spot {
-    margin: 14px 16px 0;
-    padding: 14px;
-    border-radius: var(--r-section);
-    background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 10%, var(--surface)), var(--surface) 55%);
-    border: 1px solid var(--line);
-    display: flex;
-    gap: 16px;
-    align-items: center;
-    color: var(--text);
-    text-decoration: none;
-  }
 
-  .spot img {
-    width: 42%;
-    max-width: 170px;
-    aspect-ratio: 63 / 88;
-    border-radius: var(--r-cardimg);
-    object-fit: cover;
-    box-shadow: 0 14px 28px rgb(0 0 0 / 0.45);
-    transform: rotate(-3deg);
-  }
 
-  .spot strong {
-    font-family: var(--font-display);
-    font-size: 22px;
-    font-weight: 800;
-    line-height: 1.15;
-  }
 
-  .tag {
-    align-self: flex-start;
-    margin-bottom: 4px;
-    padding: 3px 10px;
-    border-radius: 10px;
-    background: var(--bg);
-    color: var(--accent);
-    font-size: 11px;
-    font-weight: 700;
-  }
 
-  .price {
-    margin-top: 6px;
-    font-family: var(--font-display);
-    font-size: 20px;
-    font-weight: 800;
-  }
 
   .section-head {
     display: flex;
@@ -421,6 +370,22 @@
     gap: 14px;
     color: var(--text);
     text-decoration: none;
+  }
+
+  /* Fixed box: wide and tall logos take the same room, the text starts at the same place. */
+  .setlogo {
+    width: 64px;
+    height: 44px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .setlogo img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
   }
 
   .progress strong {

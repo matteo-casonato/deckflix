@@ -8,7 +8,8 @@
   import { account } from './lib/stores/account.svelte.js';
   import { backupNow, initSync } from './lib/sync/sync.js';
   import { FULL_SCREEN, NAV_SECTION } from './lib/domain/routes.js';
-  import { loadSettings } from './lib/stores/settings.svelte.js';
+  import { loadSettings, settings, setSetting } from './lib/stores/settings.svelte.js';
+  import { db } from './lib/db.js';
   import Toast from './lib/ui/Toast.svelte';
   import UpdateBanner from './lib/ui/UpdateBanner.svelte';
   import { initPwa } from './lib/stores/pwa.svelte.js';
@@ -35,9 +36,12 @@
   import Access from './screens/Access.svelte';
   import Restore from './screens/Restore.svelte';
   import Choice from './screens/Choice.svelte';
+  import Setup from './screens/Setup.svelte';
+
+  const settingsLoaded = loadSettings();
 
   onMount(() => {
-    loadSettings().then(() => recordTodaySnapshot()).catch(() => {});
+    settingsLoaded.then(() => recordTodaySnapshot()).catch(() => {});
     initSync();
     initPwa();
     guardExit(() => showToast('Premi ancora Indietro per uscire'));
@@ -45,8 +49,34 @@
 
   const route = $derived(router.route);
   const flow = $derived(
-    !account.ready ? 'loading' : !account.firstRunDone ? 'access' : account.choice ? 'choice' : account.signIn ? 'restore' : 'app',
+    !account.ready
+      ? 'loading'
+      : !account.firstRunDone
+        ? 'access'
+        : account.choice
+          ? 'choice'
+          : account.signIn
+            ? 'restore'
+            : account.setup
+              ? 'setup'
+              : 'app',
   );
+
+  // First time in the app: the setup screen for new users. Those who already have cards,
+  // players or a city (an older version, or a restored backup) skip it.
+  let setupChecked = false;
+  $effect(() => {
+    if (flow !== 'app' || setupChecked) return;
+    setupChecked = true;
+    settingsLoaded
+      .then(() => (settings.setupDone ? null : db.collection.count()))
+      .then((n) => {
+        if (n == null) return;
+        if (n || settings.players.length || settings.homePlace) setSetting('setupDone', true);
+        else account.setup = true;
+      })
+      .catch(() => {});
+  });
   const showNav = $derived(flow === 'app' && !FULL_SCREEN.has(route.name));
 </script>
 
@@ -56,6 +86,8 @@
   <Restore />
 {:else if flow === 'choice'}
   <Choice />
+{:else if flow === 'setup'}
+  <Setup />
 {:else if flow === 'app'}
 {#if !account.online}
   <p class="banner" role="status">Sei offline: mostro i dati salvati</p>

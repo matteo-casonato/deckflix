@@ -30,4 +30,6 @@ export const account = $state({
   /** Two copies with data: the user must choose which one to keep. */
   /** @type {Choice | null} */
   choice: null,
+  /** The first-setup screen is open (new users, or "Configurazione iniziale" in Profile). */
+  setup: false,
 });

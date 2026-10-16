@@ -13,12 +13,14 @@
     GridViewIcon,
     LinkSquare02Icon,
     QrCodeIcon,
+    Settings02Icon,
     Location01Icon,
   } from '@hugeicons/core-free-icons';
   import Icon from '../lib/ui/Icon.svelte';
   import Avatar from '../lib/ui/Avatar.svelte';
   import ConfirmDialog from '../lib/ui/ConfirmDialog.svelte';
   import Sheet from '../lib/ui/Sheet.svelte';
+  import QrCode from '../lib/ui/QrCode.svelte';
   import { account } from '../lib/stores/account.svelte.js';
   import { settings } from '../lib/stores/settings.svelte.js';
   import { LANG_LABELS } from '../lib/domain/cards.js';
@@ -81,6 +83,14 @@
   );
 
   let restoreSheet = $state(false);
+
+  /** Address of the app (the published site; the dev server in development). */
+  const APP_URL = `${location.origin}${import.meta.env.BASE_URL}`;
+  let shareSheet = $state(false);
+  const canShare = typeof navigator.share === 'function';
+  function shareLink() {
+    navigator.share({ title: 'Deckflix', text: 'Le tue carte Pokémon: collezione, valore, deck e tornei.', url: APP_URL }).catch(() => {});
+  }
 </script>
 
 <header class="top"><h1>Profilo</h1></header>
@@ -175,7 +185,29 @@
     <span class="text"><strong>Link utili</strong><span>{USEFUL_LINKS.map((l) => l.name).join(', ')}</span></span>
     <span class="chev"><Icon icon={ArrowRight01Icon} size={20} /></span>
   </a>
+  <button class="row" onclick={() => (account.setup = true)}>
+    <span class="ico"><Icon icon={Settings02Icon} /></span>
+    <span class="text"><strong>Configurazione iniziale</strong><span>Lingua, città, giocatore e prima carta</span></span>
+    <span class="chev"><Icon icon={ArrowRight01Icon} size={20} /></span>
+  </button>
+  <button class="row" onclick={() => (shareSheet = true)}>
+    <span class="ico"><Icon icon={QrCodeIcon} /></span>
+    <span class="text"><strong>Condividi Deckflix</strong><span>Il codice QR per installarla su un altro telefono</span></span>
+    <span class="chev"><Icon icon={ArrowRight01Icon} size={20} /></span>
+  </button>
 </section>
+
+<Sheet open={shareSheet} title="Condividi Deckflix" onclose={() => (shareSheet = false)}>
+  <div class="share">
+    <div class="qr-box"><QrCode text={APP_URL} label={`Codice QR del sito di Deckflix, ${APP_URL}`} size={220} /></div>
+    <p class="url num">{APP_URL.replace(/^https:\/\//, '')}</p>
+    <p class="hint">
+      Inquadrala con la fotocamera del telefono e apri il link in Chrome: dal menu ⋮ scegli <strong>Installa app</strong>
+      (su iPhone, in Safari: Condividi › Aggiungi alla schermata Home). È gratuita e si aggiorna da sola.
+    </p>
+    {#if canShare}<button class="btn primary" onclick={shareLink}>Invia il link</button>{/if}
+  </div>
+</Sheet>
 
 {#if account.user}
   <button class="signout" onclick={() => (confirm = 'signout')}>Esci dall’account</button>
@@ -564,5 +596,36 @@
     font-size: 12px;
     color: var(--muted);
     text-align: center;
+  }
+
+  .share {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    text-align: center;
+  }
+
+  .qr-box {
+    padding: 14px;
+    border-radius: 24px;
+    background: #fff;
+  }
+
+  .url {
+    margin: 0;
+    font-weight: 700;
+  }
+
+  .hint {
+    margin: 0;
+    max-width: 340px;
+    font-size: 13px;
+    line-height: 1.45;
+    color: var(--muted);
+  }
+
+  .share .btn {
+    width: 100%;
   }
 </style>

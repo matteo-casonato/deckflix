@@ -24,12 +24,14 @@ export const settings = $state({
   homePlace: null,
   /** Radius of the nearby tournaments, in km. */
   eventRadius: 50,
+  /** The first-setup screen (language, city, player, first card) was shown. */
+  setupDone: false,
   /** navigator.storage.persist() result: true = the browser won't evict IndexedDB. */
   /** @type {boolean | null} */
   persisted: null,
 });
 
-const SYNCED = /** @type {const} */ (['cardLang', 'recentSets', 'missingImages', 'players', 'covers', 'conditionFactors', 'homePlace', 'eventRadius']);
+const SYNCED = /** @type {const} */ (['cardLang', 'recentSets', 'missingImages', 'players', 'covers', 'conditionFactors', 'homePlace', 'eventRadius', 'setupDone']);
 
 export async function loadSettings() {
   const rows = await db.settings.bulkGet([...SYNCED]);

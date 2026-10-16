@@ -101,6 +101,21 @@ export function nearby(list, home, radiusKm) {
 }
 
 /**
+ * The tournaments worth a preview: Challenge, Cup and Prerelease first (they need booking), then
+ * league days to fill up to `n`, in date order.
+ * @template {Tournament} T
+ * @param {T[]} list sorted by date
+ * @param {number} n
+ * @returns {T[]}
+ */
+export function highlights(list, n) {
+  const big = list.filter((t) => t.type && t.type !== 'league').slice(0, n);
+  return (big.length >= n ? big : [...big, ...list.filter((t) => !big.includes(t))].slice(0, n)).sort((a, b) =>
+    a.start.localeCompare(b.start),
+  );
+}
+
+/**
  * Tournaments in the next `days` days (from today, local date).
  * @param {Tournament[]} list
  * @param {number} now
