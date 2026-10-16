@@ -73,11 +73,12 @@
     white-space: nowrap;
   }
 
+  /* Same box for every logo: wide ones (Lost Origin) fill the width, tall ones (Paldea
+     Evolved, Prismatic Evolutions) the height, none takes over the row. */
   .logo {
     align-self: flex-start;
-    height: 34px;
-    max-width: 100%;
-    width: auto;
+    width: 96px;
+    height: 32px;
     object-fit: contain;
     object-position: left center;
     margin-bottom: 2px;

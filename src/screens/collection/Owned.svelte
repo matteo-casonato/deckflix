@@ -63,6 +63,10 @@
     return [...map.values()];
   });
 
+  /** Position of each set in TCGdex's list, which goes from the oldest to the newest. */
+  const setOrder = $derived(new Map([...sets.keys()].map((id, i) => [id, i])));
+
+  // Newest set first: release date when known, else TCGdex's order.
   const groups = $derived.by(() => {
     /** @type {Map<string, typeof byCard>} */
     const bySet = new Map();
@@ -81,9 +85,11 @@
           value: tiles.reduce((s, t) => s + t.value, 0),
           tiles: [...tiles].sort((a, b) => b.value - a.value),
           updatedAt: Math.max(...tiles.map((t) => t.updatedAt)),
+          released: set?.releaseDate ?? '',
+          order: setOrder.get(setId) ?? -1,
         };
       })
-      .sort((a, b) => b.updatedAt - a.updatedAt);
+      .sort((a, b) => (a.released && b.released ? b.released.localeCompare(a.released) : 0) || b.order - a.order || a.name.localeCompare(b.name));
   });
 
   const allTiles = $derived(

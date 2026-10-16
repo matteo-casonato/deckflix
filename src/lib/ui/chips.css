@@ -40,7 +40,9 @@
   color: var(--on-accent);
 }
 
-select.chip {
+/* Native selects and buttons that open a chooser (SetPicker) share the same arrow. */
+select.chip,
+.chip.dropdown {
   appearance: none;
   /* A select is as wide as its longest option: cap it, the full name is in the menu. */
   max-width: 170px;

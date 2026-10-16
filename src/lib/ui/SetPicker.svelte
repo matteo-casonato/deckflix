@@ -6,6 +6,15 @@
   import { findSetsByCode } from '../api/tcgdex.js';
   import { isPocketSet } from '../domain/cards.js';
   import Sheet from './Sheet.svelte';
+  import { setLogoUrl, setSymbolUrl } from '../domain/setSymbols.js';
+
+  /** Logos that did not load: those rows show the symbol, else nothing. */
+  let broken = $state(/** @type {Set<string>} */ (new Set()));
+  /** Icon of a set: its logo, else its symbol. @param {any} s */
+  const iconOf = (s) => {
+    const logo = setLogoUrl(s.id, s.logo);
+    return logo && !broken.has(logo) ? logo : setSymbolUrl(s.id);
+  };
 
   /**
    * @type {{
@@ -55,10 +64,16 @@
   const current = $derived(value ? (sets.get(value)?.name ?? value) : null);
 </script>
 
-<button type="button" class="chip pick" class:on={active && !!value} aria-haspopup="dialog" aria-label={`${label}: ${current ?? placeholder}`} onclick={() => (open = true)}>
+<button type="button" class="chip dropdown pick" class:on={active && !!value} aria-haspopup="dialog" aria-label={`${label}: ${current ?? placeholder}`} onclick={() => (open = true)}>
   <span>{current ?? placeholder}</span>
-  <span aria-hidden="true">▾</span>
 </button>
+
+{#snippet icon(/** @type {any} */ s)}
+  {@const src = iconOf(s)}
+  <span class="icon" aria-hidden="true">
+    {#if src}<img {src} alt="" loading="lazy" onerror={() => (broken = new Set([...broken, src]))} />{/if}
+  </span>
+{/snippet}
 
 <Sheet {open} title={label} onclose={() => ((open = false), (q = ''))}>
   <label class="visually-hidden" for="set-search">Cerca un’edizione</label>
@@ -71,14 +86,18 @@
     {#if recentSets.length && !q.trim()}
       <li class="group">Ultime usate</li>
       {#each recentSets as s (s.id)}
-        <li><button type="button" role="option" aria-selected={value === s.id} onclick={() => pick(s.id)}>{s.name}<span>{s.id}</span></button></li>
+        <li>
+          <button type="button" role="option" aria-selected={value === s.id} onclick={() => pick(s.id)}>
+            {@render icon(s)}<span class="txt">{s.name}<span>{s.id}</span></span>
+          </button>
+        </li>
       {/each}
       <li class="group">Tutte le edizioni</li>
     {/if}
     {#each shown as s (s.id)}
       <li>
         <button type="button" role="option" aria-selected={value === s.id} onclick={() => pick(s.id)}>
-          {s.name}<span>{s.cardCount?.official ? `${s.cardCount.official} carte · ` : ''}{s.id}</span>
+          {@render icon(s)}<span class="txt">{s.name}<span>{s.cardCount?.official ? `${s.cardCount.official} carte · ` : ''}{s.id}</span></span>
         </button>
       </li>
     {:else}
@@ -131,12 +150,34 @@
     font-size: 15px;
     text-align: left;
     display: flex;
-    flex-direction: column;
-    justify-content: center;
+    align-items: center;
+    gap: 12px;
     cursor: pointer;
   }
 
-  .list button span {
+  /* Square box: every logo, wide or tall, takes the same room and the names line up. */
+  .icon {
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .icon img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
+
+  .txt {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .txt span {
     font-size: 12px;
     color: var(--muted);
   }

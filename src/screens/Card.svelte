@@ -62,12 +62,13 @@
       .sort((a, b) => CONDITION_ORDER.indexOf(a.condition || DEFAULT_CONDITION) - CONDITION_ORDER.indexOf(b.condition || DEFAULT_CONDITION));
   /** @param {string} variant */
   const qtyOf = (variant) => groupsOf(variant).reduce((n, e) => n + e.qty, 0);
-  const otherLangs = $derived(
-    Object.entries(
-      ($entries ?? [])
-        .filter((e) => e.lang !== copyLang)
-        .reduce((/** @type {Record<string, number>} */ m, e) => ({ ...m, [e.lang]: (m[e.lang] ?? 0) + e.qty }), {}),
-    ),
+  /** Copies per language (the same card in Italian and English are separate copies). */
+  const byLang = $derived(
+    ($entries ?? []).reduce((/** @type {Record<string, number>} */ m, e) => ({ ...m, [e.lang]: (m[e.lang] ?? 0) + e.qty }), {}),
+  );
+  /** Languages with copies first, then the others. */
+  const langOrder = $derived(
+    Object.keys(LANG_LABELS).sort((a, b) => (byLang[b] ?? 0) - (byLang[a] ?? 0) || (a === lang ? -1 : b === lang ? 1 : 0)),
   );
   const totalCopies = $derived(($entries ?? []).reduce((s, e) => s + e.qty, 0));
 
@@ -204,12 +205,16 @@
           <span class="muted num">{totalCopies} {totalCopies === 1 ? 'copia' : 'copie'}</span>
         </div>
 
-        <label class="lang">
-          <span>Lingua della copia</span>
-          <select class="chip" bind:value={copyLang}>
-            {#each Object.entries(LANG_LABELS) as [code, label] (code)}<option value={code}>{label}</option>{/each}
-          </select>
-        </label>
+        <div class="langs">
+          <span class="muted small">Lingua delle copie</span>
+          <div class="chips" role="group" aria-label="Lingua delle copie">
+            {#each langOrder as code (code)}
+              <button class="chip" aria-pressed={copyLang === code} onclick={() => (copyLang = code)}>
+                {LANG_LABELS[code]}{#if byLang[code]}<span class="num count">{byLang[code]}</span>{/if}
+              </button>
+            {/each}
+          </div>
+        </div>
 
         {#if variants.length === 0}
           <p class="muted">TCGdex non elenca le stampe di questa carta.</p>
@@ -231,7 +236,7 @@
                 {@const cond = g.condition || DEFAULT_CONDITION}
                 <div class="cgroup">
                   <span class="ctxt">
-                    <select class="cond" aria-label={`Condizione di ${g.qty === 1 ? 'questa copia' : 'queste copie'} ${v.label}`} value={cond} onchange={(e) => regrade(g, e.currentTarget.value)}>
+                    <select class="chip cond" aria-label={`Condizione di ${g.qty === 1 ? 'questa copia' : 'queste copie'} ${v.label}`} value={cond} onchange={(e) => regrade(g, e.currentTarget.value)}>
                       {#each CONDITIONS as [code, label] (code)}<option value={code}>{label}</option>{/each}
                     </select>
                     {#if v.price != null && cond !== DEFAULT_CONDITION}
@@ -247,7 +252,7 @@
               {/each}
               {#if groups.length && groups.length < CONDITIONS.length}
                 <select
-                  class="cond add"
+                  class="chip add"
                   aria-label={`Aggiungi una copia ${v.label} in un’altra condizione`}
                   value=""
                   onchange={(e) => {
@@ -265,11 +270,6 @@
             </li>
           {/each}
         </ul>
-        {#if otherLangs.length}
-          <p class="muted small">
-            Anche in: {otherLangs.map(([l, n]) => `${LANG_LABELS[l] ?? l} ×${n}`).join(', ')}
-          </p>
-        {/if}
         {#if totalCopies > 0}
           <button class="btn subtle" onclick={() => (confirmMove = true)}>Sposta nei desideri</button>
         {/if}
@@ -352,11 +352,34 @@
     min-width: 0;
   }
 
-  .cond.add {
+  .chip.add {
     width: 100%;
-    min-height: 44px;
-    margin-top: 10px;
+    max-width: none;
+    margin-top: 12px;
+    justify-content: center;
     color: var(--accent);
+  }
+
+  /* min-width 0: the chips row scrolls sideways instead of widening the page. */
+  .langs {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .langs .chips {
+    max-width: 100%;
+    padding: 2px;
+  }
+
+  .count {
+    min-width: 20px;
+    padding: 0 6px;
+    border-radius: 10px;
+    background: color-mix(in srgb, currentColor 16%, transparent);
+    font-size: 12px;
+    text-align: center;
   }
 
   .small a {
@@ -367,18 +390,9 @@
     color: var(--text);
   }
 
-  .cond {
+  .chip.cond {
     align-self: flex-start;
     margin-top: 4px;
-    min-height: 32px;
-    padding: 0 26px 0 10px;
-    border: 1px solid var(--line-2);
-    border-radius: 12px;
-    background: var(--bg);
-    color: var(--text);
-    font: inherit;
-    font-size: 12px;
-    font-weight: 600;
   }
 
 
@@ -497,6 +511,7 @@
 
   .block {
     width: 100%;
+    min-width: 0;
     padding: 18px;
     border-radius: var(--r-section);
     background: var(--surface);
@@ -515,14 +530,6 @@
 
   h2 {
     font-size: 18px;
-  }
-
-  .lang {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    font-size: 14px;
   }
 
   .variants {
