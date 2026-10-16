@@ -4,7 +4,7 @@
   // Riprova / Aggiungi. Several candidates: the user picks. Not read: Riprova / Inserimento rapido.
   import { liveQuery } from 'dexie';
   import { db } from '../../lib/db.js';
-  import { LANG_LABELS, euro } from '../../lib/domain/cards.js';
+  import { LANG_LABELS, euro, thumbUrl } from '../../lib/domain/cards.js';
   import { hrefFor } from '../../lib/domain/routes.js';
   import { printsFor } from '../../lib/scan/pipeline.js';
   import { learnStamp } from '../../lib/scan/stamp.js';
@@ -69,7 +69,7 @@
   {:else if candidate}
     <div class="card-row">
       {#if candidate.image}
-        <img src={`${candidate.image}/low.webp`} alt="" />
+        <img src={thumbUrl(candidate)} alt="" onerror={(e) => (e.currentTarget.style.visibility = 'hidden')} />
       {:else}
         <span class="ph"></span>
       {/if}

@@ -12,7 +12,7 @@
   import { addOneCopy, toggleWish } from '../lib/data/actions.js';
   import { changeDeckCard } from '../lib/data/decks.js';
   import { showToast } from '../lib/stores/toast.svelte.js';
-  import { LANG_LABELS, setIdOf } from '../lib/domain/cards.js';
+  import { LANG_LABELS, setIdOf, thumbUrl } from '../lib/domain/cards.js';
   import { hrefFor } from '../lib/domain/routes.js';
   import { replace } from '../lib/router.svelte.js';
   import BackHeader from '../lib/ui/BackHeader.svelte';
@@ -90,6 +90,9 @@
   const wished = liveQuery(async () => new Set((await db.wishlist.toArray()).map((w) => w.cardId)));
 
   // Results.
+  /** Thumbnails that did not load (the guessed path does not exist): those show the frame. */
+  let broken = $state(/** @type {Set<string>} */ (new Set()));
+  const thumbOf = thumbUrl;
   /** @type {{ id: string, localId: string, name: string, image?: string }[]} */
   let results = $state([]);
   let page = $state(1);
@@ -255,10 +258,11 @@
     {#each results as c (c.id)}
       {@const qty = $owned?.get(c.id) ?? 0}
       {@const wish = $wished?.has(c.id) ?? false}
+      {@const img = thumbOf(c)}
       <li class="row card" class:owned={qty > 0}>
         <a class="main" href={hrefFor('card', { lang, id: c.id })}>
-          {#if c.image}
-            <img class="thumb" src={`${c.image}/low.webp`} alt="" loading="lazy" />
+          {#if img && !broken.has(c.id)}
+            <img class="thumb" src={img} alt="" loading="lazy" onerror={() => (broken = new Set([...broken, c.id]))} />
           {:else}
             <span class="thumb dashed"></span>
           {/if}

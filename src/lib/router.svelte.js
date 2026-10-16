@@ -7,13 +7,52 @@ export const router = $state({ route: matchRoute(location.hash) });
 /** Screens visited inside the app since it opened, so "back" never leaves the app. */
 let depth = 0;
 
+// Scroll position of each screen, kept in its history entry: back to a list (from a card) lands
+// where it was, a new screen starts at the top. The browser's own restoration is off because
+// lists load after the route changes, when it has already given up.
+history.scrollRestoration = 'manual';
+/** @type {ReturnType<typeof setTimeout> | undefined} */
+let saveTimer;
+window.addEventListener(
+  'scroll',
+  () => {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => history.replaceState({ ...history.state, scroll: window.scrollY }, ''), 150);
+  },
+  { passive: true },
+);
+
+// A tap right after scrolling (on a card) saves the position at once, before the screen changes.
+window.addEventListener(
+  'pointerdown',
+  () => {
+    clearTimeout(saveTimer);
+    history.replaceState({ ...history.state, scroll: window.scrollY }, '');
+  },
+  { capture: true, passive: true },
+);
+
+/** Scrolls to `y` once the page is tall enough (lists render after their data loads). @param {number} y */
+function restoreScroll(y) {
+  const until = Date.now() + 2000;
+  const tick = () => {
+    const reachable = document.documentElement.scrollHeight - window.innerHeight >= y;
+    window.scrollTo(0, y);
+    if (!reachable && Date.now() < until) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+
 window.addEventListener('hashchange', () => {
+  clearTimeout(saveTimer);
   const previous = router.route;
   router.route = matchRoute(location.hash);
   depth++;
   // Query-only changes (filters, tabs) keep the scroll position.
   if (previous.name !== router.route.name || JSON.stringify(previous.params) !== JSON.stringify(router.route.params)) {
-    window.scrollTo(0, 0);
+    const saved = history.state?.scroll;
+    if (typeof saved === 'number' && saved > 0) restoreScroll(saved);
+    else window.scrollTo(0, 0);
   }
 });
 

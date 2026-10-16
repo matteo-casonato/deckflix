@@ -185,8 +185,8 @@ const SERIES_OF_SET = /** @type {Record<string, string>} */ ({ cel25: 'swsh', ce
 
 /**
  * Best guess of a card's image when TCGdex has none in its data: the asset is often on the
- * server anyway (mep-028), and gallery cards (TG, GG) live in the folder of their main set
- * (swsh12tg-TG20 → swsh/swsh12/TG20); Sun & Moon "half" sets drop the dot (sm7.5 → sm75,
+ * server anyway (mep-028), and gallery and Shiny Vault cards (TG, GG, SV) live in the folder of
+ * their main set (swsh12tg-TG20 → swsh/swsh12/TG20, swsh4.5sv-SV107 → swsh/swsh4.5/SV107); Sun & Moon "half" sets drop the dot (sm7.5 → sm75,
  * checked 15/10/2026), the others keep it (swsh4.5, sv03.5). The tile tries it and falls
  * back to a placeholder.
  * @param {string} cardId
@@ -197,9 +197,20 @@ export function guessImage(cardId, localId, lang = 'en') {
   const setId = setIdOf(cardId);
   const series = SERIES_OF_SET[setId] ?? SERIES.find((s) => setId.startsWith(s));
   if (!series) return null;
-  let folder = /^(TG|GG)/.test(localId) ? setId.replace(/(tg|gg)$/, '') : setId;
+  let folder = /^(TG|GG|SV)\d/.test(localId) ? setId.replace(/(tg|gg|sv)$/, '') : setId;
   if (series === 'sm') folder = folder.replace('.', '');
   return `https://assets.tcgdex.net/${lang}/${series}/${folder}/${localId}`;
+}
+
+/**
+ * Small image of a card from search results or brief data: TCGdex's image, else the guessed
+ * English asset (old cards, promos, Shiny Vault); null when there is nothing to try.
+ * @param {{ id?: string, localId?: string, image?: string | null } | null | undefined} card
+ */
+export function thumbUrl(card) {
+  if (!card) return null;
+  const base = card.image ?? (card.id && card.localId ? guessImage(card.id, card.localId, 'en') : null);
+  return base ? `${base}/low.webp` : null;
 }
 
 /**

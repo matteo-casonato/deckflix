@@ -4,7 +4,7 @@
   // scan, remove wrong ones, then save all. Uncertain ones are marked "Da verificare".
   import { Delete02Icon } from '@hugeicons/core-free-icons';
   import Icon from '../../lib/ui/Icon.svelte';
-  import { LANG_LABELS, euro } from '../../lib/domain/cards.js';
+  import { LANG_LABELS, euro, thumbUrl } from '../../lib/domain/cards.js';
   import { printsFor } from '../../lib/scan/pipeline.js';
 
   /**
@@ -39,7 +39,7 @@
       {@const c = item.rec.candidates[item.chosen]}
       <li class="row card" class:warn={item.rec.uncertain}>
         <div class="top">
-          {#if c?.image}<img src={`${c.image}/low.webp`} alt="" />{:else}<span class="ph"></span>{/if}
+          {#if thumbUrl(c)}<img src={thumbUrl(c)} alt="" onerror={(e) => (e.currentTarget.style.visibility = 'hidden')} />{:else}<span class="ph"></span>{/if}
           <span class="txt">
             <strong>{c?.name}</strong>
             <span class="muted num">{c?.setName} · {c?.localId}/{c?.official || '?'}</span>

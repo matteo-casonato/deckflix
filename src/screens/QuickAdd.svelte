@@ -12,7 +12,7 @@
   import { defaultVariant } from '../lib/data/actions.js';
   import { listVariants } from '../lib/domain/variants.js';
   import { collectionKey } from '../lib/domain/collection.js';
-  import { LANG_LABELS, cardByNumber, euro, parseQuickNumber, setIdOf } from '../lib/domain/cards.js';
+  import { LANG_LABELS, cardByNumber, euro, parseQuickNumber, setIdOf, thumbUrl } from '../lib/domain/cards.js';
   import { hrefFor } from '../lib/domain/routes.js';
   import { replace } from '../lib/router.svelte.js';
   import BackHeader from '../lib/ui/BackHeader.svelte';
@@ -231,7 +231,7 @@
           {@const s = sets.get(setIdOf(c.id))}
           <li>
             <button type="button" onclick={() => (picked = c)}>
-              <span class="mini">{#if c.image}<img src={`${c.image}/low.webp`} alt="" loading="lazy" />{/if}</span>
+              <span class="mini">{#if thumbUrl(c)}<img src={thumbUrl(c)} alt="" loading="lazy" onerror={(e) => (e.currentTarget.style.visibility = 'hidden')} />{/if}</span>
               <span class="ctxt">
                 <strong>{c.name}</strong>
                 <span class="num">{s?.name ?? setIdOf(c.id)} · {c.localId}{isDigits(c.localId) && s?.cardCount?.official ? `/${s.cardCount.official}` : ''}</span>
@@ -251,7 +251,7 @@
   {#if brief}
     <section class="preview card">
       {#if brief.image}
-        <img src={`${brief.image}/low.webp`} alt="" />
+        <img src={thumbUrl(brief)} alt="" onerror={(e) => (e.currentTarget.style.visibility = 'hidden')} />
       {:else}
         <span class="ph"></span>
       {/if}

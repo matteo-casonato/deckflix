@@ -6,7 +6,7 @@
   import { settings } from '../../lib/stores/settings.svelte.js';
   import { setsMap } from '../../lib/data/catalog.js';
   import { smartSearch } from '../../lib/data/search.js';
-  import { setIdOf } from '../../lib/domain/cards.js';
+  import { setIdOf, thumbUrl } from '../../lib/domain/cards.js';
   import Sheet from '../../lib/ui/Sheet.svelte';
 
   /**
@@ -74,7 +74,7 @@
         {@const set = sets.get(setIdOf(c.id))}
         <li>
           <button onclick={() => pick(c)}>
-            <span class="thumb">{#if c.image}<img src={`${c.image}/low.webp`} alt="" loading="lazy" />{/if}</span>
+            <span class="thumb">{#if thumbUrl(c)}<img src={thumbUrl(c)} alt="" loading="lazy" onerror={(e) => (e.currentTarget.style.visibility = 'hidden')} />{/if}</span>
             <span class="txt">
               <strong>{c.name}</strong>
               <span class="num">{set?.name ?? setIdOf(c.id)} · {c.localId}{set?.cardCount?.official ? `/${set.cardCount.official}` : ''}</span>

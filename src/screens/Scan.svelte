@@ -3,6 +3,7 @@
   // Scanner (SPEC § 4.1, docs/mockups/Raffica.html). Single: tap the camera to scan, then
   // confirm in the sheet. Burst: automatic shot when the card is still, queue, review and save.
   import { onMount } from 'svelte';
+  import { thumbUrl } from '../lib/domain/cards.js';
   import { ArrowLeft01Icon, FlashIcon, KeyboardIcon, PauseIcon, Tick02Icon } from '@hugeicons/core-free-icons';
   import Icon from '../lib/ui/Icon.svelte';
   import ConfirmDialog from '../lib/ui/ConfirmDialog.svelte';
@@ -407,7 +408,7 @@
           <div class="thumbs">
             {#each items.slice(-5) as it (it.id)}
               {@const c = it.rec.candidates[it.chosen]}
-              {#if c?.image}<img src={`${c.image}/low.webp`} alt={c.name} class:warn={it.rec.uncertain} />{:else}<span class="t"></span>{/if}
+              {#if thumbUrl(c)}<img src={thumbUrl(c)} alt={c.name} class:warn={it.rec.uncertain} onerror={(e) => (e.currentTarget.style.visibility = 'hidden')} />{:else}<span class="t"></span>{/if}
             {/each}
             {#if items.length > 5}<span class="t more num">+{items.length - 5}</span>{/if}
           </div>

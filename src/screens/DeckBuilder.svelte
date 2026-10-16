@@ -10,7 +10,7 @@
   import { parseDecklist, suggestDeckName } from '../lib/domain/decklist.js';
   import { DECK_SIZE, MAX_COPIES, coverCards, deckSummary, isBasicEnergy } from '../lib/domain/deck.js';
   import { cardImage } from '../lib/api/tcgdex.js';
-  import { euro } from '../lib/domain/cards.js';
+  import { euro, thumbUrl } from '../lib/domain/cards.js';
   import { hrefFor } from '../lib/domain/routes.js';
   import { replace } from '../lib/router.svelte.js';
   import { showToast } from '../lib/stores/toast.svelte.js';
@@ -170,7 +170,7 @@
             oncontextmenu={(e) => chooseCover(e, r)}
           >
             {#if r.card?.image}
-              <img src={`${r.card.image}/low.webp`} alt="" loading="lazy" />
+              <img src={thumbUrl(r.card)} alt="" loading="lazy" onerror={(e) => (e.currentTarget.style.visibility = 'hidden')} />
             {:else}
               <span class="ph">{r.card?.name ?? r.cardId}</span>
             {/if}
