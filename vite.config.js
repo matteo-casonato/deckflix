@@ -65,6 +65,16 @@ export default defineConfig({
             },
           },
           {
+            // Set symbols from pokesymbols.com: they don't change, keep them.
+            urlPattern: ({ url }) => url.hostname === 'pokesymbols.com',
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'set-symbols',
+              cacheableResponse: { statuses: [0, 200] },
+              expiration: { maxEntries: 300, maxAgeSeconds: 180 * DAY, purgeOnQuotaError: true },
+            },
+          },
+          {
             // API responses: network first, cached copy when the network fails or is slow.
             // Not StaleWhileRevalidate: Dexie already caches with its own expiry, and serving an
             // old response first would make the app store days-old prices as fresh.

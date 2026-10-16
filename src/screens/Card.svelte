@@ -14,6 +14,8 @@
   import { CONDITIONS, DEFAULT_CONDITION, collectionKey, conditionFactor, conditionLabel } from '../lib/domain/collection.js';
   import { LANG_LABELS, cardmarketUrl, euro, guessImage, pricesDate, setIdOf } from '../lib/domain/cards.js';
   import { hrefFor } from '../lib/domain/routes.js';
+  import { rarityIcon } from '../lib/domain/rarity.js';
+  import { setSymbolUrl } from '../lib/domain/setSymbols.js';
   import { freshnessLabel } from '../lib/domain/cache.js';
   import BackHeader from '../lib/ui/BackHeader.svelte';
   import Icon from '../lib/ui/Icon.svelte';
@@ -74,6 +76,8 @@
   let confirmMove = $state(false);
   /** The (possibly guessed) image did not load: show the placeholder. */
   let artFailed = $state(false);
+  /** The set symbol (from pokesymbols.com) did not load: just the name. */
+  let symbolFailed = $state(false);
   let picker = $state(false);
   const inAlbums = $derived(liveQuery(async () => (await db.albums.toArray()).filter((a) => a.cards.some((c) => c.cardId === id)).length));
 
@@ -165,6 +169,8 @@
     </div>
   {:then r}
     {@const card = r.card}
+    {@const symbol = setSymbolUrl(setIdOf(id))}
+    {@const rarityImg = rarityIcon(card.rarity)}
     {@const variants = listVariants(card)}
     {@const prices = pricesDate(card.pricing?.cardmarket?.updated, Date.now())}
     <div class="layout">
@@ -176,10 +182,19 @@
 
       <div class="info">
         <h1>{card.name}</h1>
-        <p class="muted">
-          <a href={hrefFor('set', { id: setIdOf(id) })}>{card.set?.name}</a> ·
-          <span class="num">{card.localId}/{card.set?.cardCount?.official ?? '?'}</span>
-          {#if card.rarity && card.rarity !== 'Nessuna'} · {card.rarity}{/if}
+        <p class="muted meta">
+          <a href={hrefFor('set', { id: setIdOf(id) })}>
+            {#if symbol && !symbolFailed}<span class="sym"><img src={symbol} alt="" onerror={() => (symbolFailed = true)} /></span>{/if}
+            {card.set?.name}
+          </a>
+          <span>· <span class="num">{card.localId}/{card.set?.cardCount?.official ?? '?'}</span></span>
+          {#if card.rarity && card.rarity !== 'Nessuna'}
+            <span class="rar">
+              ·
+              {#if rarityImg}<span class="sym"><img src="{import.meta.env.BASE_URL}rarities/{rarityImg}.png" alt="" /></span>{/if}
+              {card.rarity}
+            </span>
+          {/if}
         </p>
       </div>
 
@@ -428,6 +443,39 @@
 
   h1 {
     font-size: 28px;
+  }
+
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    column-gap: 6px;
+    row-gap: 4px;
+  }
+
+  .meta a,
+  .rar {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  /* Symbols are printed black on the card: a light tile keeps them readable on the dark theme. */
+  .sym {
+    height: 22px;
+    padding: 3px 5px;
+    border-radius: 6px;
+    background: #f4f4f2;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .sym img {
+    height: 16px;
+    width: auto;
+    max-width: 40px;
+    object-fit: contain;
   }
 
   .info a {
