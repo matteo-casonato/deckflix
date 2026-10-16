@@ -7,9 +7,9 @@
   import { CONDITIONS, DEFAULT_CONDITION_FACTORS } from '../lib/domain/collection.js';
   import { clearImageCache, imageCacheInfo } from '../lib/data/imageCache.js';
   import { currentPosition, geocodeCity } from '../lib/data/geocode.js';
-  import { nearbyEventsData, nearbyEventsUrl } from '../lib/domain/players.js';
-  import { clearTournaments, importTournaments, liveTournaments } from '../lib/data/tournaments.js';
-  import { showToast } from '../lib/stores/toast.svelte.js';
+  import { nearbyEventsUrl } from '../lib/domain/players.js';
+  import { clearTournaments, liveTournaments } from '../lib/data/tournaments.js';
+  import TournamentImport from './play/TournamentImport.svelte';
   import { hrefFor } from '../lib/domain/routes.js';
   import BackHeader from '../lib/ui/BackHeader.svelte';
   import ConfirmDialog from '../lib/ui/ConfirmDialog.svelte';
@@ -53,19 +53,6 @@
   }
 
   const saved = liveTournaments();
-  /** @param {Event & { currentTarget: HTMLInputElement }} e */
-  async function pickIcs(e) {
-    const file = e.currentTarget.files?.[0];
-    e.currentTarget.value = '';
-    if (!file) return;
-    try {
-      const n = await importTournaments(file);
-      showToast(`${n} tornei importati`);
-    } catch (err) {
-      showToast(err instanceof Error ? err.message : 'File non valido');
-    }
-  }
-
   async function useMyPosition() {
     locating = true;
     placeError = null;
@@ -227,23 +214,15 @@
     <h2 class="label">Elenco dei tornei nell’app</h2>
     <section class="explain card">
       <p>
-        Pokedata non lascia leggere i tornei ad altre app, ma l’elenco si può salvare come file e importare qui: in Play! vedi i
-        prossimi tornei con città, distanza e tipo (Challenge, Cup, Prerelease). Per aggiornarli, ripeti i due passaggi ogni tanto.
+        Pokedata non lascia leggere i tornei ad altre app, ma il loro elenco si può copiare e incollare qui: in Play! vedi i
+        prossimi tornei con città, distanza e tipo (Challenge, Cup, Prerelease). Per aggiornarli, ripeti i due passaggi ogni tanto
+        (anche da Play! › Tornei › Aggiorna i tornei).
       </p>
       {#if settings.homePlace}
-        <a class="btn" href={nearbyEventsData(settings.homePlace, settings.eventRadius, Date.now())} target="_blank" rel="noopener noreferrer">
-          1 · Apri l’elenco dei tornei
-        </a>
-        <p class="small-note">
-          Si apre una pagina di testo: in Chrome tocca ⋮ in alto e poi ⬇ per scaricarla (oppure Condividi › Salva su file).
-        </p>
+        <TournamentImport />
       {:else}
         <p class="warn">Prima salva la città qui sopra.</p>
       {/if}
-      <label class="btn primary file">
-        2 · Importa il file scaricato
-        <input class="visually-hidden" type="file" accept=".json,.ics,.txt,application/json,text/calendar,text/plain" onchange={pickIcs} />
-      </label>
       {#if $saved}
         <p class="num">
           {$saved.events.length} tornei importati il {new Date($saved.importedAt).toLocaleDateString('it-IT')}.
@@ -273,10 +252,6 @@
 />
 
 <style>
-  .file {
-    cursor: pointer;
-  }
-
   .link {
     min-height: 40px;
     padding: 0 6px;
@@ -286,10 +261,6 @@
     font: inherit;
     font-weight: 700;
     cursor: pointer;
-  }
-
-  .small-note {
-    font-size: 12px;
   }
 
   .place {

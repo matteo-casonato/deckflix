@@ -16,7 +16,17 @@ const KEY = 'tournaments';
  * @param {File} file
  */
 export async function importTournaments(file) {
-  const text = (await file.text()).trim();
+  return importTournamentsText(await file.text());
+}
+
+/**
+ * Same as importTournaments, from text pasted from the list page (select all, copy).
+ * @param {string} raw
+ */
+export async function importTournamentsText(raw) {
+  // Chrome may add text around a selection; keep from the first "[" to the last "]".
+  let text = raw.trim();
+  if (!text.startsWith('BEGIN:') && text.includes('[')) text = text.slice(text.indexOf('['), text.lastIndexOf(']') + 1);
   // The JSON (city, position, type) or the .ics calendar (shop and date only).
   let events = [];
   try {
@@ -24,7 +34,7 @@ export async function importTournaments(file) {
   } catch {
     events = [];
   }
-  if (!events.length) throw new Error('Il file non contiene tornei: è quello scaricato da pokedata?');
+  if (!events.length) throw new Error('Non trovo tornei: copia tutto il testo della pagina dell’elenco e riprova');
   await db.settings.put({ key: KEY, value: /** @type {TournamentsFile} */ ({ importedAt: Date.now(), events }) });
   return events.length;
 }
