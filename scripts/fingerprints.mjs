@@ -62,14 +62,22 @@ if (MINUTES > 0) {
   const stopAt = Date.now() + MINUTES * 60_000;
   let added = 0;
   let failed = 0;
+  let busy = 0;
   for (const card of todo) {
     if (Date.now() > stopAt) break;
     try {
       const res = await fetch(`${card.image}/low.png`, { headers: HEADERS });
-      if (res.status === 429) {
-        console.log('TCGdex asks to slow down: stopping here');
-        break;
+      // Too many requests or server busy: pause a minute; stop after three times in a row.
+      if (res.status === 429 || res.status === 503) {
+        if (++busy >= 3) {
+          console.log(`TCGdex answers ${res.status} again: stopping here`);
+          break;
+        }
+        console.log(`TCGdex answers ${res.status}: pausing a minute`);
+        await sleep(60_000);
+        continue;
       }
+      busy = 0;
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const { width, height, rgba } = decodePng(Buffer.from(await res.arrayBuffer()));
       index.set(card.id, fingerprint(rgba, width, height));
