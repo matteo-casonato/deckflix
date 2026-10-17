@@ -14,6 +14,8 @@
   cursor: pointer;
   background: var(--line-2);
   color: var(--text);
+  /* One line only: two-line buttons look broken. Labels are kept short instead. */
+  white-space: nowrap;
 }
 
 .btn.primary {

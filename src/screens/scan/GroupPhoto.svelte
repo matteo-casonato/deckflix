@@ -439,8 +439,12 @@
 
   .actions {
     display: grid;
-    grid-template-columns: 1fr 2fr;
+    grid-template-columns: 1fr 1fr;
     gap: 10px;
+  }
+
+  .actions .btn {
+    padding: 0 12px;
   }
 
   .progress {

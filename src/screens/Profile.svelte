@@ -174,7 +174,7 @@
     {#if account.user}<p class="muted">Collegato come <strong>{account.user.email}</strong></p>{/if}
     <button class="btn danger-outline" onclick={() => ((accountSheet = false), (confirm = 'signout'))}>Esci dall’account</button>
     <p class="muted">La collezione resta su questo telefono; il backup automatico su Drive si ferma finché non accedi di nuovo.</p>
-    <button class="btn danger" onclick={() => ((accountSheet = false), (confirm = 'wipe'))}>Esci e cancella i dati da questo telefono</button>
+    <button class="btn danger" onclick={() => ((accountSheet = false), (confirm = 'wipe'))}>Esci e cancella i dati</button>
     <p class="muted">Collezione, deck e impostazioni spariscono da questo telefono; il backup su Drive resta e si può ripristinare accedendo di nuovo.</p>
   </div>
 </Sheet>

@@ -34,6 +34,7 @@
 }
 
 .chip[aria-pressed='true'],
+.chip[aria-checked='true'],
 .chip.on {
   background: var(--accent);
   border-color: var(--accent);
