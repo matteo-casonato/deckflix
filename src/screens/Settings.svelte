@@ -6,6 +6,7 @@
   import Flag from '../lib/ui/Flag.svelte';
   import { LANG_LABELS } from '../lib/domain/cards.js';
   import { CONDITIONS, DEFAULT_CONDITION_FACTORS } from '../lib/domain/collection.js';
+  import { ROADMAP, ROADMAP_STATUS } from '../lib/domain/roadmap.js';
 
   /** Reference price choices: [field, label, explanation]. */
   const PRICE_CHOICES = /** @type {const} */ ([
@@ -36,6 +37,7 @@
     scansione: 'Scansione',
     privacy: 'Privacy',
     termini: 'Termini di servizio',
+    roadmap: 'Roadmap',
   });
 
   // ---------- home city ----------
@@ -208,6 +210,22 @@
     <LegalText file="privacy.html" />
   {:else if key === 'termini'}
     <LegalText file="termini.html" />
+  {:else if key === 'roadmap'}
+    <p class="intro">Cosa potrebbe arrivare in Deckflix. Hai un’idea o vuoi dare la precedenza a una di queste? Scrivimi dal Profilo, in “Il progetto”.</p>
+    {#each ROADMAP_STATUS as [status, label] (status)}
+      {@const items = ROADMAP.filter((i) => i.status === status)}
+      {#if items.length}
+        <h2 class="label">{label}</h2>
+        <ul class="roadmap card">
+          {#each items as item (item.title)}
+            <li>
+              <strong>{item.title}</strong>
+              <span class="muted">{item.text}</span>
+            </li>
+          {/each}
+        </ul>
+      {/if}
+    {/each}
   {:else if key === 'scansione'}
     {#if hasGoogleOcr}
       <section class="explain card">
@@ -422,6 +440,29 @@
     align-items: center;
     justify-content: space-between;
     cursor: pointer;
+  }
+
+  .roadmap {
+    list-style: none;
+    margin: 0;
+    padding: 4px 16px;
+  }
+
+  .roadmap li {
+    padding: 14px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 14px;
+    line-height: 1.45;
+  }
+
+  .roadmap li + li {
+    border-top: 1px solid var(--line);
+  }
+
+  .roadmap strong {
+    font-size: 15px;
   }
 
   .choice-text {

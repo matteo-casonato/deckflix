@@ -3,23 +3,24 @@
   // Profile (docs/mockups/Profilo.html): account and backup, data (CSV, deck lists,
   // restore) and app preferences.
   import {
+    Analytics01Icon,
     ArrowRight01Icon,
     CloudDownloadIcon,
     Csv01Icon,
     FileImportIcon,
+    GridViewIcon,
+    Idea01Icon,
     Image01Icon,
     LanguageSkillIcon,
-    Analytics01Icon,
-    GridViewIcon,
-    LinkSquare02Icon,
-    QrCodeIcon,
-    LockIcon,
     LegalDocument01Icon,
-    ScanIcon,
-    UserAccountIcon,
     LicenseIcon,
-    Settings02Icon,
+    LinkSquare02Icon,
     Location01Icon,
+    LockIcon,
+    QrCodeIcon,
+    ScanIcon,
+    Settings02Icon,
+    UserAccountIcon,
   } from '@hugeicons/core-free-icons';
   import { hasGoogleOcr } from '../lib/scan/ocr.js';
   import Icon from '../lib/ui/Icon.svelte';
@@ -215,6 +216,11 @@
   <a class="row" href={hrefFor('links')}>
     <span class="ico"><Icon icon={LinkSquare02Icon} /></span>
     <span class="text"><strong>Link utili</strong><span>{USEFUL_LINKS.map((l) => l.name).join(', ')}</span></span>
+    <span class="chev"><Icon icon={ArrowRight01Icon} size={20} /></span>
+  </a>
+  <a class="row" href={hrefFor('settings', { key: 'roadmap' })}>
+    <span class="ico"><Icon icon={Idea01Icon} /></span>
+    <span class="text"><strong>Roadmap</strong><span>Le idee in arrivo e quelle da valutare</span></span>
     <span class="chev"><Icon icon={ArrowRight01Icon} size={20} /></span>
   </a>
   <button class="row" onclick={() => (account.setup = true)}>
