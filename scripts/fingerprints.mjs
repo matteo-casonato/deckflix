@@ -9,7 +9,7 @@
 // adds the new sets. With FINGERPRINT_MINUTES=0 (pushes) it just republishes the previous index.
 //
 // Usage: node scripts/fingerprints.mjs [outDir]
-//   FINGERPRINT_MINUTES (default 20), FINGERPRINT_DELAY_MS (default 700),
+//   FINGERPRINT_MINUTES (default 20, at most 300), FINGERPRINT_DELAY_MS (default 400),
 //   FINGERPRINT_PREVIOUS (URL of the published index)
 import { writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -18,8 +18,8 @@ import { decodePng } from './png.mjs';
 
 const API = 'https://api.tcgdex.net/v2/en';
 const PREVIOUS = process.env.FINGERPRINT_PREVIOUS ?? 'https://matteo-casonato.github.io/deckflix/fingerprints.json';
-const MINUTES = Number(process.env.FINGERPRINT_MINUTES ?? 20);
-const DELAY_MS = Number(process.env.FINGERPRINT_DELAY_MS ?? 700);
+const MINUTES = Math.min(300, Number(process.env.FINGERPRINT_MINUTES ?? 20));
+const DELAY_MS = Number(process.env.FINGERPRINT_DELAY_MS ?? 400);
 const HEADERS = { 'User-Agent': 'Deckflix (personal PWA; slow artwork index, github.com/matteo-casonato/deckflix)' };
 const out = resolve(process.argv[2] ?? 'dist', 'fingerprints.json');
 
