@@ -2,7 +2,7 @@
   // @ts-check
   // App shell: first run (Google sign-in), restore and choice flows, router, navigation
   // bar and the offline / renew-access banners.
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import { guardExit, router } from './lib/router.svelte.js';
   import { showToast } from './lib/stores/toast.svelte.js';
   import { account } from './lib/stores/account.svelte.js';
@@ -38,6 +38,7 @@
   import Choice from './screens/Choice.svelte';
   import Setup from './screens/Setup.svelte';
   import GroupPhoto from './screens/scan/GroupPhoto.svelte';
+  import { clearCardSequence } from './lib/stores/cardSequence.svelte.js';
 
   const settingsLoaded = loadSettings();
 
@@ -79,6 +80,11 @@
       .catch(() => {});
   });
   const showNav = $derived(flow === 'app' && !FULL_SCREEN.has(route.name));
+
+  // Card arrows follow the list the card was opened from, until the app shows another screen.
+  $effect(() => {
+    if (route.name !== 'card') untrack(clearCardSequence);
+  });
 </script>
 
 {#if flow === 'access'}

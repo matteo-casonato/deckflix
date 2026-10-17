@@ -15,6 +15,7 @@
   import { navigate } from '../lib/router.svelte.js';
   import BackHeader from '../lib/ui/BackHeader.svelte';
   import CardTile from '../lib/ui/CardTile.svelte';
+  import { setCardSequence } from '../lib/stores/cardSequence.svelte.js';
   import ConfirmDialog from '../lib/ui/ConfirmDialog.svelte';
   import EmptyState from '../lib/ui/EmptyState.svelte';
   import Icon from '../lib/ui/Icon.svelte';
@@ -145,7 +146,7 @@
     <div class="grid3">
       {#each g.tiles as t (t.cardId)}
         <div class="cell">
-          <CardTile {...tileProps(t)} />
+          <CardTile {...tileProps(t)} onopen={() => setCardSequence(groups.flatMap((g) => g.tiles.map((x) => x.cardId)))} />
           {#if editing}
             <button class="remove" aria-label={`Togli ${$cards?.get(t.cardId)?.name ?? t.cardId} dalla raccolta`} onclick={() => remove(t.cardId)}>
               <Icon icon={Cancel01Icon} size={16} />

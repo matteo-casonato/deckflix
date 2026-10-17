@@ -3,10 +3,10 @@
   // Card in a grid (docs/mockups/Set.html, Collezione.html): image, quantity and variant
   // badges, or a missing card: dashed slot with its number, or its image greyed out (`ghost`).
   // 63:88 placeholder while loading or without image.
-  /** @type {{ name: string, localId: string, image?: string | null, qty?: number, badge?: string | null, href?: string, price?: string | null, missing?: boolean, ghost?: boolean, starred?: boolean, onhold?: ((e: Event) => void) | null }} */
+  /** @type {{ name: string, localId: string, image?: string | null, qty?: number, badge?: string | null, href?: string, price?: string | null, missing?: boolean, ghost?: boolean, starred?: boolean, onhold?: ((e: Event) => void) | null, onopen?: (() => void) | null }} */
   import { imageAt } from '../domain/cards.js';
 
-  let { name, localId, image = null, qty = 0, badge = null, href, price = null, missing = false, ghost = false, starred = false, onhold = null } = $props();
+  let { name, localId, image = null, qty = 0, badge = null, href, price = null, missing = false, ghost = false, starred = false, onhold = null, onopen = null } = $props();
 
   // Fallbacks when the thumbnail doesn't load. Images are cached as opaque responses (CORS
   // headers on TCGdex assets are sometimes broken), so a missing image once cached as an
@@ -27,7 +27,7 @@
   const src = $derived(sources[attempt]);
 </script>
 
-<a class="tile" class:holdable={!!onhold} {href} oncontextmenu={onhold ?? undefined} aria-label={`${name}, ${localId}${missing ? ', mancante' : qty ? `, ${qty} ${qty === 1 ? 'copia' : 'copie'}` : ''}`}>
+<a class="tile" class:holdable={!!onhold} {href} onclick={onopen ?? undefined} oncontextmenu={onhold ?? undefined} aria-label={`${name}, ${localId}${missing ? ', mancante' : qty ? `, ${qty} ${qty === 1 ? 'copia' : 'copie'}` : ''}`}>
   {#if missing && ghost && image && !failed}
     <span class="art missing ghost">
       <img {src} alt="" loading="lazy" decoding="async" onerror={() => attempt++} />

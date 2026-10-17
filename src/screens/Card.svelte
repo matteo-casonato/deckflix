@@ -5,7 +5,7 @@
   import { liveQuery } from 'dexie';
   import Picker from '../lib/ui/Picker.svelte';
   import Flag from '../lib/ui/Flag.svelte';
-  import { BookmarkAdd02Icon, FavouriteIcon, LinkSquare02Icon } from '@hugeicons/core-free-icons';
+  import { ArrowLeft01Icon, ArrowRight01Icon, BookmarkAdd02Icon, FavouriteIcon, LinkSquare02Icon } from '@hugeicons/core-free-icons';
   import { db } from '../lib/db.js';
   import { TcgdexError, cardImage, getCard } from '../lib/api/tcgdex.js';
   import { settings } from '../lib/stores/settings.svelte.js';
@@ -16,6 +16,9 @@
   import { CONDITIONS, DEFAULT_CONDITION, collectionKey, conditionFactor, conditionLabel } from '../lib/domain/collection.js';
   import { LANG_LABELS, cardmarketUrl, euro, guessImage, imageAt, pricesDate, setIdOf } from '../lib/domain/cards.js';
   import { hrefFor } from '../lib/domain/routes.js';
+  import { replace } from '../lib/router.svelte.js';
+  import { cardSequence } from '../lib/stores/cardSequence.svelte.js';
+  import { neighbours } from '../lib/domain/sequence.js';
   import { rarityIcon } from '../lib/domain/rarity.js';
   import { setSymbolUrl } from '../lib/domain/setSymbols.js';
   import { freshnessLabel } from '../lib/domain/cache.js';
@@ -52,6 +55,37 @@
   $effect(() => {
     request = load();
   });
+
+  /** Previous and next card of the list this card was opened from (a set, an album…). */
+  const steps = $derived(neighbours(cardSequence.ids, id));
+  /** Steps in place: Back still returns to the list. @param {string | null | undefined} to */
+  const go = (to) => {
+    if (to) replace(hrefFor('card', { lang, id: to }));
+  };
+
+  /** @param {KeyboardEvent} e */
+  function onKey(e) {
+    if (!steps || e.altKey || e.ctrlKey || e.metaKey || document.querySelector('[role="dialog"]')) return;
+    if (e.target instanceof HTMLElement && e.target.closest('input, textarea, [contenteditable]')) return;
+    if (e.key === 'ArrowLeft') go(steps.prev);
+    else if (e.key === 'ArrowRight') go(steps.next);
+  }
+
+  // Horizontal swipe on the picture: left for the next card, right for the previous one.
+  let swipeX = 0;
+  let swipeY = 0;
+  /** @param {TouchEvent} e */
+  const swipeStart = (e) => {
+    swipeX = e.touches[0].clientX;
+    swipeY = e.touches[0].clientY;
+  };
+  /** @param {TouchEvent} e */
+  const swipeEnd = (e) => {
+    const dx = e.changedTouches[0].clientX - swipeX;
+    const dy = e.changedTouches[0].clientY - swipeY;
+    if (!steps || Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    go(dx < 0 ? steps.next : steps.prev);
+  };
 
   const entries = $derived(liveQuery(() => db.collection.where('cardId').equals(id).toArray()));
   const wished = $derived(liveQuery(() => db.wishlist.get(id).then(Boolean)));
@@ -155,6 +189,8 @@
   }
 </script>
 
+<svelte:window onkeydown={onKey} />
+
 <BackHeader fallback={hrefFor('set', { id: setIdOf(id) })}>
   <button
     class="round"
@@ -190,11 +226,26 @@
     {@const variants = listVariants(card)}
     {@const prices = pricesDate(card.pricing?.cardmarket?.updated, Date.now())}
     <div class="layout">
-      {#if r.image && !artFailed}
-        <img class="art" onerror={() => (artFailed = true)} src={r.image} alt={`${card.name}, carta ${card.localId} di ${card.set?.name}`} />
-      {:else}
-        <div class="art placeholder"><span>{card.name}</span><span class="num">{card.localId}</span></div>
-      {/if}
+      <!-- Swipe is a shortcut: the arrows are the accessible way to step. -->
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div class="stage" class:stepping={!!steps} ontouchstart={swipeStart} ontouchend={swipeEnd}>
+        {#if steps}
+          <button class="step" aria-label="Carta precedente" disabled={!steps.prev} onclick={() => go(steps.prev)}>
+            <Icon icon={ArrowLeft01Icon} size={22} />
+          </button>
+        {/if}
+        {#if r.image && !artFailed}
+          <img class="art" onerror={() => (artFailed = true)} src={r.image} alt={`${card.name}, carta ${card.localId} di ${card.set?.name}`} />
+        {:else}
+          <div class="art placeholder"><span>{card.name}</span><span class="num">{card.localId}</span></div>
+        {/if}
+        {#if steps}
+          <button class="step" aria-label="Carta successiva" disabled={!steps.next} onclick={() => go(steps.next)}>
+            <Icon icon={ArrowRight01Icon} size={22} />
+          </button>
+        {/if}
+      </div>
+      {#if steps}<p class="position num" aria-live="polite">{steps.index} di {steps.total}</p>{/if}
 
       <div class="info">
         <h1>{card.name}</h1>
@@ -430,6 +481,42 @@
     display: grid;
     gap: 16px;
     justify-items: center;
+  }
+
+  .stage {
+    display: grid;
+    grid-template-columns: auto;
+    align-items: center;
+    gap: 4px;
+    touch-action: pan-y;
+  }
+
+  .stage.stepping {
+    grid-template-columns: 48px auto 48px;
+  }
+
+  .stepping .art {
+    width: min(300px, calc(100vw - 32px - 104px));
+  }
+
+  .step {
+    width: 48px;
+    height: 48px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    color: var(--text);
+    background: var(--surface-2);
+  }
+
+  .step:disabled {
+    opacity: 0.3;
+  }
+
+  .position {
+    margin: -8px 0 0;
+    font-size: 12px;
+    color: var(--muted);
   }
 
   .art {

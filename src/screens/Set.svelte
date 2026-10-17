@@ -16,6 +16,7 @@
   import BackHeader from '../lib/ui/BackHeader.svelte';
   import Segmented from '../lib/ui/Segmented.svelte';
   import CardTile from '../lib/ui/CardTile.svelte';
+  import { setCardSequence } from '../lib/stores/cardSequence.svelte.js';
   import Icon from '../lib/ui/Icon.svelte';
   import { setLogoUrl } from '../lib/domain/setSymbols.js';
 
@@ -177,7 +178,7 @@
 
   <div class="grid4">
     {#each v.shown as t (t.id)}
-      <CardTile {...t.props} />
+      <CardTile {...t.props} onopen={() => setCardSequence(v.shown.map((x) => x.id))} />
     {/each}
   </div>
 {:catch}

@@ -11,6 +11,7 @@
   import { replace } from '../../lib/router.svelte.js';
   import Icon from '../../lib/ui/Icon.svelte';
   import CardTile from '../../lib/ui/CardTile.svelte';
+  import { setCardSequence } from '../../lib/stores/cardSequence.svelte.js';
   import EmptyState from '../../lib/ui/EmptyState.svelte';
   import Stats from './Stats.svelte';
   import { entryPrice } from '../../lib/domain/value.js';
@@ -163,7 +164,7 @@
 {:else}
   <div class="grid3 loose">
     {#each allTiles as t (t.cardId)}
-      <CardTile {...tileProps(t)} />
+      <CardTile {...tileProps(t)} onopen={() => setCardSequence(allTiles.map((x) => x.cardId))} />
     {/each}
   </div>
 {/if}

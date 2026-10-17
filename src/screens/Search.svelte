@@ -21,6 +21,7 @@
   import SetPicker from '../lib/ui/SetPicker.svelte';
   import Picker from '../lib/ui/Picker.svelte';
   import { langOptions, rarityOptions, typeOptions } from '../lib/ui/options.js';
+  import { setCardSequence } from '../lib/stores/cardSequence.svelte.js';
   import { KINDS, isKind } from '../lib/domain/kinds.js';
 
   /** @type {{ query: Record<string, string> }} */
@@ -266,7 +267,7 @@
       {@const wish = $wished?.has(c.id) ?? false}
       {@const img = thumbOf(c)}
       <li class="row card" class:owned={qty > 0}>
-        <a class="main" href={hrefFor('card', { lang, id: c.id })}>
+        <a class="main" href={hrefFor('card', { lang, id: c.id })} onclick={() => setCardSequence(results.map((x) => x.id))}>
           {#if img && !broken.has(c.id)}
             <img class="thumb" src={img} alt="" loading="lazy" onerror={() => (broken = new Set([...broken, c.id]))} />
           {:else}

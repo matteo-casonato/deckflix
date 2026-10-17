@@ -14,6 +14,7 @@
   import { hrefFor } from '../../lib/domain/routes.js';
   import { replace } from '../../lib/router.svelte.js';
   import Icon from '../../lib/ui/Icon.svelte';
+  import { setCardSequence } from '../../lib/stores/cardSequence.svelte.js';
   import EmptyState from '../../lib/ui/EmptyState.svelte';
 
   /** @type {{ query: Record<string, string> }} */
@@ -92,6 +93,7 @@
       <li>
         <StackRow
           href={hrefFor('card', { lang: settings.cardLang, id: r.cardId })}
+          onopen={() => setCardSequence(rows.map((x) => x.cardId))}
           images={[cardImage(r.card)]}
           title={r.card?.name ?? r.cardId}
           sub={r.subtitle}

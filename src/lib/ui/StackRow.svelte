@@ -7,11 +7,11 @@
   /**
    * @type {{
    *   href: string, images: (string | null | undefined)[], title: string, logo?: string | null, sub?: string,
-   *   percent?: number | null, done?: boolean, aside?: string | null, label?: string,
+   *   percent?: number | null, done?: boolean, aside?: string | null, label?: string, onopen?: (() => void) | null,
    *   children?: import('svelte').Snippet,
    * }}
    */
-  let { href, images, title, logo = null, sub = '', percent = null, done = false, aside = null, label, children } = $props();
+  let { href, images, title, logo = null, sub = '', percent = null, done = false, aside = null, label, onopen = null, children } = $props();
 
   /** The logo (a set's) did not load: show the title. */
   let logoFailed = $state(false);
@@ -20,7 +20,7 @@
   const C = 2 * Math.PI * R;
 </script>
 
-<a class="row card" {href} aria-label={label}>
+<a class="row card" {href} onclick={onopen ?? undefined} aria-label={label}>
   <CardStack {images} />
   <span class="txt">
     {#if logo && !logoFailed}
