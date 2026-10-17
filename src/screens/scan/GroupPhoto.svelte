@@ -9,7 +9,7 @@
   import { saveItems } from './saveItems.js';
   import { GRIDS, gridCells, moveCorner } from '../../lib/domain/grid.js';
   import { loadImage } from '../../lib/data/avatar.js';
-  import { printsFor, recognize } from '../../lib/scan/pipeline.js';
+  import { printsFor, recognize, recognizeTyped } from '../../lib/scan/pipeline.js';
   import { hrefFor } from '../../lib/domain/routes.js';
   import { back, replace } from '../../lib/router.svelte.js';
   import { showToast } from '../../lib/stores/toast.svelte.js';
@@ -26,8 +26,8 @@
   let done = $state(0);
   /** @type {Item[]} */
   let items = $state([]);
-  /** Cells not read or not found: their crop, to show and add by hand. */
-  /** @type {{ n: number, src: string }[]} */
+  /** Cells not read or not found: their crop, to show and add by typing the number. */
+  /** @type {{ n: number, src: string, text: string, busy: boolean, error: string }[]} */
   let missed = $state([]);
 
   /** @param {Event & { currentTarget: HTMLInputElement }} e */
@@ -98,10 +98,10 @@
         if (r.status === 'found') {
           const p = await printsFor(r.candidates[0], r);
           items.push({ id: Date.now() + n, rec: r, chosen: 0, lang: r.lang, variant: p.preselect, options: p.options });
-        } else missed.push({ n, src: thumb(canvas) });
+        } else missed.push({ n, src: thumb(canvas), text: '', busy: false, error: '' });
       } catch (err) {
         console.error(err);
-        missed.push({ n, src: thumb(canvas) });
+        missed.push({ n, src: thumb(canvas), text: '', busy: false, error: '' });
       }
       done = n;
     }
@@ -116,6 +116,31 @@
     t.height = 160;
     /** @type {CanvasRenderingContext2D} */ (t.getContext('2d')).drawImage(canvas, 0, 0, t.width, t.height);
     return t.toDataURL('image/jpeg', 0.7);
+  }
+
+  /**
+   * Adds a missed card from the number typed under its picture; it joins the review like the
+   * cards the scan found.
+   * @param {typeof missed[number]} m
+   */
+  async function addTyped(m) {
+    if (m.busy) return;
+    m.error = '';
+    m.busy = true;
+    try {
+      const r = await recognizeTyped(m.text);
+      if (!r) m.error = 'Scrivi numero e totale, come sulla carta: 25/165';
+      else if (r.status !== 'found') m.error = 'Nessuna carta con questo numero';
+      else {
+        const p = await printsFor(r.candidates[0], r);
+        items.push({ id: Date.now() + m.n, rec: r, chosen: 0, lang: r.lang, variant: p.preselect, options: p.options });
+        missed = missed.filter((x) => x.n !== m.n);
+      }
+    } catch {
+      m.error = 'Non riesco a cercare: controlla la connessione';
+    } finally {
+      m.busy = false;
+    }
   }
 
   async function save() {
@@ -136,10 +161,27 @@
     {#if missed.length}
       <section class="missed card">
         <strong>{missed.length === 1 ? '1 carta non riconosciuta' : `${missed.length} carte non riconosciute`}</strong>
-        <span class="muted">Aggiungile dopo con Scansiona o Per numero, o rifai la foto più vicina e con meno riflessi.</span>
-        <div class="thumbs">
-          {#each missed as m (m.n)}<figure><img src={m.src} alt="" /><figcaption class="num">{m.n}</figcaption></figure>{/each}
-        </div>
+        <span class="muted">Scrivi il numero stampato in basso sulla carta (es. 25/165, TG05, SWSH302) e aggiungila alla revisione.</span>
+        <ul class="typed">
+          {#each missed as m (m.n)}
+            <li>
+              <img src={m.src} alt={`Carta ${m.n} della foto`} />
+              <form
+                onsubmit={(e) => {
+                  e.preventDefault();
+                  addTyped(m);
+                }}
+              >
+                <label class="muted" for={`num-${m.n}`}>Carta {m.n}</label>
+                <span class="field">
+                  <input id={`num-${m.n}`} class="num" bind:value={m.text} placeholder="25/165" autocomplete="off" autocapitalize="characters" enterkeyhint="go" />
+                  <button class="btn" type="submit" disabled={m.busy || !m.text.trim()}>{m.busy ? 'Cerco…' : 'Aggiungi'}</button>
+                </span>
+                {#if m.error}<span class="err" role="alert">{m.error}</span>{/if}
+              </form>
+            </li>
+          {/each}
+        </ul>
       </section>
     {/if}
   </BurstReview>
@@ -157,10 +199,11 @@
 
     {#if phase === 'pick'}
       <section class="intro">
-        <h1>Più carte in una foto</h1>
+        <h1>Carte da una foto</h1>
         <p class="muted">
           Metti le carte in griglia, dritte e vicine (per esempio una pagina del raccoglitore 3×3), con buona luce e senza
-          riflessi. Poi inquadra solo le carte: l’app legge il numero in basso di ognuna.
+          riflessi. Poi inquadra solo le carte: l’app legge il numero in basso di ognuna. Va bene anche una carta sola (1×1),
+          per esempio da una foto già nella galleria.
         </p>
         <label class="btn primary file">
           <Icon icon={Camera01Icon} size={20} /> Scatta una foto
@@ -208,7 +251,7 @@
 
       <div class="chips" role="radiogroup" aria-label="Griglia">
         {#each GRIDS as [r, c] (`${r}x${c}`)}
-          <button class="chip" role="radio" aria-checked={rows === r && cols === c} aria-pressed={rows === r && cols === c} disabled={phase === 'work'} onclick={() => ((rows = r), (cols = c))}>
+          <button class="chip" role="radio" aria-checked={rows === r && cols === c} disabled={phase === 'work'} onclick={() => ((rows = r), (cols = c))}>
             <span class="num">{r}×{c}</span>
           </button>
         {/each}
@@ -225,7 +268,7 @@
             Altra foto
             <input class="visually-hidden" type="file" accept="image/*" capture="environment" onchange={pickFile} />
           </label>
-          <button class="btn primary" onclick={run}>Riconosci {total} carte</button>
+          <button class="btn primary" onclick={run}>{total === 1 ? 'Riconosci la carta' : `Riconosci ${total} carte`}</button>
         </div>
       {/if}
     {/if}
@@ -431,24 +474,60 @@
     gap: 8px;
   }
 
-  .thumbs {
+  .typed {
+    list-style: none;
+    margin: 4px 0 0;
+    padding: 0;
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .typed li {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .typed img {
+    height: 96px;
+    border-radius: 6px;
+    flex: none;
+  }
+
+  .typed form {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 13px;
+  }
+
+  .field {
+    display: flex;
     gap: 8px;
   }
 
-  figure {
-    margin: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
-    font-size: 11px;
-    color: var(--muted);
+  .field input {
+    flex: 1;
+    min-width: 0;
+    min-height: 48px;
+    padding: 0 14px;
+    border-radius: 14px;
+    border: 1px solid var(--line-2);
+    background: var(--surface-2);
+    color: var(--text);
+    font-size: 16px;
   }
 
-  figure img {
-    height: 80px;
-    border-radius: 6px;
+  .field .btn {
+    min-height: 48px;
+    flex: none;
+  }
+
+  .err {
+    color: var(--danger);
+    font-size: 12px;
   }
 </style>

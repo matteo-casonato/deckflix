@@ -2,6 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { gridCells, moveCorner } from '../src/lib/domain/grid.js';
 
 describe('gridCells', () => {
+  it('1×1 is the whole frame, a single card', () => {
+    const [cell, ...rest] = gridCells({ width: 1000, height: 1400 }, { x0: 0, y0: 0, x1: 1, y1: 1 }, 1, 1, 0);
+    expect(rest).toEqual([]);
+    expect(cell).toEqual({ x: 0, y: 0, w: 1000, h: 1400, row: 0, col: 0 });
+  });
+
   it('cuts a 3×3 page into nine cells in reading order, a bit inside each slot', () => {
     const cells = gridCells({ width: 3000, height: 4200 }, { x0: 0, y0: 0, x1: 1, y1: 1 }, 3, 3, 0.05);
     expect(cells).toHaveLength(9);

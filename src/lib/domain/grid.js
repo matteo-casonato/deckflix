@@ -6,8 +6,9 @@
  * @typedef {{ x: number, y: number, w: number, h: number, row: number, col: number }} Cell in pixels
  */
 
-/** Grids offered: rows × columns. */
+/** Grids offered: rows × columns (1×1: a single card from a photo of the gallery). */
 export const GRIDS = /** @type {const} */ ([
+  [1, 1],
   [3, 3],
   [2, 2],
   [2, 3],

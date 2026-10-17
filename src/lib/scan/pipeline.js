@@ -2,12 +2,12 @@
 // From a card image to a proposal the user confirms: OCR, TCGdex lookup, stamp, prints.
 import { getCard, searchCards } from '../api/tcgdex.js';
 import { artUncertain, distance, LIKELY, nearest, SAME } from '../domain/fingerprint.js';
-import { nameGuesses, nameSimilarity } from '../domain/recognize.js';
+import { nameGuesses, nameSimilarity, parseCollectorNumber, parseSetCode, parseSpecialNumber } from '../domain/recognize.js';
 import { settings } from '../stores/settings.svelte.js';
 import { applyStampSuggestion, guessVariant, listVariants } from '../domain/variants.js';
 import { artIndex, mapLimited, photoFingerprint, thumbFingerprint } from './artwork.js';
 import { readCard } from './ocr.js';
-import { isUncertain, knownTotals, matchCard, matchSpecial } from './matcher.js';
+import { findCandidates, isUncertain, knownTotals, matchCard, matchSpecial } from './matcher.js';
 import { detectPlayStamp } from './stamp.js';
 
 /**
@@ -190,6 +190,37 @@ async function toCandidate(id, d, lang, nameText) {
     };
   }
   return null;
+}
+
+/**
+ * A card the scan didn't read, from the number the user types: "25/165", "SVI 25/198",
+ * "TG05/TG30", "SWSH302". Null when the text is not a number with its total or a special
+ * number (a plain "25" exists in every set). Several matches are left to choose in the review.
+ * @param {string} text
+ * @param {string} [lang]
+ * @returns {Promise<Recognition | null>}
+ */
+export async function recognizeTyped(text, lang = settings.cardLang) {
+  const t0 = performance.now();
+  const num = parseCollectorNumber(text);
+  const special = num ? null : parseSpecialNumber(text);
+  if (!num && !special) return null;
+  const setCode = parseSetCode(text);
+  const candidates = num
+    ? await findCandidates({ number: num.number, total: num.total, lang, nameText: '', setCode })
+    : await matchSpecial(/** @type {{ code: string }} */ (special).code, lang, '');
+  const reading = /** @type {import('./ocr.js').Reading} */ ({ num, special, setCode, lang: null, nameText: '', text, engine: 'google' });
+  return {
+    status: candidates.length ? 'found' : 'nomatch',
+    reading,
+    lang,
+    candidates,
+    corrected: null,
+    // Typed by the user: doubtful only when the number fits several cards.
+    uncertain: candidates.length > 1 && !candidates.some((c) => c.codeMatch),
+    stamp: null,
+    ms: performance.now() - t0,
+  };
 }
 
 /**
