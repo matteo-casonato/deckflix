@@ -8,8 +8,12 @@
   import { getSetWithCards } from '../lib/api/tcgdex.js';
   import { settings, toggleCover } from '../lib/stores/settings.svelte.js';
   import { showToast } from '../lib/stores/toast.svelte.js';
-  import { prefetchCards, liveCards } from '../lib/data/catalog.js';
-  import { cheapestPrice, euro, guessImage, printBadge, setProgress } from '../lib/domain/cards.js';
+  import { cachedCards, prefetchCards, liveCards } from '../lib/data/catalog.js';
+  import { LANG_LABELS, cheapestPrice, euro, guessImage, missingFromSet, printBadge, setProgress, standardPrint } from '../lib/domain/cards.js';
+  import { addOneEach } from '../lib/data/collection.js';
+  import Sheet from '../lib/ui/Sheet.svelte';
+  import Picker from '../lib/ui/Picker.svelte';
+  import { langOptions } from '../lib/ui/options.js';
   import { hrefFor } from '../lib/domain/routes.js';
   import { replace } from '../lib/router.svelte.js';
   import { entryPrice } from '../lib/domain/value.js';
@@ -56,11 +60,7 @@
       official = d.cardCount?.official ?? 0;
     });
   });
-  const missingIds = $derived(
-    setCards
-      .filter((c) => /^\d+$/.test(c.localId) && (!official || Number(c.localId) <= official) && !ownedIds.includes(c.id))
-      .map((c) => c.id),
-  );
+  const missingIds = $derived(missingFromSet(setCards, official, ownedIds));
   const missingCards = $derived(liveCards(missingIds, settings.cardLang));
   $effect(() => {
     if (missingIds.length) prefetchCards(missingIds, settings.cardLang);
@@ -77,6 +77,47 @@
     }
     return { total, priced, loaded: missingIds.filter((cid) => $missingCards?.has(cid)).length };
   });
+
+  // ---------- whole set in one tap ----------
+  let completeOpen = $state(false);
+  let completeLang = $state(settings.cardLang);
+  let withSecret = $state(false);
+  let adding = $state(false);
+  /** Every card not owned, secret ones included (offered as an option). */
+  const allMissingIds = $derived(missingFromSet(setCards, official, ownedIds, { secret: true }));
+  const secretCount = $derived(allMissingIds.length - missingIds.length);
+  const toAdd = $derived(withSecret ? allMissingIds : missingIds);
+  /** The print of each card comes from its details: the secret ones are fetched on request. */
+  let prepared = $state(false);
+  $effect(() => {
+    if (!completeOpen) return;
+    prepared = false;
+    prefetchCards(toAdd, settings.cardLang).finally(() => (prepared = true));
+  });
+
+  function openComplete() {
+    completeLang = settings.cardLang;
+    withSecret = false;
+    completeOpen = true;
+  }
+
+  /** Adds one copy of every missing card, each in its standard print, with "Annulla". */
+  async function addAll() {
+    adding = true;
+    try {
+      // Details from the cache, read now: the live list may not have caught up yet.
+      const details = await cachedCards(toAdd, settings.cardLang);
+      const copies = toAdd.map((cardId) => ({ cardId, lang: completeLang, variant: standardPrint(details.get(cardId)) }));
+      const undo = await addOneEach(copies);
+      completeOpen = false;
+      navigator.vibrate?.(30);
+      showToast(`${copies.length} ${copies.length === 1 ? 'carta aggiunta' : 'carte aggiunte'} alla collezione`, undo);
+    } catch {
+      showToast('Non riesco a salvare le carte: riprova');
+    } finally {
+      adding = false;
+    }
+  }
 
   /**
    * Long press on an owned card: it becomes the cover of this set in the Edizioni list.
@@ -159,6 +200,12 @@
     </span>
   </section>
 
+  {#if missingIds.length || allMissingIds.length}
+    <div class="pad complete">
+      <button class="btn" onclick={openComplete}>Ho l’edizione completa</button>
+    </div>
+  {/if}
+
   <div class="pad">
     <Segmented
       label="Mostra"
@@ -179,6 +226,28 @@
       <CardTile {...t.props} onopen={() => setCardSequence(v.shown.map((x) => x.id))} />
     {/each}
   </div>
+  <Sheet open={completeOpen} title="Edizione completa" onclose={() => (completeOpen = false)}>
+    <div class="complete-sheet">
+      <p class="muted">
+        Aggiungo una copia di ogni carta che ti manca, nella sua stampa normale (Near Mint). Le carte che hai già restano come
+        sono; varianti, reverse e condizione le cambi poi dalla scheda della carta.
+      </p>
+      <Picker title="Lingua delle carte" value={completeLang} options={langOptions()} onchange={(l) => (completeLang = l)} />
+      {#if secretCount > 0}
+        <label class="toggle">
+          <span>
+            <strong>Anche le carte segrete</strong>
+            <span class="muted">{secretCount} {secretCount === 1 ? 'carta' : 'carte'} oltre il numero {official}</span>
+          </span>
+          <input class="switch" type="checkbox" role="switch" bind:checked={withSecret} />
+        </label>
+      {/if}
+      <button class="btn primary" disabled={adding || !prepared || !toAdd.length} onclick={addAll}>
+        {adding ? 'Aggiungo…' : !prepared ? 'Preparo le carte…' : `Aggiungi ${toAdd.length} ${toAdd.length === 1 ? 'carta' : 'carte'}`}
+      </button>
+      <p class="muted small">In {LANG_LABELS[completeLang] ?? completeLang}. Subito dopo puoi annullare.</p>
+    </div>
+  </Sheet>
 {:catch}
   <BackHeader fallback={hrefFor('collection', {}, { tab: 'owned' })} />
   <section class="error card">
@@ -188,6 +257,44 @@
 {/await}
 
 <style>
+  .complete {
+    display: grid;
+    margin-bottom: 10px;
+  }
+
+  .complete-sheet {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding-bottom: 8px;
+  }
+
+  .complete-sheet p {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.45;
+  }
+
+  .complete-sheet .small {
+    font-size: 12px;
+    text-align: center;
+  }
+
+  .toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 48px;
+  }
+
+  .toggle > span {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 14px;
+  }
+
   .missing-cost {
     color: var(--accent);
   }

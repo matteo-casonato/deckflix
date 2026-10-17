@@ -258,3 +258,20 @@ describe('reference price field', async () => {
     setReferenceField('trend');
   });
 });
+
+describe('missingFromSet', async () => {
+  const { missingFromSet } = await import('../src/lib/domain/cards.js');
+  const cards = [
+    { id: 's-001', localId: '001' },
+    { id: 's-002', localId: '002' },
+    { id: 's-003', localId: '003' },
+    { id: 's-004', localId: '004' },
+    { id: 's-TG01', localId: 'TG01' },
+  ];
+  it('lists the numbered cards up to the official count that are not owned', () => {
+    expect(missingFromSet(cards, 3, ['s-002'])).toEqual(['s-001', 's-003']);
+  });
+  it('adds secret and lettered cards on request', () => {
+    expect(missingFromSet(cards, 3, ['s-002'], { secret: true })).toEqual(['s-001', 's-003', 's-004', 's-TG01']);
+  });
+});

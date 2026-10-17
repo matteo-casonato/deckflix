@@ -39,6 +39,20 @@ export function cardByNumber(cards, number) {
 }
 
 /**
+ * Cards of a set the user doesn't have, in set order: the numbered ones up to the official
+ * count (what "mancanti" counts), plus with `secret` the ones above it and the lettered ones.
+ * @param {{ id: string, localId: string }[]} cards the set's card list
+ * @param {number} official
+ * @param {Iterable<string>} ownedIds
+ * @param {{ secret?: boolean }} [options]
+ */
+export function missingFromSet(cards, official, ownedIds, { secret = false } = {}) {
+  const owned = new Set(ownedIds);
+  const numbered = (/** @type {{ localId: string }} */ c) => /^\d+$/.test(c.localId) && (!official || Number(c.localId) <= official);
+  return cards.filter((c) => !owned.has(c.id) && (secret || numbered(c))).map((c) => c.id);
+}
+
+/**
  * Completion of a set from the owned collection entries.
  * Cards numbered above the official count (secret rares) count as owned but not towards 100%.
  * @param {{ official: number, cards?: { id: string, localId: string }[] }} set

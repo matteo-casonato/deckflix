@@ -26,6 +26,31 @@ export async function changeCopies(copy, delta) {
 }
 
 /**
+ * Adds one copy of each card in a single write (a whole set at once) and returns the undo.
+ * @param {Copy[]} copies
+ * @returns {Promise<() => Promise<void>>}
+ */
+export async function addOneEach(copies) {
+  const now = Date.now();
+  const befores = await db.transaction('rw', db.collection, async () => {
+    /** @type {{ key: string, before: any }[]} */
+    const out = [];
+    for (const copy of copies) {
+      const key = collectionKey(copy.cardId, copy.lang, copy.variant, copy.condition);
+      const before = await db.collection.get(key);
+      const next = addCopies(before, { ...copy, setId: setIdOf(copy.cardId) }, 1, now);
+      if (next) await db.collection.put(next);
+      out.push({ key, before: before ?? null });
+    }
+    return out;
+  });
+  return () =>
+    db.transaction('rw', db.collection, async () => {
+      for (const { key, before } of befores.reverse()) await restoreEntry(key, before);
+    });
+}
+
+/**
  * Restores an entry to a previous state (undo).
  * @param {string} key
  * @param {import('../db.js').CollectionEntry | null} before

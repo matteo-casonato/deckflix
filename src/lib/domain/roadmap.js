@@ -22,11 +22,6 @@ export const ROADMAP = [
     status: 'next',
   },
   {
-    title: 'Edizione completa con un tocco',
-    text: 'Se hai un’edizione intera, aggiungere tutte le sue carte in una volta dalla pagina dell’edizione, senza scansionarle una per una (con la lingua e “Annulla”).',
-    status: 'next',
-  },
-  {
     title: 'Condividi la tua lista di carte',
     text: 'Mandare a un amico la collezione, i doppioni o i desideri con un link o un file, per organizzare gli scambi.',
     status: 'next',
