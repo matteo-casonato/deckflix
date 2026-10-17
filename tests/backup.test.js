@@ -12,6 +12,8 @@ import {
   remoteIsNewer,
   shouldKeepPrevious,
   summarize,
+  compareData,
+  suggestedVersion,
 } from '../src/lib/domain/backup.js';
 
 const tables = {
@@ -142,5 +144,31 @@ describe('shouldKeepPrevious', () => {
     expect(shouldKeepPrevious(new Date(2026, 9, 15, 8, 0).toISOString(), now)).toBe(false);
     expect(shouldKeepPrevious('not a date', now)).toBe(false);
     expect(shouldKeepPrevious(new Date(2026, 9, 16, 8, 0).toISOString(), now)).toBe(false);
+  });
+});
+
+describe('compareData', () => {
+  const e = (key, qty) => ({ key, cardId: key.split('|')[0], qty, updatedAt: Math.random() });
+  const base = { wishlist: [{ cardId: 'a-1' }], decks: [{ id: 'd1', name: 'Mazzo', cards: [{ cardId: 'a-1', qty: 4 }], updatedAt: 1 }], albums: [] };
+  it('same data with different dates is the same', () => {
+    const d = compareData({ ...base, collection: [e('a-1|it|normal', 2)] }, { ...base, collection: [e('a-1|it|normal', 2)], decks: [{ ...base.decks[0], updatedAt: 9 }] });
+    expect(d.same).toBe(true);
+  });
+  it('counts the copies only on each side', () => {
+    const d = compareData(
+      { ...base, collection: [e('a-1|it|normal', 3), e('a-2|it|normal', 1)] },
+      { ...base, collection: [e('a-1|it|normal', 2), e('a-3|en|holo', 2)] },
+    );
+    expect(d).toMatchObject({ same: false, onlyLocal: 2, onlyRemote: 2, decks: false, wishlist: false });
+    expect(suggestedVersion(d)).toBeNull();
+  });
+  it('suggests the version that has everything and more', () => {
+    const d = compareData({ ...base, collection: [e('a-1|it|normal', 2)] }, { ...base, collection: [e('a-1|it|normal', 3)] });
+    expect(suggestedVersion(d)).toBe('remote');
+  });
+  it('notices decks and wishlist changes', () => {
+    const d = compareData({ ...base, collection: [] }, { ...base, collection: [], wishlist: [], decks: [] });
+    expect(d).toMatchObject({ same: false, decks: true, wishlist: true });
+    expect(suggestedVersion(d)).toBeNull();
   });
 });

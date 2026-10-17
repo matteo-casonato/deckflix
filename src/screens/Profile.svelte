@@ -73,7 +73,7 @@
 
   /** @type {{ images: number, usageMb: number | null } | null} */
 
-  /** @type {'restore' | 'signout' | 'wipe' | 'images' | null} */
+  /** @type {'restore' | 'restorePrev' | 'restoreReplaced' | 'signout' | 'wipe' | 'images' | null} */
   let confirm = $state(null);
 
   /** Interactive when Google needs a tap to renew access. */
@@ -344,8 +344,22 @@
       <strong>Backup del giorno prima</strong>
       <span>La copia che Drive conserva dal giorno precedente: serve ad annullare una giornata sbagliata, come un ripristino o una cancellazione per errore.</span>
     </button>
+    <button class="choice" onclick={() => ((restoreSheet = false), (confirm = 'restoreReplaced'))}>
+      <strong>Versione scartata</strong>
+      <span>Quella che non hai scelto l’ultima volta che l’app ti ha chiesto quale collezione tenere.</span>
+    </button>
   </div>
 </Sheet>
+
+<ConfirmDialog
+  open={confirm === 'restoreReplaced'}
+  title="Ripristinare la versione scartata?"
+  text="I dati di questo telefono verranno sostituiti con la versione che non avevi scelto. Le modifiche fatte dopo andranno perse."
+  confirmLabel="Ripristina"
+  danger
+  onconfirm={() => restoreFromDrive({ replaced: true })}
+  onclose={() => (confirm = null)}
+/>
 
 <ConfirmDialog
   open={confirm === 'restorePrev'}

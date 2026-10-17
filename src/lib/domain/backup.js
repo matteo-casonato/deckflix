@@ -4,6 +4,8 @@
 export const BACKUP_FILE = 'deckflix-backup.json';
 /** Safety copy: the backup as it was at the end of the previous day it was saved. */
 export const BACKUP_PREV_FILE = 'deckflix-backup-prev.json';
+/** The version not chosen when this phone and Drive differed: nothing is lost by choosing. */
+export const BACKUP_REPLACED_FILE = 'deckflix-backup-replaced.json';
 // v2: albums. An older app refuses a v2 backup instead of dropping the albums on its next save.
 export const SCHEMA_VERSION = 2;
 
@@ -203,3 +205,56 @@ export function showSignInReminder({ signedIn, configured, copies, lastExportAt,
 
 /** How long "Più tardi" hides the sign-in invite. */
 export const REMINDER_SNOOZE_MS = 7 * 86_400_000;
+
+/**
+ * @typedef {{ collection: any[], wishlist: any[], decks: any[], albums: any[] }} ComparableData
+ */
+
+/** Copies per collection key. @param {any[]} collection */
+const copiesByKey = (collection) => {
+  /** @type {Map<string, number>} */
+  const m = new Map();
+  for (const e of collection) m.set(e.key, (m.get(e.key) ?? 0) + (Number(e.qty) || 0));
+  return m;
+};
+
+/** Stable text of a list of decks or albums (name and cards), whatever the order. @param {any[]} list */
+const listsText = (list) =>
+  JSON.stringify(
+    list
+      .map((x) => [x.id, x.name ?? '', (x.cards ?? []).map((/** @type {any} */ c) => `${c.cardId}:${c.qty ?? 1}`).sort()])
+      .sort((a, b) => String(a[0]).localeCompare(String(b[0]))),
+  );
+
+/**
+ * How two versions of the data differ: copies only on one side (per card, language, print and
+ * condition), and whether decks, wishlist or albums differ. `same` when nothing the user sees
+ * changes (dates and price history don't count).
+ * @param {ComparableData} local
+ * @param {ComparableData} remote
+ */
+export function compareData(local, remote) {
+  const a = copiesByKey(local.collection);
+  const b = copiesByKey(remote.collection);
+  let onlyLocal = 0;
+  let onlyRemote = 0;
+  for (const [key, qty] of a) onlyLocal += Math.max(0, qty - (b.get(key) ?? 0));
+  for (const [key, qty] of b) onlyRemote += Math.max(0, qty - (a.get(key) ?? 0));
+  const wish = (/** @type {any[]} */ w) => JSON.stringify(w.map((x) => x.cardId).sort());
+  const decks = listsText(local.decks) !== listsText(remote.decks);
+  const wishlist = wish(local.wishlist) !== wish(remote.wishlist);
+  const albums = listsText(local.albums ?? []) !== listsText(remote.albums ?? []);
+  return { same: !onlyLocal && !onlyRemote && !decks && !wishlist && !albums, onlyLocal, onlyRemote, decks, wishlist, albums };
+}
+
+/**
+ * The version to suggest: the one that has everything the other has and more cards. Null when
+ * each has cards the other lacks, or only decks and lists differ (the user knows better).
+ * @param {ReturnType<typeof compareData>} diff
+ * @returns {'local' | 'remote' | null}
+ */
+export function suggestedVersion(diff) {
+  if (diff.onlyLocal > 0 && diff.onlyRemote === 0) return 'local';
+  if (diff.onlyRemote > 0 && diff.onlyLocal === 0) return 'remote';
+  return null;
+}

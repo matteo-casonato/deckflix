@@ -9,6 +9,8 @@ import { account } from '../stores/account.svelte.js';
 import {
   BACKUP_FILE,
   BACKUP_PREV_FILE,
+  BACKUP_REPLACED_FILE,
+  compareData,
   shouldKeepPrevious,
   LOCAL_ONLY_SETTINGS,
   buildBackup,
@@ -247,13 +249,20 @@ export async function backupNow({ interactive = false, force = false } = {}) {
     const lastRemoteBackupAt = await getSetting('lastRemoteBackupAt');
     if (!force && file && remoteIsNewer({ remoteModifiedTime: file.modifiedTime, lastRemoteBackupAt })) {
       const remote = parseBackup(await drive.download(file.id));
-      account.choice = {
-        local: summarize({ ...(await readTables()), exportedAt: new Date().toISOString() }),
-        remote: summarize(remote),
-        remoteFile: file,
-        reason: 'newer-on-drive',
-      };
-      return;
+      const tables = await readTables();
+      const diff = compareData(tables, remote);
+      // Same cards, decks and lists (e.g. a save that reached Drive without this phone getting
+      // the answer): nothing to choose, carry on.
+      if (!diff.same) {
+        account.choice = {
+          local: summarize({ ...tables, exportedAt: new Date().toISOString() }),
+          remote: summarize(remote),
+          remoteFile: file,
+          reason: 'newer-on-drive',
+          diff,
+        };
+        return;
+      }
     }
     if (file && shouldKeepPrevious(file.modifiedTime, Date.now())) await keepPrevious(file.id);
     const backup = buildBackup(await readTables(), { now: new Date(), device: deviceName() });
@@ -325,8 +334,15 @@ async function afterDriveAccess() {
       account.signIn = { step: 'done', progress: 1, remote: remoteSummary };
       return;
     }
+    const diff = compareData(await readTables(), remote);
+    if (diff.same) {
+      // The same collection on both sides (signing in again on the same phone): no question.
+      await setSetting('lastRemoteBackupAt', file.modifiedTime);
+      account.signIn = { step: 'done', progress: 1, remote: remoteSummary };
+      return;
+    }
     account.signIn = null;
-    account.choice = { local, remote: summarize(remote), remoteFile: file, reason: 'first-sign-in' };
+    account.choice = { local, remote: summarize(remote), remoteFile: file, reason: 'first-sign-in', diff };
   } catch (err) {
     account.signIn = null;
     handleError(err);
@@ -372,6 +388,8 @@ export async function resolveChoice(keep) {
   if (keep === 'remote') {
     account.signIn = { step: 'restoring', progress: 0.5 };
     try {
+      // This phone's version stays on Drive, to get it back from Profilo › Ripristina da Drive.
+      await keepReplaced(buildBackup(await readTables(), { now: new Date(), device: deviceName() }));
       const remote = parseBackup(await drive.download(choice.remoteFile.id));
       await importBackup(remote, choice.remoteFile.modifiedTime);
       account.signIn = null;
@@ -383,21 +401,41 @@ export async function resolveChoice(keep) {
   }
   account.signIn = null;
   account.pending = true;
+  // Drive's version stays there as the replaced copy before this phone's overwrites it.
+  try {
+    await keepReplaced(await drive.download(choice.remoteFile.id));
+  } catch (err) {
+    console.warn('Replaced copy not saved', err);
+  }
   await backupNow({ force: true });
+}
+
+/**
+ * Saves the version not chosen in a choice (deckflix-backup-replaced.json).
+ * @param {any} backup
+ */
+async function keepReplaced(backup) {
+  const old = await drive.findFile(BACKUP_REPLACED_FILE);
+  await drive.upload(BACKUP_REPLACED_FILE, backup, old?.id ?? null);
 }
 
 /** Explicit "Ripristina da Drive" from the Profile. */
 /**
  * Replaces this phone's data with the backup on Drive.
- * @param {{ previous?: boolean }} [o] previous: the copy saved at the first backup of the day
- *   (deckflix-backup-prev.json), to undo a bad day (wrong restore, mass deletion).
+ * @param {{ previous?: boolean, replaced?: boolean }} [o] previous: the copy saved at the first
+ *   backup of the day (deckflix-backup-prev.json), to undo a bad day (wrong restore, mass
+ *   deletion); replaced: the version not chosen the last time this phone and Drive differed.
  */
-export async function restoreFromDrive({ previous = false } = {}) {
+export async function restoreFromDrive({ previous = false, replaced = false } = {}) {
   try {
     await requestToken({ interactive: true, hint: account.user?.email });
-    const file = await drive.findFile(previous ? BACKUP_PREV_FILE : BACKUP_FILE);
+    const file = await drive.findFile(replaced ? BACKUP_REPLACED_FILE : previous ? BACKUP_PREV_FILE : BACKUP_FILE);
     if (!file) {
-      account.error = previous ? 'Su Google Drive non c’è ancora una copia del giorno precedente' : 'Su Google Drive non c’è ancora un backup';
+      account.error = replaced
+        ? 'Su Google Drive non c’è una versione scartata: non hai mai dovuto scegliere tra due versioni'
+        : previous
+          ? 'Su Google Drive non c’è ancora una copia del giorno precedente'
+          : 'Su Google Drive non c’è ancora un backup';
       return;
     }
     account.signIn = { step: 'restoring', progress: 0.5 };

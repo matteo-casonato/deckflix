@@ -4,7 +4,7 @@
 /**
  * @typedef {{ email: string, name: string, givenName: string, picture: string | null }} User
  * @typedef {import('../domain/backup.js').BackupSummary} Summary
- * @typedef {{ local: Summary, remote: Summary, remoteFile: import('../sync/drive.js').DriveFile, reason: 'first-sign-in' | 'newer-on-drive' }} Choice
+ * @typedef {{ local: Summary, remote: Summary, remoteFile: import('../sync/drive.js').DriveFile, reason: 'first-sign-in' | 'newer-on-drive', diff: ReturnType<typeof import('../domain/backup.js').compareData> }} Choice
  */
 
 export const account = $state({
