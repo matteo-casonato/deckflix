@@ -181,7 +181,7 @@ export function variantBadge(variantKey) {
 
 // Series folders of TCGdex assets, matched on the start of the set id (longest first).
 const SERIES = ['swsh', 'hgss', 'ecard', 'base', 'neo', 'gym', 'pop', 'sv', 'sm', 'xy', 'bw', 'me', 'dp', 'pl', 'ex', 'lc'];
-const SERIES_OF_SET = /** @type {Record<string, string>} */ ({ cel25: 'swsh', cel25c: 'swsh', svp: 'sv', mep: 'me' });
+const SERIES_OF_SET = /** @type {Record<string, string>} */ ({ cel25: 'swsh', svp: 'sv', mep: 'me' });
 
 /**
  * Best guess of a card's image when TCGdex has none in its data: the asset is often on the
@@ -224,7 +224,56 @@ const OTHER_IMAGES = {
     const cc = CLASSIC_30TH[Number(localId) - 1];
     return cc ? `${LIMITLESS}/30C/30C_CC${cc}_R_EN` : null;
   },
+  // Celebrations Classic Collection: same order on both sites (CC001 Blastoise = CC1).
+  cel25cc: (localId) => {
+    const n = Number(localId.replace(/^CC/, ''));
+    return n >= 1 && n <= 25 ? `${LIMITLESS}/CEL/CEL_CC${n}_R_EN` : null;
+  },
 };
+
+/**
+ * Sets Limitless TCG has with the same numbering as TCGdex (names compared on 17/10/2026):
+ * energies, promos and Celebrations, where TCGdex lacks some or all of the files.
+ */
+const LIMITLESS_CODES = /** @type {Record<string, string>} */ ({
+  sve: 'SVE',
+  mee: 'MEE',
+  cel25: 'CEL',
+  mep: 'MEP',
+  svp: 'SVP',
+  swshp: 'SP',
+  smp: 'SMP',
+  xyp: 'XYP',
+  bwp: 'BWP',
+  hgssp: 'HSP',
+  dpp: 'DPP',
+  dc1: 'DCR',
+  '30th': '30C',
+});
+
+/**
+ * Limitless image base of a card, or null when Limitless doesn't have its set. Numbers lose
+ * their letters and get three digits (SWSH307 → SP_307, 1 → DCR_001); single letters stay (30C_R).
+ * @param {string} setId
+ * @param {string} localId
+ */
+export function limitlessImage(setId, localId) {
+  const code = LIMITLESS_CODES[setId];
+  if (!code) return null;
+  const digits = localId.match(/(\d+)$/)?.[1];
+  const num = digits ? digits.replace(/^0+(?=\d)/, '').padStart(3, '0') : /^[A-Z]$/.test(localId) ? localId : null;
+  return num ? `${LIMITLESS}/${code}/${code}_${num}_R_EN` : null;
+}
+
+/**
+ * Last resort for a TCGdex image base whose file is missing (30th-R, dc1-1): the same card on
+ * Limitless, from the set and number at the end of the URL.
+ * @param {string} base e.g. https://assets.tcgdex.net/en/me/30th/R
+ */
+export function limitlessFallback(base) {
+  const [setId, localId] = base.split('/').slice(-2);
+  return setId && localId ? limitlessImage(setId, localId) : null;
+}
 
 /**
  * Image URL from an image base (TCGdex's `image`, or guessImage's): TCGdex serves

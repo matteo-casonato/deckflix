@@ -3,7 +3,7 @@
 import { liveQuery } from 'dexie';
 import { db } from '../db.js';
 import { guessImage, setIdOf } from '../domain/cards.js';
-import { getCard, getSet, getSets } from '../api/tcgdex.js';
+import { getCard, getSetWithCards, getSets } from '../api/tcgdex.js';
 
 /**
  * Sets by id in `lang`, completed with the English list for sets not translated.
@@ -94,8 +94,7 @@ export async function prefetchCards(cardIds, lang) {
 export async function setDetails(setIds, lang) {
   const rows = await Promise.all(
     [...new Set(setIds)].map((id) =>
-      getSet(lang, id)
-        .catch(() => getSet('en', id))
+      getSetWithCards(lang, id)
         .then((r) => /** @type {[string, any]} */ ([id, r.data]))
         .catch(() => null),
     ),

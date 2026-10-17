@@ -9,6 +9,9 @@ import {
   pricesDate,
   setIdOf,
   setProgress,
+  guessImage,
+  limitlessFallback,
+  limitlessImage,
 } from '../src/lib/domain/cards.js';
 
 const fixture = (path) => JSON.parse(readFileSync(new URL(`./fixtures/tcgdex/${path}.json`, import.meta.url), 'utf8'));
@@ -186,5 +189,27 @@ describe('standardPrint and printBadge', async () => {
   it('without card data only shows unambiguous tags', () => {
     expect(printBadge(null, 'holo')).toBe(null);
     expect(printBadge(null, 'reverse')).toBe('Rev');
+  });
+});
+
+describe('limitlessImage', () => {
+  const L = 'https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/tpci';
+  it('pads numbers and drops their letters', () => {
+    expect(limitlessImage('sve', '001')).toBe(`${L}/SVE/SVE_001_R_EN`);
+    expect(limitlessImage('swshp', 'SWSH307')).toBe(`${L}/SP/SP_307_R_EN`);
+    expect(limitlessImage('dc1', '1')).toBe(`${L}/DCR/DCR_001_R_EN`);
+  });
+  it('keeps single letters and skips other names and sets', () => {
+    expect(limitlessImage('30th', 'R')).toBe(`${L}/30C/30C_R_R_EN`);
+    expect(limitlessImage('mep', 'Museum')).toBeNull();
+    expect(limitlessImage('sv03.5', '001')).toBeNull();
+  });
+  it('reads set and number from a TCGdex image base', () => {
+    expect(limitlessFallback('https://assets.tcgdex.net/en/me/30th/R')).toBe(`${L}/30C/30C_R_R_EN`);
+  });
+  it('comes after TCGdex, except for the classic collections TCGdex has no files of', () => {
+    expect(guessImage('cel25-25', '25')).toBe('https://assets.tcgdex.net/en/swsh/cel25/25');
+    expect(limitlessFallback('https://assets.tcgdex.net/en/swsh/cel25/25')).toBe(`${L}/CEL/CEL_025_R_EN`);
+    expect(guessImage('cel25cc-CC001', 'CC001')).toBe(`${L}/CEL/CEL_CC1_R_EN`);
   });
 });

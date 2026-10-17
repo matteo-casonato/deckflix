@@ -5,7 +5,7 @@
   import { liveQuery } from 'dexie';
   import { KeyboardIcon } from '@hugeicons/core-free-icons';
   import { db } from '../lib/db.js';
-  import { getSet } from '../lib/api/tcgdex.js';
+  import { getSetWithCards } from '../lib/api/tcgdex.js';
   import { settings, toggleCover } from '../lib/stores/settings.svelte.js';
   import { showToast } from '../lib/stores/toast.svelte.js';
   import { prefetchCards, liveCards } from '../lib/data/catalog.js';
@@ -31,9 +31,7 @@
   /** @type {Promise<any>} */
   let request = $state(new Promise(() => {}));
   $effect(() => {
-    request = getSet(settings.cardLang, id)
-      .catch(() => getSet('en', id))
-      .then((r) => r.data);
+    request = getSetWithCards(settings.cardLang, id).then((r) => r.data);
   });
 
   const entries = $derived(liveQuery(() => db.collection.where('setId').equals(id).toArray()));
@@ -185,7 +183,7 @@
   <BackHeader fallback={hrefFor('collection', {}, { tab: 'owned' })} />
   <section class="error card">
     <p>Non riesco a caricare questa edizione. Se sei offline, riprova quando torna la rete.</p>
-    <button class="btn" onclick={() => (request = getSet(settings.cardLang, id).then((r) => r.data))}>Riprova</button>
+    <button class="btn" onclick={() => (request = getSetWithCards(settings.cardLang, id).then((r) => r.data))}>Riprova</button>
   </section>
 {/await}
 

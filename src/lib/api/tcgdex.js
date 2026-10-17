@@ -113,6 +113,24 @@ export const getSets = (lang) => getCachedPath(`/${lang}/sets`);
 /** @param {string} lang @param {string} setId */
 export const getSet = (lang, setId) => getCachedPath(`/${lang}/sets/${encodeURIComponent(setId)}`);
 
+/**
+ * A set with its cards in `lang`, else in English: some sets are missing in a language, others
+ * exist with an empty card list (Italian "Gran Festa Collezione Classica", checked 17/10/2026).
+ * The localized name is kept when there is one.
+ * @param {string} lang
+ * @param {string} setId
+ * @returns {Promise<Result<any>>}
+ */
+export async function getSetWithCards(lang, setId) {
+  const local = await getSet(lang, setId).catch((err) => {
+    if (lang === 'en') throw err;
+    return null;
+  });
+  if (local?.data?.cards?.length || lang === 'en') return /** @type {Result<any>} */ (local);
+  const en = await getSet('en', setId);
+  return local?.data?.name ? { ...en, data: { ...en.data, name: local.data.name } } : en;
+}
+
 /** @param {string} lang */
 export const getSeries = (lang) => getCachedPath(`/${lang}/series`);
 

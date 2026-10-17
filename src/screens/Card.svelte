@@ -14,7 +14,7 @@
   import { toggleWish } from '../lib/data/actions.js';
   import { listVariants, variantLabelOf } from '../lib/domain/variants.js';
   import { CONDITIONS, DEFAULT_CONDITION, collectionKey, conditionFactor, conditionLabel } from '../lib/domain/collection.js';
-  import { LANG_LABELS, cardmarketUrl, euro, guessImage, imageAt, pricesDate, setIdOf } from '../lib/domain/cards.js';
+  import { LANG_LABELS, cardmarketUrl, euro, guessImage, imageAt, limitlessFallback, pricesDate, setIdOf } from '../lib/domain/cards.js';
   import { hrefFor } from '../lib/domain/routes.js';
   import { replace } from '../lib/router.svelte.js';
   import { cardSequence } from '../lib/stores/cardSequence.svelte.js';
@@ -126,6 +126,14 @@
   let confirmMove = $state(false);
   /** The (possibly guessed) image did not load: show the placeholder. */
   let artFailed = $state(false);
+  /** Limitless copy of the picture, when the TCGdex file is missing (30th-R). */
+  let artSrc = $state(/** @type {string | null} */ (null));
+  /** @param {string} url */
+  function artError(url) {
+    const alt = artSrc ? null : imageAt(limitlessFallback(url.replace(/\/(high|low)\.webp$/, '')), 'high');
+    if (alt) artSrc = alt;
+    else artFailed = true;
+  }
   /** The set symbol (from pokesymbols.com) did not load: just the name. */
   let symbolFailed = $state(false);
   let picker = $state(false);
@@ -235,7 +243,7 @@
           </button>
         {/if}
         {#if r.image && !artFailed}
-          <img class="art" onerror={() => (artFailed = true)} src={r.image} alt={`${card.name}, carta ${card.localId} di ${card.set?.name}`} />
+          <img class="art" onerror={() => artError(r.image)} src={artSrc ?? r.image} alt={`${card.name}, carta ${card.localId} di ${card.set?.name}`} />
         {:else}
           <div class="art placeholder"><span>{card.name}</span><span class="num">{card.localId}</span></div>
         {/if}

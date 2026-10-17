@@ -4,7 +4,7 @@
   // ("SVI 25", "25/165", "16/107", "TG25", "swsh302"), no set needed. For a pile of cards from
   // the same set, fix the set and type only the numbers ("25", "26"…). Enter adds the default
   // print and clears the field for the next card.
-  import { cardsByNumber, getCard, getSet } from '../lib/api/tcgdex.js';
+  import { cardsByNumber, getCard, getSetWithCards } from '../lib/api/tcgdex.js';
   import Picker from '../lib/ui/Picker.svelte';
   import { langOptions } from '../lib/ui/options.js';
   import { settings, rememberSet } from '../lib/stores/settings.svelte.js';
@@ -47,8 +47,7 @@
     setError = false;
     replace(hrefFor('quick', {}, { set: id || null }));
     if (!id) return;
-    getSet(settings.cardLang, id)
-      .catch(() => getSet('en', id))
+    getSetWithCards(settings.cardLang, id)
       .then((r) => (set = r.data))
       .catch(() => (setError = true));
   });
@@ -91,7 +90,7 @@
         let list = [];
         for (const sub of [`${id}tg`, `${id}gg`]) {
           if (!sets.has(sub)) continue;
-          const r = await getSet(settings.cardLang, sub).catch(() => getSet('en', sub)).catch(() => null);
+          const r = await getSetWithCards(settings.cardLang, sub).catch(() => null);
           const c = r && cardByNumber(r.data.cards ?? [], p.number);
           if (c) list = [c];
         }
