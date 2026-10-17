@@ -70,13 +70,29 @@ const humanize = (s) => s.replace(/-/g, ' ').replace(/^./, (c) => c.toUpperCase(
  * }} VariantOption
  */
 
+/** @typedef {'low' | 'trend'} PriceField */
+
+/**
+ * Cardmarket field used as the reference price everywhere (value, prints, wishlist, CSV):
+ * `low`, the cheapest offer, or `trend`. Set from the user's preference (settings.priceField);
+ * screens are rebuilt when it changes.
+ */
+let referenceField = /** @type {PriceField} */ ('trend');
+
+/** @param {PriceField} field */
+export function setReferenceField(field) {
+  referenceField = field === 'low' ? 'low' : 'trend';
+}
+
+export const currentReferenceField = () => referenceField;
+
 /**
  * Price of one variant: holo and reverse prints sharing the base product use the
- * `-holo` fields, prints with their own product (stamps, special foils) use `trend`.
+ * `-holo` fields, prints with their own product (stamps, special foils) the plain ones.
  * @param {any} v variants_detailed entry
  * @param {'trend' | 'avg' | 'low'} [field]
  */
-export function variantPrice(v, field = 'trend') {
+export function variantPrice(v, field = referenceField) {
   const cm = v?.pricing?.cardmarket;
   if (!cm) return null;
   const holo = cm[`${field}-holo`];
@@ -91,9 +107,10 @@ export function variantPrice(v, field = 'trend') {
  * into a list the user can pick from. `key` is stable across languages and is what
  * the collection stores next to cardId and lang.
  * @param {any} card full TCGdex card
+ * @param {'trend' | 'avg' | 'low'} [field] price field (default: the reference one)
  * @returns {VariantOption[]}
  */
-export function listVariants(card) {
+export function listVariants(card, field = referenceField) {
   const detailed = Array.isArray(card?.variants_detailed) ? card.variants_detailed : [];
   if (detailed.length) {
     return detailed.map((/** @type {any} */ v) => {
@@ -112,7 +129,7 @@ export function listVariants(card) {
         finish: finishKey,
         stamps,
         foil,
-        price: variantPrice(v),
+        price: variantPrice(v, field),
         // Cardmarket product of this print (stamped prints have their own).
         productId: v.pricing?.cardmarket?.idProduct ?? null,
       };

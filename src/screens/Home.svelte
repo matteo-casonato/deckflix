@@ -12,7 +12,7 @@
   import { isConfigured } from '../lib/sync/sync.js';
   import { REMINDER_SNOOZE_MS, showSignInReminder } from '../lib/domain/backup.js';
   import { cardImage } from '../lib/api/tcgdex.js';
-  import { collectionValue, periodChange } from '../lib/domain/value.js';
+  import { collectionValue, periodChange, snapshotSeries } from '../lib/domain/value.js';
   import { ownedTiles } from '../lib/domain/albums.js';
   import { priceMovers, setInProgress } from '../lib/domain/home.js';
   import { setLogoUrl, setSymbolUrl } from '../lib/domain/setSymbols.js';
@@ -44,7 +44,7 @@
   // Value from the cached prices (App records the daily snapshot).
   const value = $derived($entries && $cards ? collectionValue($entries, $cards, settings.conditionFactors) : null);
   const snapshots = liveQuery(() => db.priceSnapshots.toArray());
-  const trend = $derived(periodChange($snapshots ?? [], 30, Date.now()));
+  const trend = $derived(periodChange(snapshotSeries($snapshots ?? [], settings.priceField), 30, Date.now()));
 
   const tiles = $derived($entries && $cards ? ownedTiles($entries, $cards, settings.conditionFactors) : []);
   const movers = $derived($cards ? priceMovers(tiles, $cards) : { up: [], down: [] });

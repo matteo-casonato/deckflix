@@ -18,11 +18,11 @@ describe('toCsv', () => {
   it('writes a BOM, the selected columns in fixed order and CRLF lines', () => {
     const csv = toCsv([row, { ...row, name: 'Ninetales; d\'Alola', price: null }], ['qty', 'name', 'price']);
     expect(csv.startsWith('﻿')).toBe(true);
-    expect(csv.slice(1).split('\r\n')).toEqual(['nome;quantita;prezzo_trend', 'Pikachu;2;1,2', '"Ninetales; d\'Alola";2;', '']);
+    expect(csv.slice(1).split('\r\n')).toEqual(['nome;quantita;prezzo', 'Pikachu;2;1,2', '"Ninetales; d\'Alola";2;', '']);
   });
 
   it('rounds prices to cents and can skip the BOM for the preview', () => {
-    expect(toCsv([{ ...row, price: 4.199999 }], ['price'], { bom: false })).toBe('prezzo_trend\r\n4,2\r\n');
+    expect(toCsv([{ ...row, price: 4.199999 }], ['price'], { bom: false })).toBe('prezzo\r\n4,2\r\n');
   });
 });
 

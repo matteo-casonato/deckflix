@@ -148,9 +148,9 @@ Energy: 10
 
 ### 4.3 Valore e statistiche
 
-- Prezzo di riferimento configurabile (predefinito `trend`), preso dalla voce di `variants_detailed` della copia: per Reverse e Olografica che condividono il prodotto base si usa il campo `-holo` (es. `trend-holo`) se maggiore di zero; per le stampe con un prodotto proprio (timbri, foil speciali) si usa `trend`. Se la voce non ha prezzi, ripiego sul `pricing` della carta.
+- Prezzo di riferimento scelto in Qualità e prezzi (`settings.priceField`, nel backup): **`low`, l'offerta più bassa (predefinito dal 17/10/2026, su richiesta dell'utente)** oppure `trend`. Si prende dalla voce di `variants_detailed` della copia: per Reverse e Olografica che condividono il prodotto base si usa il campo `-holo` (es. `low-holo`) se maggiore di zero; per le stampe con un prodotto proprio (timbri, foil speciali) il campo semplice. Se la voce non ha prezzi, ripiego sul `pricing` della carta. Vale per valore, edizioni, raccolte, statistiche, desideri, deck e CSV (colonna `prezzo`); cambiando scelta la schermata si ricostruisce. Attenzione: `low` è l'offerta più economica di qualsiasi lingua e condizione, spesso una copia rovinata, e la percentuale per condizione si applica comunque.
 - Valore della collezione = somma di `prezzo × qty`.
-- Al primo avvio della giornata si salva un'istantanea del valore totale.
+- Al primo avvio della giornata si salva un'istantanea del valore totale, con tutti e due i prezzi (`totalValue` con la tendenza, `lowValue` con il più basso; stesso per lo storico delle carte, `price` e `low`): grafici e variazioni usano solo i valori del prezzo scelto, quindi lo storico del prezzo più basso parte dal 17/10/2026. La scheda carta mostra anche l'offerta più bassa accanto alle medie.
 - La data di aggiornamento dei prezzi è sempre visibile vicino ai valori ("Prezzi di oggi", "Prezzi del 12/10"); se i dati in cache hanno più di 3 giorni, segnalarlo.
 
 ### 4.4 Protezione dei dati sul dispositivo

@@ -1,7 +1,7 @@
 // @ts-check
 // Pure helpers about cards, sets and prices used by the collection screens.
 import { normalizeNumber } from './searchQuery.js';
-import { listVariants } from './variants.js';
+import { currentReferenceField, listVariants } from './variants.js';
 
 /**
  * Set id from a TCGdex card id: "sv03.5-025" → "sv03.5", "30th-c-001" → "30th-c".
@@ -68,16 +68,17 @@ export function setProgress(set, entries) {
 
 /**
  * Reference price of one copy (SPEC § 4.3): the price of its print in variants_detailed,
- * falling back to the card's pricing (`-holo` for holo and reverse).
+ * falling back to the card's pricing (`-holo` for holo and reverse). The field is the user's
+ * choice (lowest offer or trend) unless given.
  * @param {any} card full TCGdex card
  * @param {string} variantKey e.g. "normal", "reverse", "holo+stamp-set-logo"
  * @param {'trend' | 'avg' | 'low'} [field]
  * @returns {number | null}
  */
-export function copyPrice(card, variantKey, field = 'trend') {
+export function copyPrice(card, variantKey, field = currentReferenceField()) {
   if (!card) return null;
-  const variant = listVariants(card).find((v) => v.key === variantKey);
-  if (variant?.price != null && field === 'trend') return variant.price;
+  const variant = listVariants(card, field).find((v) => v.key === variantKey);
+  if (variant?.price != null) return variant.price;
   const cm = card.pricing?.cardmarket;
   if (!cm) return null;
   const foil = /^(reverse|holo)/.test(variantKey);

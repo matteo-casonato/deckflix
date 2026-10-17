@@ -8,7 +8,7 @@
   import { settings } from '../../lib/stores/settings.svelte.js';
   import { recordTodaySnapshot, valuedCollection } from '../../lib/data/value.js';
   import { setsMap } from '../../lib/data/catalog.js';
-  import { PERIODS, collectionStats, periodChange } from '../../lib/domain/value.js';
+  import { PERIODS, collectionStats, periodChange, snapshotSeries } from '../../lib/domain/value.js';
   import { LANG_LABELS, euro, pricesDate, printBadge, setIdOf } from '../../lib/domain/cards.js';
   import { hrefFor } from '../../lib/domain/routes.js';
   import { replace } from '../../lib/router.svelte.js';
@@ -19,7 +19,7 @@
 
   const period = $derived(PERIODS.find(([k]) => k === query.period) ?? PERIODS[1]);
   const snapshots = liveQuery(() => db.priceSnapshots.toArray());
-  const change = $derived(periodChange($snapshots ?? [], period[2], Date.now()));
+  const change = $derived(periodChange(snapshotSeries($snapshots ?? [], settings.priceField), period[2], Date.now()));
 
   /** @type {Awaited<ReturnType<typeof valuedCollection>> | null} */
   let data = $state(null);

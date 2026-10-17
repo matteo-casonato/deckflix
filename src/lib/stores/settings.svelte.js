@@ -1,6 +1,7 @@
 // @ts-check
 // User preferences (synced to Drive with the backup) and device facts (not synced).
 import { db } from '../db.js';
+import { setReferenceField } from '../domain/variants.js';
 
 export const settings = $state({
   /** Language used to show cards and search (TCGdex lang). */
@@ -19,6 +20,9 @@ export const settings = $state({
   /** Share of the Cardmarket price by condition, in % (estimate; see Qualità e prezzi). */
   /** @type {Record<string, number>} */
   conditionFactors: { MT: 110, NM: 100, EX: 85, GD: 70, LP: 60, PL: 45, PO: 30 },
+  /** Reference price: Cardmarket's lowest offer ('low') or its trend ('trend'). */
+  /** @type {import('../domain/variants.js').PriceField} */
+  priceField: 'low',
   /** Home city for "Tornei vicino a te" (position from OpenStreetMap or the phone). */
   /** @type {import('../domain/players.js').HomePlace | null} */
   homePlace: null,
@@ -31,13 +35,16 @@ export const settings = $state({
   persisted: null,
 });
 
-const SYNCED = /** @type {const} */ (['cardLang', 'recentSets', 'missingImages', 'players', 'covers', 'conditionFactors', 'homePlace', 'eventRadius', 'setupDone']);
+setReferenceField(settings.priceField);
+
+const SYNCED = /** @type {const} */ (['cardLang', 'recentSets', 'missingImages', 'players', 'covers', 'conditionFactors', 'priceField', 'homePlace', 'eventRadius', 'setupDone']);
 
 export async function loadSettings() {
   const rows = await db.settings.bulkGet([...SYNCED]);
   rows.forEach((row, i) => {
     if (row) /** @type {any} */ (settings)[SYNCED[i]] = row.value;
   });
+  setReferenceField(settings.priceField);
   // SPEC § 4.4: ask the browser not to clear the local data when space runs low.
   try {
     settings.persisted = (await navigator.storage?.persisted?.()) || (await navigator.storage?.persist?.()) || false;
@@ -53,6 +60,7 @@ export async function loadSettings() {
  */
 export async function setSetting(key, value) {
   /** @type {any} */ (settings)[key] = value;
+  if (key === 'priceField') setReferenceField(/** @type {any} */ (value));
   await db.settings.put({ key, value: $state.snapshot(value) });
 }
 

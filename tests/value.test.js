@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { collectionStats, collectionValue, dayKey, periodChange } from '../src/lib/domain/value.js';
+import { collectionStats, collectionValue, dayKey, periodChange, snapshotSeries } from '../src/lib/domain/value.js';
 
 const card = (o) => ({ pricing: { cardmarket: { trend: 1, 'trend-holo': 3, avg7: 1, avg30: 1, ...o.cm } }, rarity: 'Comune', ...o });
 const cards = new Map([
@@ -76,5 +76,19 @@ describe('entryPrice and condition factors', async () => {
   });
   it('applies to the collection value', () => {
     expect(collectionValue([{ ...e('b', 2), condition: 'EX' }], cards).total).toBe(17);
+  });
+});
+
+describe('snapshotSeries', () => {
+  const snaps = [
+    { date: '2026-10-15', totalValue: 100 },
+    { date: '2026-10-16', totalValue: 102 },
+    { date: '2026-10-17', totalValue: 104, lowValue: 70 },
+  ];
+  it('keeps the trend values as they are', () => {
+    expect(snapshotSeries(snaps, 'trend')).toBe(snaps);
+  });
+  it('uses only the days with a lowest-price value, never mixing the two', () => {
+    expect(snapshotSeries(snaps, 'low')).toEqual([{ date: '2026-10-17', totalValue: 70 }]);
   });
 });

@@ -20,9 +20,10 @@ export function dayKey(t) {
  * @param {any} card
  * @param {{ variant: string, condition?: string }} entry
  * @param {Record<string, number>} [factors]
+ * @param {'low' | 'trend'} [field] price field (default: the reference one)
  */
-export function entryPrice(card, entry, factors) {
-  const p = copyPrice(card, entry.variant);
+export function entryPrice(card, entry, factors, field = undefined) {
+  const p = copyPrice(card, entry.variant, field);
   return p == null ? null : Math.round(p * conditionFactor(entry.condition, factors) * 100) / 100;
 }
 
@@ -31,8 +32,9 @@ export function entryPrice(card, entry, factors) {
  * @param {Entry[]} entries
  * @param {Map<string, any>} cards full TCGdex cards by id (any language: prices are the same)
  * @param {Record<string, number>} [factors] condition factors in %
+ * @param {'low' | 'trend'} [field] price field (default: the reference one)
  */
-export function collectionValue(entries, cards, factors) {
+export function collectionValue(entries, cards, factors, field = undefined) {
   let total = 0;
   let unpriced = 0;
   let missingData = 0;
@@ -42,7 +44,7 @@ export function collectionValue(entries, cards, factors) {
       missingData += e.qty;
       continue;
     }
-    const p = entryPrice(card, e, factors);
+    const p = entryPrice(card, e, factors, field);
     if (p == null) unpriced += e.qty;
     else total += p * e.qty;
   }
@@ -56,6 +58,19 @@ export const PERIODS = /** @type {const} */ ([
   ['365', '1 anno', 365],
   ['all', 'Tutto', null],
 ]);
+
+/**
+ * The daily values with one kind of price, as { date, totalValue }: snapshots keep the value
+ * with the trend (`totalValue`) and the lowest price (`lowValue`, recorded since 17/10/2026),
+ * so the chart never mixes the two.
+ * @param {Snapshot[]} snapshots
+ * @param {'low' | 'trend'} field
+ * @returns {Snapshot[]}
+ */
+export function snapshotSeries(snapshots, field) {
+  if (field === 'trend') return snapshots;
+  return snapshots.filter((s) => typeof s.lowValue === 'number').map((s) => ({ date: s.date, totalValue: /** @type {number} */ (s.lowValue) }));
+}
 
 /**
  * Snapshots inside the period plus the change from its first to its last value.

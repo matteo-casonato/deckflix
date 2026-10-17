@@ -24,13 +24,16 @@ export async function valuedCollection({ refresh = false } = {}) {
  * record a value that is too low. Later in the day the snapshot is updated with the latest value.
  */
 export async function recordTodaySnapshot() {
-  const { entries, value } = await valuedCollection({ refresh: navigator.onLine });
+  const { entries, cards, value } = await valuedCollection({ refresh: navigator.onLine });
   if (!entries.length || value.missingData > 0) return null;
   const date = dayKey(Date.now());
   await recordCardPrices(date).catch(() => {});
+  // Both kinds of price every day: the chart follows the one chosen, with its own history.
+  const trend = collectionValue(entries, cards, settings.conditionFactors, 'trend').total;
+  const low = collectionValue(entries, cards, settings.conditionFactors, 'low').total;
   const existing = await db.priceSnapshots.get(date);
-  if (existing && Math.abs(existing.totalValue - value.total) < 0.005) return existing;
-  const snap = { date, totalValue: value.total };
+  if (existing && Math.abs(existing.totalValue - trend) < 0.005 && Math.abs((existing.lowValue ?? -1) - low) < 0.005) return existing;
+  const snap = { date, totalValue: trend, lowValue: low };
   await db.priceSnapshots.put(snap);
   return snap;
 }
@@ -45,7 +48,7 @@ async function recordCardPrices(date) {
   const ids = [...new Set([...(await db.collection.toArray()).map((e) => e.cardId), ...(await db.wishlist.toArray()).map((w) => w.cardId)])];
   const cards = await cachedCards(ids, settings.cardLang);
   const rows = ids
-    .map((cardId) => ({ cardId, date, price: copyPrice(cards.get(cardId), 'normal') ?? cards.get(cardId)?.pricing?.cardmarket?.trend ?? null }))
+    .map((cardId) => ({ cardId, date, price: copyPrice(cards.get(cardId), 'normal', 'trend') ?? null, low: copyPrice(cards.get(cardId), 'normal', 'low') ?? undefined }))
     .filter((r) => typeof r.price === 'number' && r.price > 0);
   await db.cardPrices.bulkPut(/** @type {import('../db.js').CardPrice[]} */ (rows));
 }

@@ -350,8 +350,14 @@
           {#if prices}<span class="small" class:warn={prices.old}>{prices.label}</span>{/if}
         </div>
         <p class="muted small">
-          Il prezzo indicato è la <strong>media Cardmarket di tutte le lingue e condizioni</strong>, come riferimento per una copia
-          Near Mint. Per le tue copie l’app stima il valore in base alla condizione (vedi
+          {#if settings.priceField === 'low'}
+            Il prezzo indicato è l’<strong>offerta più bassa su Cardmarket</strong>, in qualsiasi lingua e condizione, come
+            riferimento per una copia Near Mint.
+          {:else}
+            Il prezzo indicato è la <strong>tendenza Cardmarket di tutte le lingue e condizioni</strong>, come riferimento per una
+            copia Near Mint.
+          {/if}
+          Per le tue copie l’app stima il valore in base alla condizione (vedi
           <a href={hrefFor('settings', { key: 'qualita' })}>Qualità e prezzi</a>); il prezzo reale lo trovi su Cardmarket, con le offerte
           nella lingua e nella condizione della tua copia.
         </p>

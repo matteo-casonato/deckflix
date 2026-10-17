@@ -106,6 +106,8 @@
 {/if}
 
 <main class:with-nav={showNav}>
+  <!-- Prices are computed with the reference field: a new choice rebuilds the screen. -->
+  {#key settings.priceField}
   {#if route.name === 'home'}
     <Home />
   {:else if route.name === 'collection'}
@@ -151,6 +153,7 @@
   {:else}
     <Placeholder title="Pagina non trovata" emptyTitle="Qui non c'è niente" emptyText="Torna alla Home dalla barra in basso." phase="—" />
   {/if}
+  {/key}
 </main>
 
 {#if showNav}

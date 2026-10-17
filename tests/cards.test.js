@@ -233,3 +233,28 @@ describe('ptcgImage', () => {
     expect(imageAt(base, 'high')).toBe('https://images.pokemontcg.io/bp/1_hires.png');
   });
 });
+
+describe('reference price field', async () => {
+  const { setReferenceField } = await import('../src/lib/domain/variants.js');
+  const cm = { low: 4.55, trend: 6.92, 'low-holo': 9, 'trend-holo': 12 };
+  const card = {
+    pricing: { cardmarket: cm },
+    variants_detailed: [
+      { type: 'normal', pricing: { cardmarket: { low: 4.55, trend: 6.92 } } },
+      { type: 'reverse', pricing: { cardmarket: cm } },
+    ],
+  };
+  it('uses the lowest offer when chosen, the trend otherwise', () => {
+    setReferenceField('low');
+    expect(copyPrice(card, 'normal')).toBe(4.55);
+    expect(copyPrice(card, 'reverse')).toBe(9);
+    setReferenceField('trend');
+    expect(copyPrice(card, 'normal')).toBe(6.92);
+    expect(copyPrice(card, 'reverse')).toBe(12);
+  });
+  it('an explicit field wins over the choice', () => {
+    setReferenceField('low');
+    expect(copyPrice(card, 'normal', 'trend')).toBe(6.92);
+    setReferenceField('trend');
+  });
+});

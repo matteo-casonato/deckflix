@@ -16,7 +16,7 @@ export const CSV_COLUMNS = /** @type {const} */ ([
   ['variant', 'variante', 'Variante'],
   ['condition', 'condizione', 'Condizione'],
   ['qty', 'quantita', 'Quantità'],
-  ['price', 'prezzo_trend', 'Prezzo trend'],
+  ['price', 'prezzo', 'Prezzo'],
 ]);
 
 export const SEPARATOR = ';';

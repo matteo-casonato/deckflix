@@ -7,6 +7,7 @@
   import { db } from '../../lib/db.js';
   import { euro } from '../../lib/domain/cards.js';
   import ValueChart from '../../lib/ui/ValueChart.svelte';
+  import { settings } from '../../lib/stores/settings.svelte.js';
 
   /** @type {{ cardId: string, cardmarket: any }} */
   let { cardId, cardmarket } = $props();
@@ -17,26 +18,32 @@
       ['7 giorni', cardmarket?.avg7 ?? null],
       ['Ieri', cardmarket?.avg1 ?? null],
       ['Trend', cardmarket?.trend ?? null],
+      ['Più basso', cardmarket?.low ?? null],
     ]).filter(([, v]) => typeof v === 'number' && v > 0),
   );
   const max = $derived(Math.max(...steps.map(([, v]) => /** @type {number} */ (v)), 0.01));
   const change = $derived(cardmarket?.avg30 > 0 && cardmarket?.avg7 > 0 ? (cardmarket.avg7 / cardmarket.avg30 - 1) * 100 : null);
 
   const history = $derived(liveQuery(() => db.cardPrices.where('cardId').equals(cardId).sortBy('date')));
-  const points = $derived(($history ?? []).map((r) => ({ date: r.date, totalValue: r.price })));
+  // The daily record with the price chosen in Qualità e prezzi (the lowest one since 17/10/2026).
+  const points = $derived(
+    ($history ?? [])
+      .map((r) => ({ date: r.date, totalValue: settings.priceField === 'low' ? r.low : r.price }))
+      .filter((p) => typeof p.totalValue === 'number'),
+  );
 </script>
 
 {#if steps.length >= 2}
   <div class="trend">
     <div class="head">
-      <span class="muted small">Medie Cardmarket</span>
+      <span class="muted small">Prezzi Cardmarket</span>
       {#if change != null}
         <span class="chg num" class:up={change > 5} class:down={change < -5}>
           {change >= 0 ? '+' : '−'}{Math.abs(change).toFixed(0)}% in una settimana
         </span>
       {/if}
     </div>
-    <ul class="bars" aria-label="Prezzo medio su Cardmarket negli ultimi 30 giorni, 7 giorni, ieri e trend">
+    <ul class="bars" aria-label="Prezzo medio su Cardmarket negli ultimi 30 giorni, 7 giorni, ieri, trend e offerta più bassa">
       {#each steps as [label, v] (label)}
         <li>
           <span class="val num">{euro(v)}</span>

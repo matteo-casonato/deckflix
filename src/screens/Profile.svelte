@@ -83,7 +83,7 @@
   const SETTINGS = $derived(
     /** @type {[string, any, string, string][]} */ ([
       ['lingua', LanguageSkillIcon, 'Lingua delle carte', LANG_LABELS[settings.cardLang] ?? settings.cardLang],
-      ['qualita', Analytics01Icon, 'Qualità e prezzi', 'Come si stima il valore in base alla condizione'],
+      ['qualita', Analytics01Icon, 'Qualità e prezzi', settings.priceField === 'low' ? 'Prezzo più basso di Cardmarket, stima per condizione' : 'Tendenza di Cardmarket, stima per condizione'],
       ['edizioni', GridViewIcon, 'Edizioni', settings.missingImages ? 'Carte mancanti in grigio' : 'Carte mancanti solo col numero'],
       ['immagini', Image01Icon, 'Immagini e spazio', 'Cache delle immagini, dati protetti'],
       ['scansione', ScanIcon, 'Scansione', hasGoogleOcr ? 'Riconoscimento di Google attivo' : 'Come renderla più veloce in Chrome'],

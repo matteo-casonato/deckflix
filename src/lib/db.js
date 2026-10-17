@@ -7,8 +7,8 @@ import Dexie from 'dexie';
  * @typedef {{ cardId: string, lang?: string, variant?: string, priority?: number, addedAt: number }} WishlistEntry
  * @typedef {{ id: string, name: string, format: 'standard', cards: { cardId: string, qty: number }[], cover?: string | null, createdAt: number, updatedAt: number }} Deck
  * @typedef {{ id: string, name: string, cards: { cardId: string, addedAt: number }[], createdAt: number, updatedAt: number }} Album
- * @typedef {{ date: string, totalValue: number }} PriceSnapshot
- * @typedef {{ cardId: string, date: string, price: number }} CardPrice
+ * @typedef {{ date: string, totalValue: number, lowValue?: number }} PriceSnapshot value with the trend price and, since 17/10/2026, with the lowest one
+ * @typedef {{ cardId: string, date: string, price: number, low?: number }} CardPrice trend price and, since 17/10/2026, lowest price
  * @typedef {{ lang: string, cardId: string, data: any, fetchedAt: number }} CachedCard
  * @typedef {{ path: string, data: any, fetchedAt: number }} CachedResponse
  * @typedef {{ id?: number, changedAt: number }} SyncFlag

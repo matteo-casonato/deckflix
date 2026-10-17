@@ -6,6 +6,12 @@
   import Flag from '../lib/ui/Flag.svelte';
   import { LANG_LABELS } from '../lib/domain/cards.js';
   import { CONDITIONS, DEFAULT_CONDITION_FACTORS } from '../lib/domain/collection.js';
+
+  /** Reference price choices: [field, label, explanation]. */
+  const PRICE_CHOICES = /** @type {const} */ ([
+    ['low', 'Prezzo più basso', 'L’offerta più economica su Cardmarket: quanto spenderesti al minimo'],
+    ['trend', 'Tendenza', 'Il prezzo medio di vendita degli ultimi giorni secondo Cardmarket'],
+  ]);
   import { clearImageCache, imageCacheInfo } from '../lib/data/imageCache.js';
   import { currentPosition, geocodeCity } from '../lib/data/geocode.js';
   import { nearbyEventsUrl } from '../lib/domain/players.js';
@@ -110,11 +116,24 @@
     </ul>
     <p class="note">Se una carta non esiste nella lingua scelta (succede con le carte vecchie), l’app mostra quella inglese.</p>
   {:else if key === 'qualita'}
+    <h2 class="label">Prezzo di riferimento</h2>
+    <ul class="choices card" role="radiogroup" aria-label="Prezzo di riferimento">
+      {#each PRICE_CHOICES as [field, label, hint] (field)}
+        <li>
+          <button role="radio" aria-checked={settings.priceField === field} onclick={() => setSetting('priceField', field)}>
+            <span class="choice-text"><strong>{label}</strong><span class="muted">{hint}</span></span>
+            <span class="dot" aria-hidden="true"></span>
+          </button>
+        </li>
+      {/each}
+    </ul>
+    <p class="note">Vale per il valore della collezione, delle edizioni e delle raccolte, per i desideri, i deck e il file CSV.</p>
+
     <section class="explain card">
       <h2>Come si calcola il valore</h2>
       <p>
-        I prezzi arrivano da Cardmarket tramite TCGdex e sono <strong>medie di tutte le lingue e di tutte le condizioni</strong>:
-        una carta Near Mint e una rovinata finiscono nella stessa media.
+        I prezzi arrivano da Cardmarket tramite TCGdex e valgono per <strong>tutte le lingue e tutte le condizioni</strong>: la
+        tendenza mescola carte Near Mint e rovinate, l’offerta più bassa è spesso una copia rovinata o in un’altra lingua.
       </p>
       <p>
         Per avvicinarsi al valore reale delle tue copie, l’app applica al prezzo una <strong>percentuale in base alla condizione</strong>
@@ -124,7 +143,7 @@
       <h2>Perché non il prezzo esatto</h2>
       <p>
         Cardmarket ha i prezzi per condizione, ma li dà solo ai venditori registrati, con un’autorizzazione da richiedere e un
-        server che custodisca le credenziali. Deckflix è gratuita e senza server, quindi usa le medie pubbliche e la stima.
+        server che custodisca le credenziali. Deckflix è gratuita e senza server, quindi usa i prezzi pubblici e la stima.
       </p>
       <p>Per il prezzo vero apri la carta su Cardmarket dalla sua scheda: vedi le offerte nella lingua e nella condizione della tua copia.</p>
     </section>
@@ -405,7 +424,22 @@
     cursor: pointer;
   }
 
+  .choice-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 10px 12px 10px 0;
+    text-align: left;
+    font-size: 13px;
+  }
+
+  .choice-text strong {
+    font-size: 15px;
+    font-weight: 600;
+  }
+
   .dot {
+    flex: none;
     width: 22px;
     height: 22px;
     border-radius: 11px;
