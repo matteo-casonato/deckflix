@@ -27,6 +27,11 @@ export const ROADMAP = [
     status: 'next',
   },
   {
+    title: 'Carte gradate',
+    text: 'Segnare su una copia la casa di gradazione (PSA, BGS, CGC…) e il voto, anche dalla scansione, con una raccolta apposita. Il valore resta da capire: i prezzi Cardmarket che arrivano da TCGdex non distinguono le carte gradate, quindi servirebbe un prezzo scritto a mano.',
+    status: 'idea',
+  },
+  {
     title: 'Carte giapponesi',
     text: 'Catalogo, ricerca, scansione e prezzi delle carte giapponesi: TCGdex le ha complete, con immagini e prezzi Cardmarket. Sono un catalogo a parte, con edizioni e numeri propri.',
     status: 'idea',
