@@ -12,6 +12,8 @@ import {
   guessImage,
   limitlessFallback,
   limitlessImage,
+  imageAt,
+  ptcgImage,
 } from '../src/lib/domain/cards.js';
 
 const fixture = (path) => JSON.parse(readFileSync(new URL(`./fixtures/tcgdex/${path}.json`, import.meta.url), 'utf8'));
@@ -211,5 +213,23 @@ describe('limitlessImage', () => {
     expect(guessImage('cel25-25', '25')).toBe('https://assets.tcgdex.net/en/swsh/cel25/25');
     expect(limitlessFallback('https://assets.tcgdex.net/en/swsh/cel25/25')).toBe(`${L}/CEL/CEL_025_R_EN`);
     expect(guessImage('cel25cc-CC001', 'CC001')).toBe(`${L}/CEL/CEL_CC1_R_EN`);
+  });
+});
+
+describe('ptcgImage', () => {
+  it('drops leading zeros, also after a letter', () => {
+    expect(ptcgImage('2021swsh', '1')).toBe('https://images.pokemontcg.io/mcd21/1');
+    expect(ptcgImage('ecard3', 'H01')).toBe('https://images.pokemontcg.io/ecard3/H1');
+    expect(ptcgImage('exu', '!')).toBe('https://images.pokemontcg.io/ex10/!');
+  });
+  it('skips cards whose file would be a card back', () => {
+    expect(ptcgImage('2017sm', '1')).toBeNull();
+    expect(ptcgImage('ecard2', '50a')).toBeNull();
+    expect(ptcgImage('exu', '%3F')).toBeNull();
+  });
+  it('is the guess for those sets, with its own file names', () => {
+    const base = guessImage('bog-1', '1');
+    expect(imageAt(base)).toBe('https://images.pokemontcg.io/bp/1.png');
+    expect(imageAt(base, 'high')).toBe('https://images.pokemontcg.io/bp/1_hires.png');
   });
 });

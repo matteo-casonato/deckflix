@@ -195,7 +195,7 @@ const SERIES_OF_SET = /** @type {Record<string, string>} */ ({ cel25: 'swsh', sv
  */
 export function guessImage(cardId, localId, lang = 'en') {
   const setId = setIdOf(cardId);
-  const elsewhere = OTHER_IMAGES[setId]?.(localId);
+  const elsewhere = OTHER_IMAGES[setId]?.(localId) ?? ptcgImage(setId, localId);
   if (elsewhere) return elsewhere;
   const series = SERIES_OF_SET[setId] ?? SERIES.find((s) => setId.startsWith(s));
   if (!series) return null;
@@ -275,6 +275,47 @@ export function limitlessFallback(base) {
   return setId && localId ? limitlessImage(setId, localId) : null;
 }
 
+const PTCG = 'https://images.pokemontcg.io';
+
+/**
+ * Sets neither TCGdex nor Limitless has images of, on pokemontcg.io with the same numbers
+ * (every card name and file checked on 17/10/2026): McDonald's 2011, 2012, 2016, 2019, 2021,
+ * 2022, EX trainer kits, Best of Game, the H cards of Aquapolis and Skyridge, POP 6, the Unown
+ * of Unseen Forces. Its missing files answer 404 with a card back, which an <img> would show:
+ * cards without a file there are left out (McDonald's 2014, 2015, 2017, 2018, Aquapolis 50a…,
+ * Unown "?").
+ */
+const PTCG_CODES = /** @type {Record<string, string>} */ ({
+  '2011bw': 'mcd11',
+  '2012bw': 'mcd12',
+  '2016xy': 'mcd16',
+  '2019sm': 'mcd19',
+  '2021swsh': 'mcd21',
+  '2022swsh': 'mcd22',
+  bog: 'bp',
+  'tk-ex-latia': 'tk1a',
+  'tk-ex-latio': 'tk1b',
+  'tk-ex-p': 'tk2a',
+  'tk-ex-m': 'tk2b',
+  ecard2: 'ecard2',
+  ecard3: 'ecard3',
+  pop6: 'pop6',
+  exu: 'ex10',
+});
+
+/**
+ * pokemontcg.io image base of a card, or null when it doesn't have the set. Its numbers have
+ * no leading zeros, also after a letter (H01 → H1).
+ * @param {string} setId
+ * @param {string} localId
+ */
+export function ptcgImage(setId, localId) {
+  const code = PTCG_CODES[setId];
+  const num = decodeURIComponent(localId).replace(/^([A-Za-z]*)0+(?=\d)/, '$1');
+  if (!code || num === '?' || (setId === 'ecard2' && !num.startsWith('H'))) return null;
+  return `${PTCG}/${code}/${encodeURIComponent(num)}`;
+}
+
 /**
  * Image URL from an image base (TCGdex's `image`, or guessImage's): TCGdex serves
  * `{base}/low.webp` and `/high.webp`, Limitless `{base}_SM.png` and `_LG.png`.
@@ -284,6 +325,7 @@ export function limitlessFallback(base) {
 export function imageAt(base, quality = 'low') {
   if (!base) return null;
   if (base.startsWith(LIMITLESS)) return `${base}_${quality === 'high' ? 'LG' : 'SM'}.png`;
+  if (base.startsWith(PTCG)) return `${base}${quality === 'high' ? '_hires' : ''}.png`;
   return `${base}/${quality}.webp`;
 }
 

@@ -76,13 +76,14 @@ export default defineConfig({
             },
           },
           {
-            // Set symbols and logos (pokesymbols.com, The Hobby Bin) and country flags (Flagpack on
-            // jsDelivr): they don't change, keep them.
+            // Set symbols and logos (pokesymbols.com, The Hobby Bin), country flags (Flagpack on
+            // jsDelivr) and card images TCGdex lacks (Limitless, pokemontcg.io): they don't change.
             urlPattern: ({ url }) =>
               url.hostname === 'pokesymbols.com' ||
               url.hostname === 'thehobbybin.com' ||
               url.pathname.startsWith('/npm/flagpack-core@') ||
-              url.hostname.endsWith('.digitaloceanspaces.com'),
+              url.hostname.endsWith('.digitaloceanspaces.com') ||
+              url.hostname === 'images.pokemontcg.io',
             handler: 'CacheFirst',
             options: {
               cacheName: 'set-symbols',
