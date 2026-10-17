@@ -61,8 +61,9 @@
     <div class="actions">
       <a class="btn light" href={hrefFor('deckDetail', { id: $deck.id })}>Apri deck</a>
       {#if summary?.missing}
-        <button class="btn" onclick={toWishlist}>
-          <span class="num">{summary.missing} mancanti{summary.missingCost ? ` · ~${euro(summary.missingCost)}` : ''}</span>
+        <button class="btn stack" onclick={toWishlist} aria-label={`${summary.missing} carte mancanti${summary.missingCost ? `, circa ${euro(summary.missingCost)}` : ''}: aggiungile ai desideri`}>
+          <span class="num">{summary.missing} mancanti</span>
+          {#if summary.missingCost}<small class="num">~{euro(summary.missingCost)}</small>{/if}
         </button>
       {:else if summary}
         <a class="btn" href={hrefFor('deckPrint', { id: $deck.id })}>Stampa</a>

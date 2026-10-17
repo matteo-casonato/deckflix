@@ -84,7 +84,7 @@ Non usiamo librerie Material: l'aspetto è definito dai mockup e dai token. Di M
 - **Target toccabili** di almeno 48 × 48 dp, anche quando l'elemento visibile è più piccolo (estendi l'area con padding).
 - **Barra di navigazione**: massimo 5 destinazioni, sempre visibile nelle sezioni principali, nascosta nelle schermate a tutto schermo (scansione) e nei flussi di primo avvio.
 - **Gerarchia dei pulsanti**: una sola azione principale per schermata (pulsante pieno con l'accento), le altre secondarie o tonali.
-- **Pulsanti su una riga sola** (`white-space: nowrap` in `buttons.css`): etichette brevi, che stiano anche a 360 px di larghezza; due pulsanti affiancati hanno la stessa larghezza.
+- **Pulsanti su una riga sola** (`white-space: nowrap` in `buttons.css`): etichette brevi, che stiano anche a 360 px di larghezza; due pulsanti affiancati hanno la stessa larghezza. Quando un numero deve accompagnare l'etichetta (quantità e prezzo) si usa la seconda riga voluta, più piccola: `.btn.stack` con `<span>` e `<small>`.
 - **Bottom sheet** per azioni contestuali (conferma scansione, scelta variante, filtri), **dialog** solo per conferme distruttive (rimuovi carta, elimina deck o profilo).
 - **Feedback**: snackbar/toast per conferme brevi con eventuale "Annulla", indicatori di caricamento per operazioni oltre 300 ms, skeleton per le liste.
 - **Movimento**: transizioni brevi (150–300 ms), coerenti con la direzione di navigazione; tutto disattivato con `prefers-reduced-motion`.

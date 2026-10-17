@@ -14,8 +14,27 @@
   cursor: pointer;
   background: var(--line-2);
   color: var(--text);
-  /* One line only: two-line buttons look broken. Labels are kept short instead. */
+  /* One line only: two-line buttons look broken. Labels are kept short instead; a label that
+     still doesn't fit is cut at the button's edge rather than spilling over its neighbour. */
   white-space: nowrap;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+/* When a number has to go with the label (count and price), it goes on a smaller second line
+   on purpose instead of wrapping: <button class="btn stack"><span>54 mancanti</span><small>~€ 10,53</small></button>. */
+.btn.stack {
+  flex-direction: column;
+  gap: 1px;
+  padding: 6px 12px;
+  line-height: 1.15;
+}
+
+.btn.stack small {
+  font-size: 12px;
+  font-weight: 500;
+  opacity: 0.8;
 }
 
 .btn.primary {
