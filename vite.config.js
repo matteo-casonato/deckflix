@@ -2,8 +2,18 @@
 import { defineConfig } from 'vite';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { VitePWA } from 'vite-plugin-pwa';
+import { execSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+
+/** Number of commits on the current branch ("dev" without git). */
+function appVersion() {
+  try {
+    return execSync('git rev-list --count HEAD', { encoding: 'utf8' }).trim();
+  } catch {
+    return 'dev';
+  }
+}
 
 // Local HTTPS for testing the camera from a phone on the same Wi-Fi.
 // Certificates are created with mkcert into .certs/ (see README).
@@ -98,7 +108,11 @@ export default defineConfig({
     }),
   ],
   // BUILD_TIME comes from the workflow (last commit): rebuilding the same code gives the same app.
-  define: { __BUILD_TIME__: JSON.stringify(process.env.BUILD_TIME || new Date().toISOString()) },
+  // The version is the number of commits, shown at the bottom of Profile.
+  define: {
+    __BUILD_TIME__: JSON.stringify(process.env.BUILD_TIME || new Date().toISOString()),
+    __APP_VERSION__: JSON.stringify(appVersion()),
+  },
   server: { https },
   build: {
     rollupOptions: {

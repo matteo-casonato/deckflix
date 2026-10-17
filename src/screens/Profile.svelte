@@ -94,6 +94,11 @@
 
   /** Address of the app (the published site; the dev server in development). */
   const APP_URL = `${location.origin}${import.meta.env.BASE_URL}`;
+  // Set by Vite at build time (vite.config.js): commit count and last commit's date.
+  // @ts-ignore -- build-time constants
+  const VERSION = __APP_VERSION__;
+  // @ts-ignore -- build-time constants
+  const BUILT = new Date(__BUILD_TIME__).toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' });
   let shareSheet = $state(false);
   let licenseSheet = $state(false);
   let accountSheet = $state(false);
@@ -310,6 +315,8 @@
     Pokémon e i nomi delle carte sono marchi dei rispettivi titolari; immagini e dati arrivano da TCGdex.
   </p>
 </section>
+
+<p class="version num">Versione {VERSION} · {BUILT}</p>
 
 <ConfirmDialog
   open={confirm === 'restore'}
@@ -632,6 +639,13 @@
 
   .about-actions .btn {
     width: 100%;
+  }
+
+  .version {
+    margin: 20px 0 8px;
+    text-align: center;
+    font-size: 12px;
+    color: var(--muted);
   }
 
   .about .legal {

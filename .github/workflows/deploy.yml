@@ -28,6 +28,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        # Whole history: the app's version number is the commit count.
+        with:
+          fetch-depth: 0
       # The build stamps the last commit's time, not now: the daily rebuild then produces the
       # same app, and phones don't get a "Nuova versione disponibile" every morning.
       - run: echo "BUILD_TIME=$(git log -1 --format=%cI)" >> "$GITHUB_ENV"
